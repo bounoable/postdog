@@ -10,9 +10,10 @@ import (
 	"github.com/bounoable/postdog/letter"
 )
 
-var (
-	// DefaultConfig is the default office configuration.
-	DefaultConfig = Config{}
+// ...
+const (
+	BeforeSend = SendHook(iota)
+	AfterSend
 )
 
 var (
@@ -37,6 +38,7 @@ type Config struct {
 	QueueBuffer int
 	Middleware  []Middleware
 	Logger      Logger
+	SendHooks   map[SendHook][]func(context.Context, letter.Letter)
 }
 
 // Middleware ...
@@ -57,6 +59,9 @@ type Logger interface {
 	Log(v ...interface{})
 }
 
+// SendHook ...
+type SendHook int
+
 // Transport ...
 type Transport interface {
 	Send(context.Context, letter.Letter) error
@@ -69,11 +74,20 @@ type dispatchJob struct {
 
 // New returns a new Office.
 func New(opts ...Option) *Office {
-	cfg := DefaultConfig
+	cfg := Config{
+		Middleware: make([]Middleware, 0),
+		SendHooks:  make(map[SendHook][]func(context.Context, letter.Letter)),
+	}
+
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
+	return NewWithConfig(cfg)
+}
+
+// NewWithConfig ...
+func NewWithConfig(cfg Config) *Office {
 	return &Office{
 		cfg:        cfg,
 		transports: make(map[string]Transport),
@@ -102,6 +116,13 @@ func WithMiddleware(middleware ...Middleware) Option {
 func WithLogger(logger Logger) Option {
 	return func(cfg *Config) {
 		cfg.Logger = logger
+	}
+}
+
+// WithHook ...
+func WithHook(h SendHook, fns ...func(context.Context, letter.Letter)) Option {
+	return func(cfg *Config) {
+		cfg.SendHooks[h] = append(cfg.SendHooks[h], fns...)
 	}
 }
 
@@ -196,8 +217,16 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 		}
 	}
 
+	for _, fn := range o.cfg.SendHooks[BeforeSend] {
+		fn(ctx, let)
+	}
+
 	if err = trans.Send(ctx, let); err != nil {
 		o.log(err)
+	}
+
+	for _, fn := range o.cfg.SendHooks[AfterSend] {
+		fn(ctx, let)
 	}
 
 	return err

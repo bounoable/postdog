@@ -3,6 +3,7 @@ package office_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,7 +16,10 @@ import (
 
 func TestNew(t *testing.T) {
 	off := office.New()
-	assert.Equal(t, office.DefaultConfig, off.Config())
+	assert.Equal(t, office.Config{
+		Middleware: make([]office.Middleware, 0),
+		SendHooks:  make(map[office.SendHook][]func(context.Context, letter.Letter)),
+	}, off.Config())
 
 	off = office.New(
 		office.QueueBuffer(12),
@@ -23,6 +27,8 @@ func TestNew(t *testing.T) {
 
 	assert.Equal(t, office.Config{
 		QueueBuffer: 12,
+		Middleware:  make([]office.Middleware, 0),
+		SendHooks:   make(map[office.SendHook][]func(context.Context, letter.Letter)),
 	}, off.Config())
 }
 
@@ -275,6 +281,36 @@ func TestOffice_Send_errorlog(t *testing.T) {
 	assert.True(t, errors.Is(err, expectedErr))
 
 	<-time.After(time.Millisecond * 100)
+}
+
+func TestOffice_Send_hooks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	let := letter.Write(letter.Subject("Test"))
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	off := office.New(
+		office.WithHook(office.BeforeSend, func(_ context.Context, hlet letter.Letter) {
+			defer wg.Done()
+			assert.Equal(t, let, hlet)
+		}),
+		office.WithHook(office.AfterSend, func(_ context.Context, hlet letter.Letter) {
+			defer wg.Done()
+			assert.Equal(t, let, hlet)
+		}),
+	)
+
+	trans := mock_office.NewMockTransport(ctrl)
+	trans.EXPECT().Send(gomock.Any(), let).Return(nil)
+	off.ConfigureTransport("test", trans)
+
+	err := off.Send(context.Background(), let)
+	assert.Nil(t, err)
+
+	wg.Wait()
 }
 
 func TestOffice_Dispatch(t *testing.T) {
