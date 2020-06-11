@@ -1,15 +1,15 @@
 default: test2
 
-providers:
+transports:
   test1:
-    transport: smtp
+    provider: smtp
     config:
       host: smtp.mailtrap.io
       username: abcdef123456
       password: 123456abcdef
 
   test2:
-    transport: gmail
+    provider: gmail
     config:
       serviceAccount: /path/to/service_account.json
       scopes:

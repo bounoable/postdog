@@ -4,12 +4,18 @@ import (
 	"context"
 
 	"github.com/bounoable/postdog/office"
+	"github.com/bounoable/postdog/office/autowire"
 )
 
 const (
 	// Provider is the provider name for SMTP transport.
-	Provider = "gomail"
+	Provider = "smtp"
 )
+
+// Register registers the transport factory in the autowire config.
+func Register(cfg *autowire.Config) {
+	cfg.RegisterProvider(Provider, autowire.TransportFactoryFunc(AutowireTransport))
+}
 
 // AutowireTransport autowires SMTP transport from the given configuration.
 func AutowireTransport(_ context.Context, cfg map[string]interface{}) (office.Transport, error) {
