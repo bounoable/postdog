@@ -1,16 +1,32 @@
 package office_test
 
 import (
+	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
 	"github.com/bounoable/postdog/office/mock_office"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOffice_Configure(t *testing.T) {
+func TestNew(t *testing.T) {
+	off := office.New()
+	assert.Equal(t, office.DefaultConfig, off.Config())
+
+	off = office.New(
+		office.QueueBuffer(12),
+	)
+
+	assert.Equal(t, office.Config{
+		QueueBuffer: 12,
+	}, off.Config())
+}
+
+func TestOffice_ConfigureTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -26,7 +42,7 @@ func TestOffice_Configure(t *testing.T) {
 	assert.True(t, errors.Is(err, office.UnconfiguredTransportError{}))
 
 	mockTrans := mock_office.NewMockTransport(ctrl)
-	off.Configure("test", mockTrans)
+	off.ConfigureTransport("test", mockTrans)
 	trans, err := off.Transport("test")
 
 	assert.Nil(t, err)
@@ -38,32 +54,32 @@ func TestOffice_Configure(t *testing.T) {
 	assert.Equal(t, mockTrans, defaultTrans)
 }
 
-func TestOffice_Configure_asDefault(t *testing.T) {
+func TestOffice_ConfigureTransport_asDefault(t *testing.T) {
 	cases := map[string]struct {
 		configure func(*office.Office, *gomock.Controller)
 		expected  string
 	}{
 		"default default": {
 			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.Configure("test1", mock_office.NewMockTransport(ctrl))
-				off.Configure("test2", mock_office.NewMockTransport(ctrl))
-				off.Configure("test3", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
 			},
 			expected: "test1",
 		},
 		"first as default": {
 			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.Configure("test1", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
-				off.Configure("test2", mock_office.NewMockTransport(ctrl))
-				off.Configure("test3", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
+				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
 			},
 			expected: "test1",
 		},
 		"other-than-first as default": {
 			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.Configure("test1", mock_office.NewMockTransport(ctrl))
-				off.Configure("test2", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
-				off.Configure("test3", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
+				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
 			},
 			expected: "test2",
 		},
@@ -92,9 +108,9 @@ func TestOffice_MakeDefault(t *testing.T) {
 	defer ctrl.Finish()
 
 	off := office.New()
-	off.Configure("test1", mock_office.NewMockTransport(ctrl))
-	off.Configure("test2", mock_office.NewMockTransport(ctrl))
-	off.Configure("test3", mock_office.NewMockTransport(ctrl))
+	off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
+	off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
+	off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
 
 	assertDefaultTransport(t, off, "test1")
 
@@ -122,4 +138,225 @@ func assertDefaultTransport(t *testing.T, off *office.Office, name string) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected, trans)
+}
+
+func TestOffice_SendWith(t *testing.T) {
+	cases := map[string]struct {
+		configure   func(*office.Office, *gomock.Controller)
+		name        string
+		expectedErr error
+	}{
+		"unconfigured transport": {
+			name: "test",
+			expectedErr: office.UnconfiguredTransportError{
+				Name: "test",
+			},
+		},
+		"configured transport": {
+			configure: func(off *office.Office, ctrl *gomock.Controller) {
+				trans := mock_office.NewMockTransport(ctrl)
+				trans.EXPECT().Send(
+					gomock.AssignableToTypeOf(context.Background()),
+					gomock.AssignableToTypeOf(letter.Write()),
+				)
+				off.ConfigureTransport("test", trans)
+			},
+			name: "test",
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			off := office.New()
+			if tcase.configure != nil {
+				tcase.configure(off, ctrl)
+			}
+
+			err := off.SendWith(context.Background(), tcase.name, letter.Write())
+
+			assert.True(t, errors.Is(err, tcase.expectedErr))
+		})
+	}
+}
+
+func TestOffice_Send(t *testing.T) {
+	cases := map[string]struct {
+		configure   func(*office.Office, *gomock.Controller)
+		expectedErr error
+	}{
+		"no transport configured": {
+			expectedErr: office.UnconfiguredTransportError{},
+		},
+		"default transport": {
+			configure: func(off *office.Office, ctrl *gomock.Controller) {
+				trans := mock_office.NewMockTransport(ctrl)
+				trans.EXPECT().Send(
+					gomock.AssignableToTypeOf(context.Background()),
+					gomock.AssignableToTypeOf(letter.Write()),
+				)
+				off.ConfigureTransport("test", trans)
+			},
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			off := office.New()
+			if tcase.configure != nil {
+				tcase.configure(off, ctrl)
+			}
+
+			err := off.Send(context.Background(), letter.Write())
+			assert.True(t, errors.Is(err, tcase.expectedErr))
+		})
+	}
+}
+
+func TestOffice_Dispatch(t *testing.T) {
+	cases := map[string]struct {
+		office      func(*gomock.Controller) *office.Office
+		run         bool
+		expectedErr error
+	}{
+		"unbuffered queue, not running": {
+			office: func(ctrl *gomock.Controller) *office.Office {
+				off := office.New()
+				trans := mock_office.NewMockTransport(ctrl)
+				off.ConfigureTransport("test", trans)
+				return off
+			},
+			expectedErr: context.DeadlineExceeded,
+		},
+		"unbuffered queue, running": {
+			office: func(ctrl *gomock.Controller) *office.Office {
+				off := office.New()
+				trans := mock_office.NewMockTransport(ctrl)
+				trans.EXPECT().Send(
+					gomock.Any(),
+					gomock.AssignableToTypeOf(letter.Write()),
+				)
+				off.ConfigureTransport("test", trans)
+				return off
+			},
+			run: true,
+		},
+		"buffered queue, not running": {
+			office: func(ctrl *gomock.Controller) *office.Office {
+				off := office.New(office.QueueBuffer(1))
+				trans := mock_office.NewMockTransport(ctrl)
+				off.ConfigureTransport("test", trans)
+				return off
+			},
+		},
+		"buffered queue, running": {
+			office: func(ctrl *gomock.Controller) *office.Office {
+				off := office.New(office.QueueBuffer(1))
+				trans := mock_office.NewMockTransport(ctrl)
+				trans.EXPECT().Send(
+					gomock.Any(),
+					gomock.AssignableToTypeOf(letter.Write()),
+				)
+				off.ConfigureTransport("test", trans)
+				return off
+			},
+			run: true,
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			off := tcase.office(ctrl)
+
+			if tcase.run {
+				runCtx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go off.Run(runCtx)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+
+			err := off.Dispatch(ctx, letter.Write())
+			assert.True(t, errors.Is(err, tcase.expectedErr))
+
+			// wait for queue
+			<-time.After(time.Millisecond * 100)
+		})
+	}
+}
+
+func TestOffice_Dispatch_options(t *testing.T) {
+	cases := map[string]struct {
+		configure func(*office.Office, *gomock.Controller)
+		options   []office.DispatchOption
+	}{
+		"unconfigured transport": {
+			options: []office.DispatchOption{office.DispatchWith("test")},
+		},
+		"specify transport": {
+			configure: func(off *office.Office, ctrl *gomock.Controller) {
+				trans := mock_office.NewMockTransport(ctrl)
+				trans.EXPECT().Send(gomock.Any(), gomock.AssignableToTypeOf(letter.Write()))
+				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test2", trans)
+				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+			},
+			options: []office.DispatchOption{office.DispatchWith("test2")},
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			off := office.New(office.QueueBuffer(1))
+			if tcase.configure != nil {
+				tcase.configure(off, ctrl)
+			}
+
+			go off.Run(context.Background())
+
+			assert.Nil(t, off.Dispatch(context.Background(), letter.Write(), tcase.options...))
+
+			<-time.After(time.Millisecond * 100)
+		})
+	}
+}
+
+func TestOffice_Run(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	off := office.New()
+	trans := mock_office.NewMockTransport(ctrl)
+	off.ConfigureTransport("test1", trans)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		assert.Nil(t, off.Run(ctx))
+	}()
+
+	let1, let2, let3 := letter.Write(), letter.Write(), letter.Write()
+
+	trans.EXPECT().Send(ctx, let1)
+	trans.EXPECT().Send(ctx, let2)
+	trans.EXPECT().Send(ctx, let3)
+
+	assert.Nil(t, off.Dispatch(context.Background(), let1))
+	assert.Nil(t, off.Dispatch(context.Background(), let2))
+	assert.Nil(t, off.Dispatch(context.Background(), let3))
+
+	<-time.After(time.Millisecond * 100)
 }

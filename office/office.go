@@ -1,5 +1,7 @@
 package office
 
+//go:generate mockgen -source=office.go -destination=./mock_office/office.go
+
 import (
 	"context"
 	"fmt"
@@ -8,14 +10,31 @@ import (
 	"github.com/bounoable/postdog/letter"
 )
 
-//go:generate mockgen -source=office.go -destination=./mock_office/office.go
+var (
+	// DefaultConfig is the default office configuration.
+	DefaultConfig = Config{}
+)
+
+var (
+	defaultRunConfig = runConfig{
+		workers: 1,
+	}
+)
 
 // Office queues and dispatches outgoing letters.
 // It is thread-safe (but the transports may not be).
 type Office struct {
+	cfg              Config
 	mux              sync.RWMutex
 	transports       map[string]Transport
 	defaultTransport string
+	queue            chan dispatchJob
+}
+
+// Config is the office configuration.
+type Config struct {
+	// QueueBuffer is the channel buffer size for outgoing letters.
+	QueueBuffer int
 }
 
 // Transport ...
@@ -23,17 +42,44 @@ type Transport interface {
 	Send(context.Context, *letter.Letter) error
 }
 
+type dispatchJob struct {
+	letter    *letter.Letter
+	transport string
+}
+
 // New returns a new Office.
-func New() *Office {
+func New(opts ...Option) *Office {
+	cfg := DefaultConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	return &Office{
+		cfg:        cfg,
 		transports: make(map[string]Transport),
+		queue:      make(chan dispatchJob, cfg.QueueBuffer),
 	}
 }
 
-// Configure configures a transport.
+// Option ...
+type Option func(*Config)
+
+// QueueBuffer ...
+func QueueBuffer(size int) Option {
+	return func(cfg *Config) {
+		cfg.QueueBuffer = size
+	}
+}
+
+// Config returns the configration.
+func (o *Office) Config() Config {
+	return o.cfg
+}
+
+// ConfigureTransport configures a transport.
 // The first transport will automatically be made the default transport,
 // even if the Default() option is not used.
-func (o *Office) Configure(name string, trans Transport, options ...ConfigureOption) {
+func (o *Office) ConfigureTransport(name string, trans Transport, options ...ConfigureOption) {
 	var cfg configureConfig
 	for _, opt := range options {
 		opt(&cfg)
@@ -101,4 +147,102 @@ func (o *Office) MakeDefault(name string) error {
 	o.defaultTransport = name
 
 	return nil
+}
+
+// SendWith ...
+func (o *Office) SendWith(ctx context.Context, transport string, let *letter.Letter) error {
+	trans, err := o.Transport(transport)
+	if err != nil {
+		return err
+	}
+	return trans.Send(ctx, let)
+}
+
+// Send ...
+func (o *Office) Send(ctx context.Context, let *letter.Letter) error {
+	return o.SendWith(ctx, o.defaultTransport, let)
+}
+
+// Dispatch ...
+func (o *Office) Dispatch(ctx context.Context, let *letter.Letter, opts ...DispatchOption) error {
+	job := dispatchJob{letter: let}
+	for _, opt := range opts {
+		opt(&job)
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case o.queue <- job:
+		return nil
+	}
+}
+
+// DispatchOption ...
+type DispatchOption func(*dispatchJob)
+
+// DispatchWith ...
+func DispatchWith(transport string) DispatchOption {
+	return func(cfg *dispatchJob) {
+		cfg.transport = transport
+	}
+}
+
+// Run processes the outgoing letter queue.
+func (o *Office) Run(ctx context.Context, opts ...RunOption) error {
+	cfg := defaultRunConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(cfg.workers)
+	for i := 0; i < cfg.workers; i++ {
+		go o.run(ctx, &wg)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+		return nil
+	}
+}
+
+func (o *Office) run(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case job := <-o.queue:
+			var err error
+			if job.transport == "" {
+				err = o.Send(ctx, job.letter)
+			} else {
+				err = o.SendWith(ctx, job.transport, job.letter)
+			}
+			_ = err
+		}
+	}
+}
+
+type runConfig struct {
+	workers int
+}
+
+// RunOption ...
+type RunOption func(*runConfig)
+
+// Workers ...
+func Workers(workers int) RunOption {
+	return func(cfg *runConfig) {
+		cfg.workers = workers
+	}
 }

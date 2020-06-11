@@ -87,6 +87,11 @@ type Attachment struct {
 	Content     []byte
 }
 
+// New ...
+func New(opts ...WriteOption) *Letter {
+	return Write(opts...)
+}
+
 // Write constructs a letter.
 func Write(opts ...WriteOption) *Letter {
 	var let Letter
