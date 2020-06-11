@@ -1,4 +1,4 @@
-package postdog_test
+package letter_test
 
 import (
 	"bytes"
