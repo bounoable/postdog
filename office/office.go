@@ -36,6 +36,7 @@ type Config struct {
 	// QueueBuffer is the channel buffer size for outgoing letters.
 	QueueBuffer int
 	Middleware  []Middleware
+	Logger      Logger
 }
 
 // Middleware ...
@@ -49,6 +50,11 @@ type MiddlewareFunc func(ctx context.Context, let letter.Letter) (letter.Letter,
 // Handle ...
 func (fn MiddlewareFunc) Handle(ctx context.Context, let letter.Letter) (letter.Letter, error) {
 	return fn(ctx, let)
+}
+
+// Logger ...
+type Logger interface {
+	Log(v ...interface{})
 }
 
 // Transport ...
@@ -89,6 +95,13 @@ func QueueBuffer(size int) Option {
 func WithMiddleware(middleware ...Middleware) Option {
 	return func(cfg *Config) {
 		cfg.Middleware = append(cfg.Middleware, middleware...)
+	}
+}
+
+// WithLogger ...
+func WithLogger(logger Logger) Option {
+	return func(cfg *Config) {
+		cfg.Logger = logger
 	}
 }
 
@@ -183,7 +196,11 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 		}
 	}
 
-	return trans.Send(ctx, let)
+	if err = trans.Send(ctx, let); err != nil {
+		o.log(err)
+	}
+
+	return err
 }
 
 // Send ...
@@ -250,16 +267,20 @@ func (o *Office) run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case job := <-o.queue:
-			var err error
 			if job.transport == "" {
-				err = o.Send(ctx, job.letter)
+				o.Send(ctx, job.letter)
 			} else {
-				err = o.SendWith(ctx, job.transport, job.letter)
+				o.SendWith(ctx, job.transport, job.letter)
 			}
-			// TODO: Error handling
-			_ = err
 		}
 	}
+}
+
+func (o *Office) log(v ...interface{}) {
+	if o.cfg.Logger == nil {
+		return
+	}
+	o.cfg.Logger.Log(v...)
 }
 
 type runConfig struct {

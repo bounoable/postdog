@@ -254,6 +254,29 @@ func TestOffice_Send_middleware(t *testing.T) {
 	assert.False(t, thirdRun)
 }
 
+func TestOffice_Send_errorlog(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	expectedErr := errors.New("send error")
+
+	logger := mock_office.NewMockLogger(ctrl)
+	logger.EXPECT().Log(expectedErr)
+
+	trans := mock_office.NewMockTransport(ctrl)
+	trans.EXPECT().Send(gomock.Any(), gomock.Any()).Return(expectedErr)
+
+	off := office.New(office.WithLogger(logger))
+	off.ConfigureTransport("test", trans)
+
+	go off.Run(context.Background())
+
+	err := off.Send(context.Background(), letter.Write())
+	assert.True(t, errors.Is(err, expectedErr))
+
+	<-time.After(time.Millisecond * 100)
+}
+
 func TestOffice_Dispatch(t *testing.T) {
 	cases := map[string]struct {
 		office      func(*gomock.Controller) *office.Office
