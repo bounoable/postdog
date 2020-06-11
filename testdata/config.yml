@@ -1,0 +1,17 @@
+default: test2
+
+providers:
+  test1:
+    transport: smtp
+    config:
+      host: smtp.mailtrap.io
+      username: abcdef123456
+      password: 123456abcdef
+
+  test2:
+    transport: gmail
+    config:
+      serviceAccount: /path/to/service_account.json
+      scopes:
+        - https://www.googleapis.com/auth/gmail.addons.current.action.compose
+        - https://www.googleapis.com/auth/gmail.send
