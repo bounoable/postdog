@@ -93,6 +93,6 @@ type testTransport struct {
 	val int
 }
 
-func (tt testTransport) Send(ctx context.Context, let *letter.Letter) error {
+func (tt testTransport) Send(ctx context.Context, let letter.Letter) error {
 	return nil
 }

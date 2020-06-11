@@ -218,6 +218,42 @@ func TestOffice_Send(t *testing.T) {
 	}
 }
 
+func TestOffice_Send_middleware(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var firstRun, secondRun, thirdRun bool
+	err := errors.New("interrupted")
+
+	off := office.New(
+		office.WithMiddleware(
+			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
+				firstRun = true
+				return let, nil
+			}),
+			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
+				secondRun = true
+				return let, err
+			}),
+			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
+				thirdRun = true
+				return let, nil
+			}),
+		),
+	)
+
+	let := letter.Write(letter.Subject("Test"))
+	trans := mock_office.NewMockTransport(ctrl)
+	off.ConfigureTransport("test", trans)
+
+	sendErr := off.Send(context.Background(), let)
+	assert.True(t, errors.Is(sendErr, err))
+
+	assert.True(t, firstRun)
+	assert.True(t, secondRun)
+	assert.False(t, thirdRun)
+}
+
 func TestOffice_Dispatch(t *testing.T) {
 	cases := map[string]struct {
 		office      func(*gomock.Controller) *office.Office

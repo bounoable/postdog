@@ -28,7 +28,7 @@ type Letter struct {
 }
 
 // HasTo determines if the letter has addr as a "To" recipient.
-func (let *Letter) HasTo(addr mail.Address) bool {
+func (let Letter) HasTo(addr mail.Address) bool {
 	return containsAddress(addr, let.To...)
 }
 
@@ -42,17 +42,17 @@ func containsAddress(addr mail.Address, addresses ...mail.Address) bool {
 }
 
 // HasCC determines of the letter has addr as a "CC" recipient.
-func (let *Letter) HasCC(addr mail.Address) bool {
+func (let Letter) HasCC(addr mail.Address) bool {
 	return containsAddress(addr, let.CC...)
 }
 
 // HasBCC determines of the letter has addr as a "BCC" recipient.
-func (let *Letter) HasBCC(addr mail.Address) bool {
+func (let Letter) HasBCC(addr mail.Address) bool {
 	return containsAddress(addr, let.BCC...)
 }
 
 // RFC builds the mail according to the RFC 2822 spec.
-func (let *Letter) RFC() string {
+func (let Letter) RFC() string {
 	toHeader := RecipientsHeader(let.To)
 	ccHeader := RecipientsHeader(let.CC)
 	bccHeader := RecipientsHeader(let.BCC)
@@ -70,7 +70,7 @@ func RecipientsHeader(recipients []mail.Address) string {
 	return strings.Join(toMails, ",")
 }
 
-func (let *Letter) String() string {
+func (let Letter) String() string {
 	b, err := json.Marshal(let)
 	if err != nil {
 		panic(err)
@@ -88,17 +88,17 @@ type Attachment struct {
 }
 
 // New ...
-func New(opts ...WriteOption) *Letter {
+func New(opts ...WriteOption) Letter {
 	return Write(opts...)
 }
 
 // Write constructs a letter.
-func Write(opts ...WriteOption) *Letter {
+func Write(opts ...WriteOption) Letter {
 	var let Letter
 	for _, opt := range opts {
 		opt(&let)
 	}
-	return &let
+	return let
 }
 
 // WriteOption configures a letter.

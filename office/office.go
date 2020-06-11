@@ -35,15 +35,29 @@ type Office struct {
 type Config struct {
 	// QueueBuffer is the channel buffer size for outgoing letters.
 	QueueBuffer int
+	Middleware  []Middleware
+}
+
+// Middleware ...
+type Middleware interface {
+	Handle(ctx context.Context, let letter.Letter) (letter.Letter, error)
+}
+
+// MiddlewareFunc ...
+type MiddlewareFunc func(ctx context.Context, let letter.Letter) (letter.Letter, error)
+
+// Handle ...
+func (fn MiddlewareFunc) Handle(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+	return fn(ctx, let)
 }
 
 // Transport ...
 type Transport interface {
-	Send(context.Context, *letter.Letter) error
+	Send(context.Context, letter.Letter) error
 }
 
 type dispatchJob struct {
-	letter    *letter.Letter
+	letter    letter.Letter
 	transport string
 }
 
@@ -68,6 +82,13 @@ type Option func(*Config)
 func QueueBuffer(size int) Option {
 	return func(cfg *Config) {
 		cfg.QueueBuffer = size
+	}
+}
+
+// WithMiddleware ...
+func WithMiddleware(middleware ...Middleware) Option {
+	return func(cfg *Config) {
+		cfg.Middleware = append(cfg.Middleware, middleware...)
 	}
 }
 
@@ -150,21 +171,28 @@ func (o *Office) MakeDefault(name string) error {
 }
 
 // SendWith ...
-func (o *Office) SendWith(ctx context.Context, transport string, let *letter.Letter) error {
+func (o *Office) SendWith(ctx context.Context, transport string, let letter.Letter) error {
 	trans, err := o.Transport(transport)
 	if err != nil {
 		return err
 	}
+
+	for _, mw := range o.cfg.Middleware {
+		if let, err = mw.Handle(ctx, let); err != nil {
+			return err
+		}
+	}
+
 	return trans.Send(ctx, let)
 }
 
 // Send ...
-func (o *Office) Send(ctx context.Context, let *letter.Letter) error {
+func (o *Office) Send(ctx context.Context, let letter.Letter) error {
 	return o.SendWith(ctx, o.defaultTransport, let)
 }
 
 // Dispatch ...
-func (o *Office) Dispatch(ctx context.Context, let *letter.Letter, opts ...DispatchOption) error {
+func (o *Office) Dispatch(ctx context.Context, let letter.Letter, opts ...DispatchOption) error {
 	job := dispatchJob{letter: let}
 	for _, opt := range opts {
 		opt(&job)
@@ -228,6 +256,7 @@ func (o *Office) run(ctx context.Context, wg *sync.WaitGroup) {
 			} else {
 				err = o.SendWith(ctx, job.transport, job.letter)
 			}
+			// TODO: Error handling
 			_ = err
 		}
 	}

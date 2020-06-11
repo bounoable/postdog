@@ -11,6 +11,43 @@ import (
 	reflect "reflect"
 )
 
+// MockMiddleware is a mock of Middleware interface
+type MockMiddleware struct {
+	ctrl     *gomock.Controller
+	recorder *MockMiddlewareMockRecorder
+}
+
+// MockMiddlewareMockRecorder is the mock recorder for MockMiddleware
+type MockMiddlewareMockRecorder struct {
+	mock *MockMiddleware
+}
+
+// NewMockMiddleware creates a new mock instance
+func NewMockMiddleware(ctrl *gomock.Controller) *MockMiddleware {
+	mock := &MockMiddleware{ctrl: ctrl}
+	mock.recorder = &MockMiddlewareMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMiddleware) EXPECT() *MockMiddlewareMockRecorder {
+	return m.recorder
+}
+
+// Handle mocks base method
+func (m *MockMiddleware) Handle(ctx context.Context, let letter.Letter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Handle", ctx, let)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Handle indicates an expected call of Handle
+func (mr *MockMiddlewareMockRecorder) Handle(ctx, let interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockMiddleware)(nil).Handle), ctx, let)
+}
+
 // MockTransport is a mock of Transport interface
 type MockTransport struct {
 	ctrl     *gomock.Controller
@@ -35,7 +72,7 @@ func (m *MockTransport) EXPECT() *MockTransportMockRecorder {
 }
 
 // Send mocks base method
-func (m *MockTransport) Send(arg0 context.Context, arg1 *letter.Letter) error {
+func (m *MockTransport) Send(arg0 context.Context, arg1 letter.Letter) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0, arg1)
 	ret0, _ := ret[0].(error)

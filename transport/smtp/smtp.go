@@ -25,7 +25,7 @@ func NewTransportDialer(dialer *mail.Dialer) office.Transport {
 	}
 }
 
-func (trans transport) Send(ctx context.Context, let *letter.Letter) error {
+func (trans transport) Send(ctx context.Context, let letter.Letter) error {
 	msg := mail.NewMessage(
 		mail.SetEncoding(mail.Base64),
 		mail.SetCharset("utf-8"),
