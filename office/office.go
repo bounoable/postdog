@@ -158,7 +158,7 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	}
 
 	for _, fn := range o.cfg.SendHooks[BeforeSend] {
-		fn(ctx, let)
+		go fn(ctx, let)
 	}
 
 	if err = trans.Send(ctx, let); err != nil {
@@ -166,7 +166,7 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	}
 
 	for _, fn := range o.cfg.SendHooks[AfterSend] {
-		fn(ctx, let)
+		go fn(ctx, let)
 	}
 
 	return err
