@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/autowire"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
 	"github.com/stretchr/testify/assert"

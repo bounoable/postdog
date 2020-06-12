@@ -3,8 +3,8 @@ package smtp
 import (
 	"context"
 
+	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/autowire"
 )
 
 const (
