@@ -32,6 +32,16 @@ func TestNew(t *testing.T) {
 	}, off.Config())
 }
 
+func TestNew_withPlugin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plugin := mock_office.NewMockPlugin(ctrl)
+	plugin.EXPECT().Install(gomock.Any())
+
+	office.New(office.WithPlugin(plugin))
+}
+
 func TestOffice_ConfigureTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -293,11 +303,11 @@ func TestOffice_Send_hooks(t *testing.T) {
 	wg.Add(2)
 
 	off := office.New(
-		office.WithHook(office.BeforeSend, func(_ context.Context, hlet letter.Letter) {
+		office.WithSendHook(office.BeforeSend, func(_ context.Context, hlet letter.Letter) {
 			defer wg.Done()
 			assert.Equal(t, let, hlet)
 		}),
-		office.WithHook(office.AfterSend, func(_ context.Context, hlet letter.Letter) {
+		office.WithSendHook(office.AfterSend, func(_ context.Context, hlet letter.Letter) {
 			defer wg.Done()
 			assert.Equal(t, let, hlet)
 		}),

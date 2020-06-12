@@ -10,12 +10,6 @@ import (
 	"github.com/bounoable/postdog/letter"
 )
 
-// ...
-const (
-	BeforeSend = SendHook(iota)
-	AfterSend
-)
-
 var (
 	defaultRunConfig = runConfig{
 		workers: 1,
@@ -31,36 +25,6 @@ type Office struct {
 	defaultTransport string
 	queue            chan dispatchJob
 }
-
-// Config is the office configuration.
-type Config struct {
-	// QueueBuffer is the channel buffer size for outgoing letters.
-	QueueBuffer int
-	Middleware  []Middleware
-	Logger      Logger
-	SendHooks   map[SendHook][]func(context.Context, letter.Letter)
-}
-
-// Middleware ...
-type Middleware interface {
-	Handle(ctx context.Context, let letter.Letter) (letter.Letter, error)
-}
-
-// MiddlewareFunc ...
-type MiddlewareFunc func(ctx context.Context, let letter.Letter) (letter.Letter, error)
-
-// Handle ...
-func (fn MiddlewareFunc) Handle(ctx context.Context, let letter.Letter) (letter.Letter, error) {
-	return fn(ctx, let)
-}
-
-// Logger ...
-type Logger interface {
-	Log(v ...interface{})
-}
-
-// SendHook ...
-type SendHook int
 
 // Transport ...
 type Transport interface {
@@ -88,42 +52,18 @@ func New(opts ...Option) *Office {
 
 // NewWithConfig ...
 func NewWithConfig(cfg Config) *Office {
-	return &Office{
+	off := &Office{
 		cfg:        cfg,
 		transports: make(map[string]Transport),
 		queue:      make(chan dispatchJob, cfg.QueueBuffer),
 	}
-}
 
-// Option ...
-type Option func(*Config)
-
-// QueueBuffer ...
-func QueueBuffer(size int) Option {
-	return func(cfg *Config) {
-		cfg.QueueBuffer = size
+	ctx := pluginContext{cfg: &cfg}
+	for _, plugin := range cfg.Plugins {
+		plugin.Install(ctx)
 	}
-}
 
-// WithMiddleware ...
-func WithMiddleware(middleware ...Middleware) Option {
-	return func(cfg *Config) {
-		cfg.Middleware = append(cfg.Middleware, middleware...)
-	}
-}
-
-// WithLogger ...
-func WithLogger(logger Logger) Option {
-	return func(cfg *Config) {
-		cfg.Logger = logger
-	}
-}
-
-// WithHook ...
-func WithHook(h SendHook, fns ...func(context.Context, letter.Letter)) Option {
-	return func(cfg *Config) {
-		cfg.SendHooks[h] = append(cfg.SendHooks[h], fns...)
-	}
+	return off
 }
 
 // Config returns the configration.
