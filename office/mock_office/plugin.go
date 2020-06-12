@@ -71,13 +71,18 @@ func (m *MockPluginContext) EXPECT() *MockPluginContextMockRecorder {
 }
 
 // WithSendHook mocks base method
-func (m *MockPluginContext) WithSendHook(arg0 office.SendHook, arg1 func(context.Context, letter.Letter)) {
+func (m *MockPluginContext) WithSendHook(arg0 office.SendHook, arg1 ...func(context.Context, letter.Letter)) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WithSendHook", arg0, arg1)
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "WithSendHook", varargs...)
 }
 
 // WithSendHook indicates an expected call of WithSendHook
-func (mr *MockPluginContextMockRecorder) WithSendHook(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockPluginContextMockRecorder) WithSendHook(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithSendHook", reflect.TypeOf((*MockPluginContext)(nil).WithSendHook), arg0, arg1)
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithSendHook", reflect.TypeOf((*MockPluginContext)(nil).WithSendHook), varargs...)
 }
