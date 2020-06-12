@@ -23,11 +23,18 @@ func (fn PluginFunc) Install(ctx PluginContext) {
 
 // PluginContext ...
 type PluginContext interface {
+	Log(...interface{})
 	WithSendHook(SendHook, ...func(context.Context, letter.Letter))
 }
 
 type pluginContext struct {
 	cfg *Config
+}
+
+func (ctx pluginContext) Log(v ...interface{}) {
+	if ctx.cfg.Logger != nil {
+		ctx.cfg.Logger.Log(v...)
+	}
 }
 
 func (ctx pluginContext) WithSendHook(h SendHook, fns ...func(context.Context, letter.Letter)) {

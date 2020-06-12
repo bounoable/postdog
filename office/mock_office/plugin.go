@@ -70,6 +70,22 @@ func (m *MockPluginContext) EXPECT() *MockPluginContextMockRecorder {
 	return m.recorder
 }
 
+// Log mocks base method
+func (m *MockPluginContext) Log(arg0 ...interface{}) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Log", varargs...)
+}
+
+// Log indicates an expected call of Log
+func (mr *MockPluginContextMockRecorder) Log(arg0 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockPluginContext)(nil).Log), arg0...)
+}
+
 // WithSendHook mocks base method
 func (m *MockPluginContext) WithSendHook(arg0 office.SendHook, arg1 ...func(context.Context, letter.Letter)) {
 	m.ctrl.T.Helper()

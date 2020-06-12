@@ -92,7 +92,7 @@ func New(opts ...WriteOption) Letter {
 	return Write(opts...)
 }
 
-// Write constructs a letter.
+// Write builds a letter with the provided options.
 func Write(opts ...WriteOption) Letter {
 	var let Letter
 	for _, opt := range opts {
