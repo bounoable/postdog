@@ -87,7 +87,7 @@ type Attachment struct {
 	Content     []byte
 }
 
-// New ...
+// New is an alias to Write()
 func New(opts ...WriteOption) Letter {
 	return Write(opts...)
 }
@@ -104,7 +104,7 @@ func Write(opts ...WriteOption) Letter {
 // WriteOption configures a letter.
 type WriteOption func(*Letter)
 
-// Must ...
+// Must returns opt if err is nil and panics otherwise.
 func Must(opt WriteOption, err error) WriteOption {
 	if err != nil {
 		panic(err)
@@ -112,21 +112,21 @@ func Must(opt WriteOption, err error) WriteOption {
 	return opt
 }
 
-// Subject sets the subject of the letter.
+// Subject sets the subject of a letter.
 func Subject(s string) WriteOption {
 	return func(let *Letter) {
 		let.Subject = s
 	}
 }
 
-// FromAddress ...
+// FromAddress sets the "From" field of a letter.
 func FromAddress(addr mail.Address) WriteOption {
 	return func(let *Letter) {
 		let.From = addr
 	}
 }
 
-// From ...
+// From sets the "From" field of a letter.
 func From(name, addr string) WriteOption {
 	return FromAddress(mail.Address{
 		Name:    name,
@@ -134,7 +134,7 @@ func From(name, addr string) WriteOption {
 	})
 }
 
-// ToAddress ...
+// ToAddress adds a recipient to the "To" field of a letter.
 func ToAddress(addresses ...mail.Address) WriteOption {
 	return func(let *Letter) {
 		for _, addr := range addresses {
@@ -146,7 +146,7 @@ func ToAddress(addresses ...mail.Address) WriteOption {
 	}
 }
 
-// To ...
+// To adds a recipient to the "To" field of a letter.
 func To(name, addr string) WriteOption {
 	return ToAddress(mail.Address{
 		Name:    name,
@@ -154,7 +154,7 @@ func To(name, addr string) WriteOption {
 	})
 }
 
-// CCAddress ...
+// CCAddress adds a recipient to the "CC" field of a letter.
 func CCAddress(addresses ...mail.Address) WriteOption {
 	return func(let *Letter) {
 		for _, addr := range addresses {
@@ -166,7 +166,7 @@ func CCAddress(addresses ...mail.Address) WriteOption {
 	}
 }
 
-// CC ...
+// CC adds a recipient to the "CC" field of a letter.
 func CC(name, addr string) WriteOption {
 	return CCAddress(mail.Address{
 		Name:    name,
@@ -174,7 +174,7 @@ func CC(name, addr string) WriteOption {
 	})
 }
 
-// BCCAddress ...
+// BCCAddress adds a recipient to the "BCC" field of a letter.
 func BCCAddress(addresses ...mail.Address) WriteOption {
 	return func(let *Letter) {
 		for _, addr := range addresses {
@@ -186,7 +186,7 @@ func BCCAddress(addresses ...mail.Address) WriteOption {
 	}
 }
 
-// BCC ...
+// BCC adds a recipient to the "BCC" field of a letter.
 func BCC(name, addr string) WriteOption {
 	return BCCAddress(mail.Address{
 		Name:    name,
@@ -194,29 +194,32 @@ func BCC(name, addr string) WriteOption {
 	})
 }
 
-// HTML ...
+// HTML sets the HTML body of a letter.
 func HTML(content string) WriteOption {
 	return func(let *Letter) {
 		let.HTML = content
 	}
 }
 
-// Text ...
+// Text sets the text body of a letter.
 func Text(content string) WriteOption {
 	return func(let *Letter) {
 		let.Text = content
 	}
 }
 
-// Content ...
+// Content sets both the HTML and text body of a letter.
 func Content(text, html string) WriteOption {
 	return func(let *Letter) {
-		let.Text = text
-		let.HTML = html
+		HTML(html)(let)
+		Text(text)(let)
 	}
 }
 
-// Attach ...
+// Attach attaches the content of r to a letter, with the given filename.
+// It returns an error if it fails to read from r.
+// Available options:
+//	ContentType(): Set the attachment's "Content-Type" header.
 func Attach(r io.Reader, filename string, opts ...AttachOption) (WriteOption, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -257,12 +260,15 @@ func Attach(r io.Reader, filename string, opts ...AttachOption) (WriteOption, er
 	}, nil
 }
 
-// MustAttach ...
+// MustAttach does the same as Attach(), but panic if Attach() returns an error.
 func MustAttach(r io.Reader, filename string, opts ...AttachOption) WriteOption {
 	return Must(Attach(r, filename, opts...))
 }
 
-// AttachFile ...
+// AttachFile attaches the file at path to a letter, with the given filename.
+// It returns an error if it fails to read the file.
+// Available options:
+//	ContentType(): Set the attachment's "Content-Type" header.
 func AttachFile(path, filename string, opts ...AttachOption) (WriteOption, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -272,15 +278,15 @@ func AttachFile(path, filename string, opts ...AttachOption) (WriteOption, error
 	return Attach(bytes.NewReader(b), filename, opts...)
 }
 
-// MustAttachFile ...
+// MustAttachFile does the same as AttachFile(), but panics if AttachFile() returns an error.
 func MustAttachFile(path, filename string, opts ...AttachOption) WriteOption {
 	return Must(AttachFile(path, filename, opts...))
 }
 
-// AttachOption ...
+// AttachOption is an attachment option.
 type AttachOption func(*Attachment)
 
-// ContentType ...
+// ContentType sets the "Content-Type" header of an attachment.
 func ContentType(ct string) AttachOption {
 	return func(attach *Attachment) {
 		attach.ContentType = ct
