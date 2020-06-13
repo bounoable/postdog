@@ -26,7 +26,7 @@ type Office struct {
 	queue            chan dispatchJob
 }
 
-// Transport ...
+// Transport sends letters to the recipients.
 type Transport interface {
 	Send(context.Context, letter.Letter) error
 }
@@ -36,7 +36,7 @@ type dispatchJob struct {
 	transport string
 }
 
-// New returns a new Office.
+// New initializes a new *Office with opts.
 func New(opts ...Option) *Office {
 	cfg := Config{
 		Middleware: make([]Middleware, 0),
@@ -50,7 +50,7 @@ func New(opts ...Option) *Office {
 	return NewWithConfig(cfg)
 }
 
-// NewWithConfig ...
+// NewWithConfig initializes a new *Office with the given cfg.
 func NewWithConfig(cfg Config) *Office {
 	off := &Office{
 		cfg:        cfg,
@@ -71,9 +71,9 @@ func (o *Office) Config() Config {
 	return o.cfg
 }
 
-// ConfigureTransport configures a transport.
-// The first transport will automatically be made the default transport,
-// even if the Default() option is not used.
+// ConfigureTransport configures the transport with the given name.
+// The first configured transport is the default transport, even if the Default() option is not used.
+// Subsequent calls to ConfigureTransport() with the Default() option override the default transport.
 func (o *Office) ConfigureTransport(name string, trans Transport, options ...ConfigureOption) {
 	var cfg configureConfig
 	for _, opt := range options {
@@ -94,10 +94,10 @@ type configureConfig struct {
 	asDefault bool
 }
 
-// ConfigureOption ...
+// ConfigureOption is a transport configuration option.
 type ConfigureOption func(*configureConfig)
 
-// DefaultTransport makes the transport the default transport.
+// DefaultTransport makes a transport the default transport.
 func DefaultTransport() ConfigureOption {
 	return func(cfg *configureConfig) {
 		cfg.asDefault = true
@@ -105,6 +105,7 @@ func DefaultTransport() ConfigureOption {
 }
 
 // Transport returns the configured transport for the given name.
+// Returns an UnconfiguredTransportError, if the transport with the given name has not been registered.
 func (o *Office) Transport(name string) (Transport, error) {
 	o.mux.RLock()
 	defer o.mux.RUnlock()
@@ -117,7 +118,7 @@ func (o *Office) Transport(name string) (Transport, error) {
 	return trans, nil
 }
 
-// UnconfiguredTransportError ...
+// UnconfiguredTransportError means a transport has not been registered.
 type UnconfiguredTransportError struct {
 	Name string
 }
@@ -127,11 +128,12 @@ func (err UnconfiguredTransportError) Error() string {
 }
 
 // DefaultTransport returns the default transport.
+// Returns an UnconfiguredTransportError if no transport has been configured.
 func (o *Office) DefaultTransport() (Transport, error) {
 	return o.Transport(o.defaultTransport)
 }
 
-// MakeDefault sets the default transport.
+// MakeDefault makes the transport with the given name the default transport.
 func (o *Office) MakeDefault(name string) error {
 	if _, err := o.Transport(name); err != nil {
 		return err
@@ -144,7 +146,12 @@ func (o *Office) MakeDefault(name string) error {
 	return nil
 }
 
-// SendWith ...
+// SendWith sends a letter over the given transport.
+// Returns an UnconfiguredTransportError, if the transport with the given name has not been registered.
+// If a middleware returns an error, SendWith() will return that error.
+// The BeforeSend hook is called after the middlewares, before Transport.Send().
+// The AfterSend hook is called after Transport.Send(), even if Transport.Send() returns an error.
+// Hooks are called concurrently.
 func (o *Office) SendWith(ctx context.Context, transport string, let letter.Letter) error {
 	trans, err := o.Transport(transport)
 	if err != nil {
@@ -172,12 +179,15 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	return err
 }
 
-// Send ...
+// Send calls SendWith() with the default transport.
 func (o *Office) Send(ctx context.Context, let letter.Letter) error {
 	return o.SendWith(ctx, o.defaultTransport, let)
 }
 
-// Dispatch ...
+// Dispatch adds let to the send queue with the given opts.
+// Dispatch returns an error only if ctx is canceled before let has been queued.
+// Available options:
+//	DispatchWith(): Set the name of the transport to use.
 func (o *Office) Dispatch(ctx context.Context, let letter.Letter, opts ...DispatchOption) error {
 	job := dispatchJob{letter: let}
 	for _, opt := range opts {
@@ -192,17 +202,20 @@ func (o *Office) Dispatch(ctx context.Context, let letter.Letter, opts ...Dispat
 	}
 }
 
-// DispatchOption ...
+// DispatchOption is a Dispatch() option.
 type DispatchOption func(*dispatchJob)
 
-// DispatchWith ...
+// DispatchWith sets the transport to be used for sending the letter.
 func DispatchWith(transport string) DispatchOption {
 	return func(cfg *dispatchJob) {
 		cfg.transport = transport
 	}
 }
 
-// Run processes the outgoing letter queue.
+// Run processes the outgoing letter queue with the gives options.
+// Run blocks until ctx is canceled.
+// Available options:
+//	Workers(): Set the queue worker count.
 func (o *Office) Run(ctx context.Context, opts ...RunOption) error {
 	cfg := defaultRunConfig
 	for _, opt := range opts {
@@ -256,10 +269,10 @@ type runConfig struct {
 	workers int
 }
 
-// RunOption ...
+// RunOption is a Run() option.
 type RunOption func(*runConfig)
 
-// Workers ...
+// Workers sets the worker count for the send queue.
 func Workers(workers int) RunOption {
 	return func(cfg *runConfig) {
 		cfg.workers = workers
