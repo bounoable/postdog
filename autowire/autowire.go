@@ -23,33 +23,34 @@ func File(path string, opts ...Option) (Config, error) {
 	return cfg, cfg.LoadFile(path)
 }
 
-// Config ...
+// Config is the autowire configuration.
+// You should use the Load() or File() functions to build the configuration.
 type Config struct {
 	Providers  map[string]TransportFactory
 	Transports map[string]TransportConfig
 }
 
-// TransportFactory ...
+// TransportFactory creates transports from user-provided configuration.
 type TransportFactory interface {
 	CreateTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error)
 }
 
-// TransportFactoryFunc ...
+// The TransportFactoryFunc allows a transport factory function to be used as a TransportFactory.
 type TransportFactoryFunc func(context.Context, map[string]interface{}) (office.Transport, error)
 
-// CreateTransport ...
+// CreateTransport creates a transport from user-provided configuration.
 func (fn TransportFactoryFunc) CreateTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error) {
 	return fn(ctx, cfg)
 }
 
-// TransportConfig ...
+// TransportConfig contains the parsed used-provided configuration for a single transport.
 type TransportConfig struct {
 	Provider string
 	Config   map[string]interface{}
 }
 
-// New constructs an autowire config.
-// Normally you would use Load() or File() instead.
+// New initializes a new autowire configuration.
+// Instead of calling New() directly, you should use Load() or File() instead.
 func New(opts ...Option) Config {
 	cfg := Config{
 		Providers:  make(map[string]TransportFactory),
@@ -63,22 +64,24 @@ func New(opts ...Option) Config {
 	return cfg
 }
 
-// Option ...
+// Option is an autowire constructor option.
 type Option func(*Config)
 
-// Provider ...
+// Provider registers a transport factory for the given provider name.
+// Providers have to be registered in order to be used in the configuration file.
 func Provider(name string, factory TransportFactory) Option {
 	return func(cfg *Config) {
 		cfg.Providers[name] = factory
 	}
 }
 
-// RegisterProvider ...
+// RegisterProvider registers a transport factory for the given provider name.
 func (cfg Config) RegisterProvider(name string, factory TransportFactory) {
 	cfg.Providers[name] = factory
 }
 
-// Get ...
+// Get returns the parsed configuration for the given transport name.
+// Calling Get() with an unconfigured transport name results in an UnconfiguredTransportError.
 func (cfg Config) Get(name string) (TransportConfig, error) {
 	tcfg, ok := cfg.Transports[name]
 	if !ok {
@@ -89,7 +92,7 @@ func (cfg Config) Get(name string) (TransportConfig, error) {
 	return tcfg, nil
 }
 
-// UnconfiguredTransportError ...
+// UnconfiguredTransportError is returned by Config.Get() if the given transport name hasn't been configured yet.
 type UnconfiguredTransportError struct {
 	Name string
 }
@@ -98,7 +101,7 @@ func (err UnconfiguredTransportError) Error() string {
 	return fmt.Sprintf("unconfigured transport: %s", err.Name)
 }
 
-// LoadFile ...
+// LoadFile loads the YAML autowire configuration from the file at the given path.
 func (cfg Config) LoadFile(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -108,7 +111,7 @@ func (cfg Config) LoadFile(path string) error {
 	return cfg.Load(f)
 }
 
-// Load ...
+// Load loads the YAML autowire configuration from r.
 func (cfg Config) Load(r io.Reader) error {
 	var yamlCfg yamlConfig
 	if err := yaml.NewDecoder(r).Decode(&yamlCfg); err != nil {
@@ -172,7 +175,7 @@ func (cfg yamlConfig) apply(config Config) error {
 	return nil
 }
 
-// DuplicateTransportError means the YAML configuration contains multiple configurations for a Carrier name.
+// DuplicateTransportError means the YAML configuration contains multiple configurations for the same transport name.
 type DuplicateTransportError struct {
 	Name string
 }
@@ -181,7 +184,7 @@ func (err DuplicateTransportError) Error() string {
 	return fmt.Sprintf("duplicate transport name: %s", err.Name)
 }
 
-// InvalidConfigError means a configuration value for a Carrier has a wrong type.
+// InvalidConfigError means the configuration for a transport contains an invalid value.
 type InvalidConfigError struct {
 	Transport string
 	ConfigKey string
@@ -212,13 +215,14 @@ func replaceEnvPlaceholders(val string) string {
 	})
 }
 
-// Office ...
+// Office builds the *office.Office from the autowire configuration.
+// You have to register the used providers with the provided opts.
 func (cfg Config) Office(ctx context.Context, opts ...office.Option) (*office.Office, error) {
 	off := office.New(opts...)
 	for name, transportcfg := range cfg.Transports {
 		factory, ok := cfg.Providers[transportcfg.Provider]
 		if !ok {
-			return nil, UnconfiguredProviderError{
+			return nil, UnregisteredProviderError{
 				Name: transportcfg.Provider,
 			}
 		}
@@ -233,11 +237,11 @@ func (cfg Config) Office(ctx context.Context, opts ...office.Option) (*office.Of
 	return off, nil
 }
 
-// UnconfiguredProviderError ...
-type UnconfiguredProviderError struct {
+// UnregisteredProviderError means the autowire configuration uses a provider that hasn't been registered.
+type UnregisteredProviderError struct {
 	Name string
 }
 
-func (err UnconfiguredProviderError) Error() string {
-	return fmt.Sprintf("unconfigured provider: %s", err.Name)
+func (err UnregisteredProviderError) Error() string {
+	return fmt.Sprintf("unregistered provider: %s", err.Name)
 }
