@@ -9,6 +9,17 @@ import (
 	"github.com/bounoable/postdog/plugins/store"
 )
 
+// ...
+const (
+	SortBySendDate = Sorting(iota)
+)
+
+// ...
+const (
+	SortAsc = SortDirection(iota)
+	SortDesc
+)
+
 // Repository ...
 type Repository interface {
 	Query(context.Context, Query) (Cursor, error)
@@ -31,6 +42,7 @@ type Query struct {
 	CC         []string
 	BCC        []string
 	Attachment AttachmentFilter
+	Sort       SortConfig
 }
 
 // SentAtFilter ...
@@ -51,6 +63,18 @@ type AttachmentSizeFilter struct {
 	Exact  []int
 	Ranges [][2]int
 }
+
+// SortConfig ...
+type SortConfig struct {
+	SortBy Sorting
+	Dir    SortDirection
+}
+
+// Sorting ...
+type Sorting int
+
+// SortDirection ...
+type SortDirection int
 
 // New ...
 func New(opts ...Option) Query {
@@ -160,5 +184,15 @@ func AttachmentSizeRange(min, max int) Option {
 
 	return func(q *Query) {
 		q.Attachment.Size.Ranges = append(q.Attachment.Size.Ranges, [2]int{min, max})
+	}
+}
+
+// Sort ...
+func Sort(by Sorting, dir SortDirection) Option {
+	return func(q *Query) {
+		q.Sort = SortConfig{
+			SortBy: by,
+			Dir:    dir,
+		}
 	}
 }

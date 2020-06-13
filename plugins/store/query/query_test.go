@@ -136,6 +136,28 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		"Sorting (SentAt asc)": {
+			options: []query.Option{
+				query.Sort(query.SortBySendDate, query.SortAsc),
+			},
+			expected: query.Query{
+				Sort: query.SortConfig{
+					SortBy: query.SortBySendDate,
+					Dir:    query.SortAsc,
+				},
+			},
+		},
+		"Sorting (SentAt desc)": {
+			options: []query.Option{
+				query.Sort(query.SortBySendDate, query.SortDesc),
+			},
+			expected: query.Query{
+				Sort: query.SortConfig{
+					SortBy: query.SortBySendDate,
+					Dir:    query.SortDesc,
+				},
+			},
+		},
 	}
 
 	for name, tcase := range cases {

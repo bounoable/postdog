@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"net/mail"
+	"sort"
 	"strings"
 	"sync"
 
@@ -42,6 +43,8 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 			letters = append(letters, let)
 		}
 	}
+
+	letters = sortLetters(letters, q.Sort)
 
 	return newCursor(letters), nil
 }
@@ -174,6 +177,29 @@ func filterAttachmentSizeRanges(attachments []letter.Attachment, ranges [][2]int
 		}
 	}
 	return false
+}
+
+func sortLetters(letters []store.Letter, cfg query.SortConfig) []store.Letter {
+	switch cfg.SortBy {
+	case query.SortBySendDate:
+		return sortLettersBySendDate(letters, cfg.Dir)
+	default:
+		return letters
+	}
+}
+
+func sortLettersBySendDate(letters []store.Letter, dir query.SortDirection) []store.Letter {
+	sort.Slice(letters, func(a, b int) bool {
+		switch dir {
+		case query.SortAsc:
+			return letters[a].SentAt.Before(letters[b].SentAt)
+		case query.SortDesc:
+			return letters[a].SentAt.After(letters[b].SentAt)
+		default:
+			return true
+		}
+	})
+	return letters
 }
 
 func newCursor(letters []store.Letter) query.Cursor {

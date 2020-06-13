@@ -218,6 +218,23 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letters[2],
 			},
 		},
+		"Sorting (SentAt asc)": {
+			query: query.New(
+				query.Sort(query.SortBySendDate, query.SortAsc),
+			),
+			expected: letters,
+		},
+		"Sorting (SentAt desc)": {
+			query: query.New(
+				query.Sort(query.SortBySendDate, query.SortDesc),
+			),
+			expected: []store.Letter{
+				letters[3],
+				letters[2],
+				letters[1],
+				letters[0],
+			},
+		},
 	}
 
 	for name, tcase := range cases {
