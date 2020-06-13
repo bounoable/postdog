@@ -8,22 +8,25 @@ import (
 	"github.com/bounoable/postdog/letter"
 )
 
-// Plugin ...
+// Plugin is an office plugin.
 type Plugin interface {
 	Install(PluginContext)
 }
 
-// PluginFunc ...
+// PluginFunc allows functions to be used as plugins.
 type PluginFunc func(PluginContext)
 
-// Install ...
+// Install installs an office plugin.
 func (fn PluginFunc) Install(ctx PluginContext) {
 	fn(ctx)
 }
 
-// PluginContext ...
+// PluginContext is the context for a plugin.
+// It provides logging and configuration functions.
 type PluginContext interface {
+	// Log logs messages.
 	Log(...interface{})
+	// WithSendHook adds callback functions for send hooks.
 	WithSendHook(SendHook, ...func(context.Context, letter.Letter))
 }
 
