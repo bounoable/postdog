@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
@@ -11,6 +12,7 @@ import (
 	"github.com/bounoable/postdog/plugins/store"
 	"github.com/bounoable/postdog/plugins/store/mock_store"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -49,7 +51,14 @@ func TestPlugin(t *testing.T) {
 			}
 
 			repo := mock_store.NewMockStore(ctrl)
-			repo.EXPECT().Insert(gomock.Any(), let).Return(tcase.insertError)
+			repo.EXPECT().Insert(
+				gomock.Any(),
+				gomock.AssignableToTypeOf(store.Letter{}),
+			).DoAndReturn(func(_ context.Context, slet store.Letter) error {
+				assert.Equal(t, let, slet.Letter)
+				assert.InDelta(t, time.Now().Unix(), slet.SentAt.Unix(), 1)
+				return tcase.insertError
+			})
 
 			plugin := store.Plugin(repo)
 			plugin(ctx)

@@ -4,6 +4,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
@@ -11,14 +12,23 @@ import (
 
 // Store ...
 type Store interface {
-	Insert(context.Context, letter.Letter) error
+	Insert(context.Context, Letter) error
+}
+
+// Letter ...
+type Letter struct {
+	letter.Letter
+	SentAt time.Time
 }
 
 // Plugin ...
 func Plugin(store Store) office.PluginFunc {
 	return func(pctx office.PluginContext) {
 		pctx.WithSendHook(office.AfterSend, func(ctx context.Context, let letter.Letter) {
-			if err := store.Insert(ctx, let); err != nil {
+			if err := store.Insert(ctx, Letter{
+				Letter: let,
+				SentAt: time.Now(),
+			}); err != nil {
 				pctx.Log(err)
 			}
 		})

@@ -6,7 +6,7 @@ package mock_store
 
 import (
 	context "context"
-	letter "github.com/bounoable/postdog/letter"
+	store "github.com/bounoable/postdog/plugins/store"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -35,7 +35,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // Insert mocks base method
-func (m *MockStore) Insert(arg0 context.Context, arg1 letter.Letter) error {
+func (m *MockStore) Insert(arg0 context.Context, arg1 store.Letter) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", arg0, arg1)
 	ret0, _ := ret[0].(error)
