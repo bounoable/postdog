@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRun(t *testing.T) {
+func TestNew(t *testing.T) {
 	cases := map[string]struct {
 		options  []query.Option
 		expected query.Query
@@ -64,30 +64,111 @@ func TestRun(t *testing.T) {
 				},
 			},
 		},
+		"Subjects": {
+			options: []query.Option{
+				query.Subject("subject 1"),
+				query.Subject("subject 2", "subject 3"),
+			},
+			expected: query.Query{
+				Subjects: []string{"subject 1", "subject 2", "subject 3"},
+			},
+		},
+		"From": {
+			options: []query.Option{
+				query.From("sender 1"),
+				query.From("sender 2", "sender 3"),
+			},
+			expected: query.Query{
+				From: []string{"sender 1", "sender 2", "sender 3"},
+			},
+		},
+		"To": {
+			options: []query.Option{
+				query.To("to 1"),
+				query.To("to 2", "to 3"),
+			},
+			expected: query.Query{
+				To: []string{"to 1", "to 2", "to 3"},
+			},
+		},
+		"CC": {
+			options: []query.Option{
+				query.CC("cc 1"),
+				query.CC("cc 2", "cc 3"),
+			},
+			expected: query.Query{
+				CC: []string{"cc 1", "cc 2", "cc 3"},
+			},
+		},
+		"BCC": {
+			options: []query.Option{
+				query.BCC("bcc 1"),
+				query.BCC("bcc 2", "bcc 3"),
+			},
+			expected: query.Query{
+				BCC: []string{"bcc 1", "bcc 2", "bcc 3"},
+			},
+		},
+		"Attachments": {
+			options: []query.Option{
+				query.AttachmentName("attachment 1"),
+				query.AttachmentName("attachment 2"),
+				query.AttachmentContentType("text/plain"),
+				query.AttachmentContentType("text/html"),
+				query.AttachmentSize(27838),
+				query.AttachmentSize(174858),
+				query.AttachmentSizeRange(0, 1500),
+				query.AttachmentSizeRange(400, 2000),
+				query.AttachmentSizeRange(3000, 1000),
+			},
+			expected: query.Query{
+				Attachment: query.AttachmentFilter{
+					Names:        []string{"attachment 1", "attachment 2"},
+					ContentTypes: []string{"text/plain", "text/html"},
+					Size: query.AttachmentSizeFilter{
+						Exact: []int{27838, 174858},
+						Ranges: [][2]int{
+							{0, 1500},
+							{400, 2000},
+							{1000, 3000},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, tcase := range cases {
 		t.Run(name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			expectedCursor := mock_query.NewMockCursor(ctrl)
-
-			repo := mock_query.NewMockRepository(ctrl)
-			repo.EXPECT().
-				Query(context.Background(), tcase.expected).
-				DoAndReturn(func(ctx context.Context, q query.Query) (query.Cursor, error) {
-					return expectedCursor, nil
-				})
-
-			cur, err := query.Run(
-				context.Background(),
-				repo,
-				tcase.options...,
-			)
-
-			assert.Nil(t, err)
-			assert.Same(t, expectedCursor, cur)
+			assert.Equal(t, tcase.expected, query.New(tcase.options...))
 		})
 	}
+}
+
+func TestRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	expectedCursor := mock_query.NewMockCursor(ctrl)
+
+	opts := []query.Option{
+		query.SentBefore(time.Now()),
+		query.SentAfter(time.Now().Add(-time.Hour * 10)),
+	}
+
+	repo := mock_query.NewMockRepository(ctrl)
+	repo.EXPECT().
+		Query(context.Background(), query.New(opts...)).
+		DoAndReturn(func(ctx context.Context, q query.Query) (query.Cursor, error) {
+			return expectedCursor, nil
+		})
+
+	cur, err := query.Run(
+		context.Background(),
+		repo,
+		opts...,
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expectedCursor, cur)
 }
