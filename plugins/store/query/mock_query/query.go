@@ -6,6 +6,7 @@ package mock_query
 
 import (
 	context "context"
+	store "github.com/bounoable/postdog/plugins/store"
 	query "github.com/bounoable/postdog/plugins/store/query"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
@@ -86,32 +87,18 @@ func (mr *MockCursorMockRecorder) Next(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockCursor)(nil).Next), arg0)
 }
 
-// Decode mocks base method
-func (m *MockCursor) Decode(arg0 interface{}) error {
+// Current mocks base method
+func (m *MockCursor) Current() store.Letter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Decode", arg0)
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "Current")
+	ret0, _ := ret[0].(store.Letter)
 	return ret0
 }
 
-// Decode indicates an expected call of Decode
-func (mr *MockCursorMockRecorder) Decode(arg0 interface{}) *gomock.Call {
+// Current indicates an expected call of Current
+func (mr *MockCursorMockRecorder) Current() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Decode", reflect.TypeOf((*MockCursor)(nil).Decode), arg0)
-}
-
-// All mocks base method
-func (m *MockCursor) All(arg0 context.Context, arg1 interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "All", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// All indicates an expected call of All
-func (mr *MockCursorMockRecorder) All(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockCursor)(nil).All), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Current", reflect.TypeOf((*MockCursor)(nil).Current))
 }
 
 // Close mocks base method
