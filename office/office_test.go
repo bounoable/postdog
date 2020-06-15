@@ -286,34 +286,68 @@ func TestOffice_Send_errorlog(t *testing.T) {
 	<-time.After(time.Millisecond * 100)
 }
 
-func TestOffice_Send_hooks(t *testing.T) {
+func TestOffice_Send_beforeSendHook(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	let := letter.Write(letter.Subject("Test"))
-
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 
 	off := office.New(
 		office.WithSendHook(office.BeforeSend, func(_ context.Context, hlet letter.Letter) {
 			defer wg.Done()
 			assert.Equal(t, let, hlet)
 		}),
-		office.WithSendHook(office.AfterSend, func(_ context.Context, hlet letter.Letter) {
-			defer wg.Done()
-			assert.Equal(t, let, hlet)
-		}),
 	)
 
 	trans := mock_office.NewMockTransport(ctrl)
-	trans.EXPECT().Send(gomock.Any(), let).Return(nil)
+	trans.EXPECT().Send(context.Background(), let).Return(nil)
 	off.ConfigureTransport("test", trans)
 
 	err := off.Send(context.Background(), let)
 	assert.Nil(t, err)
 
 	wg.Wait()
+}
+
+func TestOffice_Send_afterSendHook(t *testing.T) {
+	cases := map[string]struct {
+		sendErr error
+	}{
+		"no error": {},
+		"error": {
+			sendErr: errors.New("send error"),
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			let := letter.Write(letter.Subject("Test"))
+			var wg sync.WaitGroup
+			wg.Add(1)
+
+			off := office.New(
+				office.WithSendHook(office.AfterSend, func(ctx context.Context, hlet letter.Letter) {
+					defer wg.Done()
+					assert.Equal(t, let, hlet)
+					assert.Equal(t, tcase.sendErr, office.SendError(ctx))
+				}),
+			)
+
+			trans := mock_office.NewMockTransport(ctrl)
+			trans.EXPECT().Send(context.Background(), let).Return(tcase.sendErr)
+			off.ConfigureTransport("test", trans)
+
+			err := off.Send(context.Background(), let)
+			assert.Equal(t, tcase.sendErr, err)
+
+			wg.Wait()
+		})
+	}
 }
 
 func TestOffice_Dispatch(t *testing.T) {

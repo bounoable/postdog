@@ -178,6 +178,7 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	}
 
 	if err = trans.Send(ctx, let); err != nil {
+		ctx = context.WithValue(ctx, ctxSendError, err)
 		o.log(err)
 	}
 
