@@ -17,7 +17,7 @@ func Register(cfg *autowire.Config) {
 	cfg.RegisterProvider(Provider, autowire.TransportFactoryFunc(AutowireTransport))
 }
 
-// AutowireTransport autowires Gmail transport from the given config.
+// AutowireTransport autowires gmail transport from the given config.
 func AutowireTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error) {
 	var sscopes []string
 	if scopes, ok := cfg["scopes"].([]interface{}); ok {

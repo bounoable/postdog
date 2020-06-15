@@ -1,3 +1,4 @@
+// Package gmail provides the transport implementation for gmail.
 package gmail
 
 import (
@@ -18,7 +19,7 @@ type transport struct {
 	svc           *gmail.Service
 }
 
-// NewTransport initializes a Gmail transport.
+// NewTransport initializes a gmail transport.
 // Credentials must be provided, if GMAIL_CREDENTIALS environment variable is not set.
 // If no scopes are provided, the gmail.MailGoogleComScope (https://mail.google.com/) scope is used.
 func NewTransport(ctx context.Context, options ...Option) (office.Transport, error) {
@@ -89,7 +90,6 @@ func (trans *transport) createService(ctx context.Context) error {
 	return nil
 }
 
-// Send sends the letter.
 func (trans transport) Send(ctx context.Context, let letter.Letter) error {
 	msg := let.RFC()
 	gmsg := gmail.Message{Raw: base64.RawURLEncoding.EncodeToString([]byte(msg))}

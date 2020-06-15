@@ -1,3 +1,4 @@
+// Package smtp provides the transport implementation for SMTP.
 package smtp
 
 import (
@@ -18,7 +19,7 @@ func NewTransport(host string, port int, username, password string) office.Trans
 	return NewTransportDialer(mail.NewDialer(host, port, username, password))
 }
 
-// NewTransportDialer ...
+// NewTransportDialer initializes an SMTP transport with a custom dialer.
 func NewTransportDialer(dialer *mail.Dialer) office.Transport {
 	return transport{
 		dialer: dialer,

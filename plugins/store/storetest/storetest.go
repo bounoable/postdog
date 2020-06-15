@@ -1,3 +1,4 @@
+// Package storetest provides testing utilities that can be used to test store implementations.
 package storetest
 
 import (
@@ -14,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Insert ...
+// Insert tests the Insert() function of s.
 func Insert(t *testing.T, s store.Store) {
 	assert.Nil(t, s.Insert(context.Background(), store.Letter{
 		Letter: letter.Write(),
@@ -22,7 +23,7 @@ func Insert(t *testing.T, s store.Store) {
 	}))
 }
 
-// Query ...
+// Query tests the Query() function of a query repository.
 func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 	letters := []store.Letter{
 		{

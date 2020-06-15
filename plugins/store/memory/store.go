@@ -13,20 +13,20 @@ import (
 	"github.com/bounoable/timefn"
 )
 
-// Store ...
+// Store is the in-memory store and query repository implementation.
 type Store struct {
 	mux     sync.RWMutex
 	letters []store.Letter
 }
 
-// NewStore ...
+// NewStore creates a new in-memory store.
 func NewStore(letters ...store.Letter) *Store {
 	return &Store{
 		letters: letters,
 	}
 }
 
-// Insert ...
+// Insert puts a letter into the store.
 func (s *Store) Insert(ctx context.Context, let store.Letter) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -34,7 +34,7 @@ func (s *Store) Insert(ctx context.Context, let store.Letter) error {
 	return nil
 }
 
-// Query ...
+// Query queries the store for letters.
 func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) {
 	var letters []store.Letter
 
