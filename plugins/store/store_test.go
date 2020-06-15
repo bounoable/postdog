@@ -3,6 +3,7 @@ package store_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,14 +17,19 @@ import (
 )
 
 var (
+	sendErrorStub   = errors.New("send error")
 	insertErrorStub = errors.New("insert error")
 )
 
 func TestPlugin(t *testing.T) {
 	cases := map[string]struct {
+		sendError   error
 		insertError error
 	}{
 		"works": {},
+		"send error": {
+			sendError: sendErrorStub,
+		},
 		"insert error": {
 			insertError: insertErrorStub,
 		},
@@ -34,36 +40,52 @@ func TestPlugin(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
+			var wg sync.WaitGroup
+
+			logger := mock_office.NewMockLogger(ctrl)
 			let := letter.Write(letter.Subject("Hello"))
 
-			var hookFn func(context.Context, letter.Letter)
-
-			ctx := mock_office.NewMockPluginContext(ctrl)
-			ctx.EXPECT().WithSendHook(office.AfterSend, gomock.Any()).DoAndReturn(func(
-				_ office.SendHook,
-				fn func(ctx context.Context, let letter.Letter),
-			) {
-				hookFn = fn
-			})
-
-			if tcase.insertError != nil {
-				ctx.EXPECT().Log(tcase.insertError)
+			if tcase.sendError != nil {
+				logger.EXPECT().Log(tcase.sendError)
 			}
 
+			if tcase.insertError != nil {
+				logger.EXPECT().Log(tcase.insertError)
+			}
+
+			wg.Add(1)
 			repo := mock_store.NewMockStore(ctrl)
 			repo.EXPECT().Insert(
 				gomock.Any(),
 				gomock.AssignableToTypeOf(store.Letter{}),
 			).DoAndReturn(func(_ context.Context, slet store.Letter) error {
+				defer wg.Done()
+
 				assert.Equal(t, let, slet.Letter)
 				assert.InDelta(t, time.Now().Unix(), slet.SentAt.Unix(), 1)
+
+				var expectedErr string
+				if tcase.sendError != nil {
+					expectedErr = tcase.sendError.Error()
+				}
+				assert.Equal(t, expectedErr, slet.SendError)
+
 				return tcase.insertError
 			})
 
-			plugin := store.Plugin(repo)
-			plugin(ctx)
+			trans := mock_office.NewMockTransport(ctrl)
+			trans.EXPECT().Send(context.Background(), let).Return(tcase.sendError)
 
-			hookFn(context.Background(), let)
+			off := office.New(
+				office.WithLogger(logger),
+				office.WithPlugin(store.Plugin(repo)),
+			)
+			off.ConfigureTransport("test", trans)
+
+			err := off.Send(context.Background(), let)
+			assert.Equal(t, tcase.sendError, err)
+
+			wg.Wait()
 		})
 	}
 }
