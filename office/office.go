@@ -67,7 +67,7 @@ func NewWithConfig(cfg Config) *Office {
 		queue:      make(chan dispatchJob, cfg.QueueBuffer),
 	}
 
-	ctx := pluginContext{cfg: &cfg}
+	ctx := pluginContext{cfg: &off.cfg}
 	for _, plugin := range cfg.Plugins {
 		plugin.Install(ctx)
 	}

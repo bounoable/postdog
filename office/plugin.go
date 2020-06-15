@@ -28,6 +28,8 @@ type PluginContext interface {
 	Log(...interface{})
 	// WithSendHook adds callback functions for send hooks.
 	WithSendHook(SendHook, ...func(context.Context, letter.Letter))
+	// WithMiddleware adds send middleware.
+	WithMiddleware(...Middleware)
 }
 
 type pluginContext struct {
@@ -42,4 +44,8 @@ func (ctx pluginContext) Log(v ...interface{}) {
 
 func (ctx pluginContext) WithSendHook(h SendHook, fns ...func(context.Context, letter.Letter)) {
 	ctx.cfg.SendHooks[h] = append(ctx.cfg.SendHooks[h], fns...)
+}
+
+func (ctx pluginContext) WithMiddleware(mw ...Middleware) {
+	ctx.cfg.Middleware = append(ctx.cfg.Middleware, mw...)
 }
