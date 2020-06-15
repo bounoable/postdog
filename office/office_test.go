@@ -15,20 +15,13 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	off := office.New()
-	assert.Equal(t, office.Config{
-		Middleware: make([]office.Middleware, 0),
-		SendHooks:  make(map[office.SendHook][]func(context.Context, letter.Letter)),
-	}, off.Config())
-
-	off = office.New(
-		office.QueueBuffer(12),
-	)
+	off := office.New(office.QueueBuffer(12))
 
 	assert.Equal(t, office.Config{
 		QueueBuffer: 12,
 		Middleware:  make([]office.Middleware, 0),
 		SendHooks:   make(map[office.SendHook][]func(context.Context, letter.Letter)),
+		Logger:      office.DefaultLogger,
 	}, off.Config())
 }
 

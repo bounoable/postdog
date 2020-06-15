@@ -5,12 +5,20 @@ package office
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/bounoable/postdog/letter"
 )
 
 var (
+	// DefaultLogger is the default logger implementation.
+	// It redirects all Log(v ...interface{}) calls to log.Println(v...)
+	DefaultLogger defaultLogger
+
+	// NopLogger is a nil logger and effectively a no-op logger.
+	NopLogger Logger
+
 	defaultRunConfig = runConfig{
 		workers: 1,
 	}
@@ -41,6 +49,7 @@ func New(opts ...Option) *Office {
 	cfg := Config{
 		Middleware: make([]Middleware, 0),
 		SendHooks:  make(map[SendHook][]func(context.Context, letter.Letter)),
+		Logger:     DefaultLogger,
 	}
 
 	for _, opt := range opts {
@@ -277,4 +286,10 @@ func Workers(workers int) RunOption {
 	return func(cfg *runConfig) {
 		cfg.workers = workers
 	}
+}
+
+type defaultLogger struct{}
+
+func (l defaultLogger) Log(v ...interface{}) {
+	log.Println(v...)
 }
