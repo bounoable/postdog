@@ -1,3 +1,4 @@
+// Package autowire provides office initialization through a YAML config.
 package autowire
 
 import (
