@@ -1,5 +1,5 @@
 // Package markdown provides Markdown support for letters.
-// It registeres a middleware that converts the text body of letters with a Markdown converter
+// It registers a middleware that converts the text body of letters with a Markdown converter
 // and sets the HTML body to the conversion result.
 package markdown
 
