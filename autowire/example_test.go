@@ -35,7 +35,7 @@ func Example() {
 			letter.Subject("Hi, buddy."),
 			letter.Text("Have a drink later?"),
 			letter.HTML("Have a <strong>drink</strong> later?"),
-			letter.MustAttach(bytes.NewReader([]byte{1, 2, 3}), "My burger recipe"),
+			letter.MustAttach(bytes.NewReader([]byte("tasty")), "burgerrecipe.txt", letter.ContentType("text/plain")),
 		),
 	)
 
