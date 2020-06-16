@@ -102,3 +102,19 @@ func (mr *MockPluginContextMockRecorder) WithSendHook(arg0 interface{}, arg1 ...
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithSendHook", reflect.TypeOf((*MockPluginContext)(nil).WithSendHook), varargs...)
 }
+
+// WithMiddleware mocks base method
+func (m *MockPluginContext) WithMiddleware(arg0 ...office.Middleware) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "WithMiddleware", varargs...)
+}
+
+// WithMiddleware indicates an expected call of WithMiddleware
+func (mr *MockPluginContextMockRecorder) WithMiddleware(arg0 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMiddleware", reflect.TypeOf((*MockPluginContext)(nil).WithMiddleware), arg0...)
+}

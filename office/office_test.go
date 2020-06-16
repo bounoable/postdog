@@ -231,23 +231,26 @@ func TestOffice_Send_middleware(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	var firstRun, secondRun, thirdRun bool
+	ctx := context.Background()
+
 	err := errors.New("interrupted")
+
+	mw1, mw2, mw3 := mock_office.NewMockMiddleware(ctrl), mock_office.NewMockMiddleware(ctrl), mock_office.NewMockMiddleware(ctrl)
+	mw1Call := mw1.EXPECT().Handle(ctx, gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
+			return next(ctx, let)
+		})
+
+	mw2.EXPECT().Handle(ctx, gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
+			return letter.Letter{}, err
+		}).After(mw1Call)
 
 	off := office.New(
 		office.WithMiddleware(
-			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
-				firstRun = true
-				return let, nil
-			}),
-			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
-				secondRun = true
-				return let, err
-			}),
-			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
-				thirdRun = true
-				return let, nil
-			}),
+			mw1,
+			mw2,
+			mw3,
 		),
 	)
 
@@ -257,10 +260,6 @@ func TestOffice_Send_middleware(t *testing.T) {
 
 	sendErr := off.Send(context.Background(), let)
 	assert.True(t, errors.Is(sendErr, err))
-
-	assert.True(t, firstRun)
-	assert.True(t, secondRun)
-	assert.False(t, thirdRun)
 }
 
 func TestOffice_Send_errorlog(t *testing.T) {

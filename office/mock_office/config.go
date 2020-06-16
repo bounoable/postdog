@@ -35,18 +35,18 @@ func (m *MockMiddleware) EXPECT() *MockMiddlewareMockRecorder {
 }
 
 // Handle mocks base method
-func (m *MockMiddleware) Handle(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+func (m *MockMiddleware) Handle(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Handle", ctx, let)
+	ret := m.ctrl.Call(m, "Handle", ctx, let, next)
 	ret0, _ := ret[0].(letter.Letter)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Handle indicates an expected call of Handle
-func (mr *MockMiddlewareMockRecorder) Handle(ctx, let interface{}) *gomock.Call {
+func (mr *MockMiddlewareMockRecorder) Handle(ctx, let, next interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockMiddleware)(nil).Handle), ctx, let)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockMiddleware)(nil).Handle), ctx, let, next)
 }
 
 // MockLogger is a mock of Logger interface

@@ -167,10 +167,8 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 		return err
 	}
 
-	for _, mw := range o.cfg.Middleware {
-		if let, err = mw.Handle(ctx, let); err != nil {
-			return err
-		}
+	if let, err = o.applyMiddleware(ctx, let); err != nil {
+		return err
 	}
 
 	for _, fn := range o.cfg.SendHooks[BeforeSend] {
@@ -187,6 +185,22 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	}
 
 	return err
+}
+
+func (o *Office) applyMiddleware(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+	if len(o.cfg.Middleware) == 0 {
+		return let, nil
+	}
+	return o.cfg.Middleware[0].Handle(ctx, let, nextFunc(o.cfg.Middleware, 0))
+}
+
+func nextFunc(mws []Middleware, i int) func(context.Context, letter.Letter) (letter.Letter, error) {
+	return func(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+		if i >= len(mws)-1 {
+			return let, nil
+		}
+		return mws[i+1].Handle(ctx, let, nextFunc(mws, i+1))
+	}
 }
 
 // Send calls SendWith() with the default transport.

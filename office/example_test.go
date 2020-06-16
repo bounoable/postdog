@@ -17,10 +17,10 @@ func ExampleNew() {
 		office.WithLogger(office.NopLogger),
 		// Add middleware
 		office.WithMiddleware(
-			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
+			office.MiddlewareFunc(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
 				// Manipulate letter in some way
 				let.Subject = fmt.Sprintf("Re: %s", let.Subject)
-				return let, nil
+				return next(ctx, let)
 			}),
 		),
 		// Add hooks

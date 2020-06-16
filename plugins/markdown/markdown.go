@@ -44,7 +44,7 @@ func Plugin(conv Converter, opts ...Option) office.PluginFunc {
 func PluginWithConfig(conv Converter, cfg Config) office.PluginFunc {
 	return func(pctx office.PluginContext) {
 		pctx.WithMiddleware(
-			office.MiddlewareFunc(func(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+			office.MiddlewareFunc(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
 				if Disabled(ctx) {
 					return let, nil
 				}
@@ -58,7 +58,8 @@ func PluginWithConfig(conv Converter, cfg Config) office.PluginFunc {
 					return let, err
 				}
 				let.HTML = buf.String()
-				return let, nil
+
+				return next(ctx, let)
 			}),
 		)
 	}

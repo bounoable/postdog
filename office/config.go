@@ -32,15 +32,27 @@ type Config struct {
 // Middleware intercepts and manipulates letters before they are sent.
 // A Middleware that returns an error, aborts the sending of the letter with the returned error.
 type Middleware interface {
-	Handle(ctx context.Context, let letter.Letter) (letter.Letter, error)
+	Handle(
+		ctx context.Context,
+		let letter.Letter,
+		next func(context.Context, letter.Letter) (letter.Letter, error),
+	) (letter.Letter, error)
 }
 
 // MiddlewareFunc allows the use of functions as middlewares.
-type MiddlewareFunc func(ctx context.Context, let letter.Letter) (letter.Letter, error)
+type MiddlewareFunc func(
+	ctx context.Context,
+	let letter.Letter,
+	next func(context.Context, letter.Letter) (letter.Letter, error),
+) (letter.Letter, error)
 
 // Handle intercepts and manipulates letters before they are sent.
-func (fn MiddlewareFunc) Handle(ctx context.Context, let letter.Letter) (letter.Letter, error) {
-	return fn(ctx, let)
+func (fn MiddlewareFunc) Handle(
+	ctx context.Context,
+	let letter.Letter,
+	next func(context.Context, letter.Letter) (letter.Letter, error),
+) (letter.Letter, error) {
+	return fn(ctx, let, next)
 }
 
 // Logger logs messages.
