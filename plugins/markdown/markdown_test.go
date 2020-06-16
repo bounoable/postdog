@@ -23,7 +23,6 @@ func TestPlugin(t *testing.T) {
 	cases := map[string]struct {
 		text               string
 		html               string
-		withContext        func(context.Context) context.Context
 		configureConverter func(*mock_markdown.MockConverter)
 		opts               []markdown.Option
 		expectedHTML       string
@@ -57,15 +56,6 @@ func TestPlugin(t *testing.T) {
 				})
 			},
 		},
-		"disabled": {
-			text: mdStub,
-			withContext: func(ctx context.Context) context.Context {
-				assert.False(t, markdown.Disabled(ctx))
-				ctx = markdown.Disable(ctx)
-				assert.True(t, markdown.Disabled(ctx))
-				return ctx
-			},
-		},
 	}
 
 	for name, tcase := range cases {
@@ -75,10 +65,6 @@ func TestPlugin(t *testing.T) {
 
 			ctx := context.Background()
 			let := letter.Write(letter.Content(tcase.text, tcase.html))
-
-			if tcase.withContext != nil {
-				ctx = tcase.withContext(ctx)
-			}
 
 			converter := mock_markdown.NewMockConverter(ctrl)
 			if tcase.configureConverter != nil {
@@ -95,4 +81,35 @@ func TestPlugin(t *testing.T) {
 			assert.Nil(t, err)
 		})
 	}
+}
+
+func TestDisable(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	assert.False(t, markdown.Disabled(ctx))
+	assert.True(t, markdown.Enabled(ctx))
+	ctx = markdown.Disable(ctx)
+	assert.True(t, markdown.Disabled(ctx))
+	assert.False(t, markdown.Enabled(ctx))
+	ctx = markdown.Enable(ctx)
+	assert.False(t, markdown.Disabled(ctx))
+	assert.True(t, markdown.Enabled(ctx))
+	ctx = markdown.Disable(ctx)
+
+	conv := mock_markdown.NewMockConverter(ctrl)
+
+	off := office.New(office.WithPlugin(markdown.Plugin(conv)))
+	trans := mock_office.NewMockTransport(ctrl)
+	off.ConfigureTransport("test", trans)
+
+	let := letter.Write(letter.Text("# Heading"))
+
+	trans.EXPECT().Send(ctx, let).DoAndReturn(func(ctx context.Context, let letter.Letter) error {
+		assert.Equal(t, "", let.HTML)
+		return nil
+	})
+
+	off.Send(ctx, let)
 }

@@ -82,15 +82,25 @@ func OverrideHTML(override bool) Option {
 	}
 }
 
+// Disabled determines if Markdown conversion is disabled for ctx.
+func Disabled(ctx context.Context) bool {
+	disabled, _ := ctx.Value(ctxDisabled).(bool)
+	return disabled
+}
+
 // Disable disables Markdown conversions for all letters that are sent with this ctx.
 func Disable(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxDisabled, true)
 }
 
-// Disabled determines if Markdown conversion is disabled for ctx.
-func Disabled(ctx context.Context) bool {
-	disabled, _ := ctx.Value(ctxDisabled).(bool)
-	return disabled
+// Enabled determines if Markdown conversion is enabled for ctx.
+func Enabled(ctx context.Context) bool {
+	return !Disabled(ctx)
+}
+
+// Enable (re)enables Markdown conversions for ctx.
+func Enable(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxDisabled, false)
 }
 
 type ctxKey string
