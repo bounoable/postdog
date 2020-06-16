@@ -96,10 +96,13 @@ func TestDisable(t *testing.T) {
 
 	ctx := context.Background()
 	assert.False(t, store.Disabled(ctx))
+	assert.True(t, store.Enabled(ctx))
 	ctx = store.Disable(ctx)
 	assert.True(t, store.Disabled(ctx))
+	assert.False(t, store.Enabled(ctx))
 	ctx = store.Enable(ctx)
 	assert.False(t, store.Disabled(ctx))
+	assert.True(t, store.Enabled(ctx))
 	ctx = store.Disable(ctx)
 
 	repo := mock_store.NewMockStore(ctrl)

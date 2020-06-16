@@ -48,15 +48,20 @@ func Plugin(store Store) office.PluginFunc {
 	}
 }
 
+// Disabled determines if the insertion of letters is disabled for ctx.
+func Disabled(ctx context.Context) bool {
+	disabled, _ := ctx.Value(ctxDisabled).(bool)
+	return disabled
+}
+
 // Disable disables the insertion of letters for ctx.
 func Disable(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxDisabled, true)
 }
 
-// Disabled determines if the insertion of letters is disabled for ctx.
-func Disabled(ctx context.Context) bool {
-	disabled, _ := ctx.Value(ctxDisabled).(bool)
-	return disabled
+// Enabled determines if the insertion of letters is enabled for ctx.
+func Enabled(ctx context.Context) bool {
+	return !Disabled(ctx)
 }
 
 // Enable (re)enables the insertion of letters for ctx.
