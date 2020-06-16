@@ -44,7 +44,11 @@ func Plugin(conv Converter, opts ...Option) office.PluginFunc {
 func PluginWithConfig(conv Converter, cfg Config) office.PluginFunc {
 	return func(pctx office.PluginContext) {
 		pctx.WithMiddleware(
-			office.MiddlewareFunc(func(_ context.Context, let letter.Letter) (letter.Letter, error) {
+			office.MiddlewareFunc(func(ctx context.Context, let letter.Letter) (letter.Letter, error) {
+				if Disabled(ctx) {
+					return let, nil
+				}
+
 				if len(let.HTML) > 0 && !cfg.OverrideHTML {
 					return let, nil
 				}
@@ -77,3 +81,18 @@ func OverrideHTML(override bool) Option {
 		cfg.OverrideHTML = override
 	}
 }
+
+// Disable disables Markdown conversions for all letters that are sent with this ctx.
+func Disable(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxDisabled, true)
+}
+
+// Disabled determines if Markdown conversion is disabled for ctx.
+func Disabled(ctx context.Context) bool {
+	disabled, _ := ctx.Value(ctxDisabled).(bool)
+	return disabled
+}
+
+type ctxKey string
+
+var ctxDisabled = ctxKey("disabled")
