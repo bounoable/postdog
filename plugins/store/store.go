@@ -27,6 +27,10 @@ type Letter struct {
 func Plugin(store Store) office.PluginFunc {
 	return func(pctx office.PluginContext) {
 		pctx.WithSendHook(office.AfterSend, func(ctx context.Context, let letter.Letter) {
+			if Disabled(ctx) {
+				return
+			}
+
 			var sendError string
 			sendErr := office.SendError(ctx)
 			if sendErr != nil {
@@ -43,3 +47,23 @@ func Plugin(store Store) office.PluginFunc {
 		})
 	}
 }
+
+// Disable disables the insertion of letters for ctx.
+func Disable(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxDisabled, true)
+}
+
+// Disabled determines if the insertion of letters is disabled for ctx.
+func Disabled(ctx context.Context) bool {
+	disabled, _ := ctx.Value(ctxDisabled).(bool)
+	return disabled
+}
+
+// Enable (re)enables the insertion of letters for ctx.
+func Enable(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxDisabled, false)
+}
+
+type ctxKey string
+
+var ctxDisabled = ctxKey("disabled")

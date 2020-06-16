@@ -60,6 +60,7 @@ func TestPlugin(t *testing.T) {
 		"disabled": {
 			text: mdStub,
 			withContext: func(ctx context.Context) context.Context {
+				assert.False(t, markdown.Disabled(ctx))
 				ctx = markdown.Disable(ctx)
 				assert.True(t, markdown.Disabled(ctx))
 				return ctx

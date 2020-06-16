@@ -89,3 +89,24 @@ func TestPlugin(t *testing.T) {
 		})
 	}
 }
+
+func TestDisable(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	assert.False(t, store.Disabled(ctx))
+	ctx = store.Disable(ctx)
+	assert.True(t, store.Disabled(ctx))
+	ctx = store.Enable(ctx)
+	assert.False(t, store.Disabled(ctx))
+	ctx = store.Disable(ctx)
+
+	repo := mock_store.NewMockStore(ctrl)
+	off := office.New(office.WithPlugin(store.Plugin(repo)))
+	trans := mock_office.NewMockTransport(ctrl)
+	trans.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+	off.ConfigureTransport("test", trans)
+
+	off.Send(ctx, letter.Write())
+}
