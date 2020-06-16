@@ -19,6 +19,14 @@ type Converter interface {
 	Convert(src []byte, w io.Writer) error
 }
 
+// ConverterFunc allows a function to be used as Converter.
+type ConverterFunc func([]byte, io.Writer) error
+
+// Convert converts the Markdown in src to HTML and writes the result to w.
+func (fn ConverterFunc) Convert(src []byte, w io.Writer) error {
+	return fn(src, w)
+}
+
 // Config is the plugin configuration.
 type Config struct {
 	// Override HTML field even if it's already filled.
