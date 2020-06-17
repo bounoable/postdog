@@ -9,11 +9,6 @@ import (
 	"github.com/bounoable/postdog/office"
 )
 
-// type plugin struct {
-// 	cfg  Config
-// 	tpls *template.Template
-// }
-
 // Plugin creates the template plugin.
 // It panics if it fails to parse the templates.
 // Use TryPlugin() if you need to catch parse errors.
