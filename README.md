@@ -13,7 +13,7 @@
   </a>
 </p>
 
-`postdog` is an idiomatic mailing toolkit for GO applications, providing:
+`postdog` is a mailing toolkit for GO applications, providing:
 
 - Simple mail writing
 - Sending mails with support for different transports (SMTP, Gmail etc.)
