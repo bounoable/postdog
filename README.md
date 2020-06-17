@@ -151,6 +151,47 @@ func main() {
 }
 ```
 
+## Sending mails / letters
+
+```go
+package main
+
+import (
+  "context"
+
+  "github.com/bounoable/postdog"
+  "github.com/bounoable/postdog/autowire"
+  "github.com/bounoable/postdog/letter"
+  "github.com/bounoable/postdog/transport/smtp"
+  "github.com/bounoable/postdog/transport/gmail"
+)
+
+func main() {
+  // Load config
+  cfg, err := autowire.File("/path/to/config.yml", smtp.Register, gmail.Register)
+  if err != nil {
+    panic(err)
+  }
+
+  // Initialize office
+  po, err := cfg.Office(context.Background())
+  if err != nil {
+    panic(err)
+  }
+
+  // Send letter directly
+  err = po.Send(context.Background(), letter.Write())
+
+  // Queued sending
+
+  // 1. Make sure postdog is running
+  go po.Run(context.Background(), postdog.Workers(3))
+
+  // 2. Dispatch the letter
+  err = po.Dispatch(context.Background(), letter.Write())
+}
+```
+
 ## Plugins
 
 You can extend `postdog` with plugins that register custom middleware and hooks:
