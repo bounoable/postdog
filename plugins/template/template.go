@@ -3,17 +3,16 @@ package template
 
 import (
 	"context"
-	"html/template"
 	"strings"
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
 )
 
-type plugin struct {
-	cfg  Config
-	tpls *template.Template
-}
+// type plugin struct {
+// 	cfg  Config
+// 	tpls *template.Template
+// }
 
 // Plugin creates the template plugin.
 // It panics if it fails to parse the templates.
@@ -23,7 +22,7 @@ type plugin struct {
 //	plugin := template.Plugin(
 //		template.UseDir("/templates")
 //	)
-func Plugin(opts ...Option) office.Plugin {
+func Plugin(opts ...Option) office.PluginFunc {
 	plugin, err := TryPlugin(opts...)
 	if err != nil {
 		panic(err)
@@ -32,47 +31,43 @@ func Plugin(opts ...Option) office.Plugin {
 }
 
 // TryPlugin creates the template plugin. It doesn't panic when it fails to parse the templates.
-func TryPlugin(opts ...Option) (office.Plugin, error) {
+func TryPlugin(opts ...Option) (office.PluginFunc, error) {
 	cfg := newConfig(opts...)
 	tpls, err := cfg.ParseTemplates()
 	if err != nil {
 		return nil, err
 	}
-	return plugin{
-		cfg:  cfg,
-		tpls: tpls,
-	}, nil
-}
 
-func (p plugin) Install(pctx office.PluginContext) {
-	pctx.WithMiddleware(
-		office.MiddlewareFunc(func(
-			ctx context.Context,
-			let letter.Letter,
-			next func(context.Context, letter.Letter) (letter.Letter, error),
-		) (letter.Letter, error) {
-			name, ok := Name(ctx)
-			if !ok {
+	return func(pctx office.PluginContext) {
+		pctx.WithMiddleware(
+			office.MiddlewareFunc(func(
+				ctx context.Context,
+				let letter.Letter,
+				next func(context.Context, letter.Letter) (letter.Letter, error),
+			) (letter.Letter, error) {
+				name, ok := Name(ctx)
+				if !ok {
+					return next(ctx, let)
+				}
+
+				var builder strings.Builder
+
+				if err := tpls.ExecuteTemplate(&builder, name, struct {
+					Letter letter.Letter
+					Data   interface{}
+				}{
+					Letter: let,
+					Data:   Data(ctx),
+				}); err != nil {
+					return let, err
+				}
+
+				let.HTML = builder.String()
+
 				return next(ctx, let)
-			}
-
-			var builder strings.Builder
-
-			if err := p.tpls.ExecuteTemplate(&builder, name, struct {
-				Letter letter.Letter
-				Data   interface{}
-			}{
-				Letter: let,
-				Data:   Data(ctx),
-			}); err != nil {
-				return let, err
-			}
-
-			let.HTML = builder.String()
-
-			return next(ctx, let)
-		}),
-	)
+			}),
+		)
+	}, nil
 }
 
 // Enable sets the template that will be used to build the letter body for this context.
