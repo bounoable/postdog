@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Config ...
+// Config is the plugin configuration.
 type Config struct {
 	Templates    map[string]string
 	TemplateDirs []string
@@ -28,24 +28,39 @@ func newConfig(opts ...Option) Config {
 	return cfg
 }
 
-// Option ...
+// Option is a plugin option.
 type Option func(*Config)
 
-// Use ...
-func Use(name, path string) Option {
+// Use registers the template at filepath under name.
+func Use(name, filepath string) Option {
 	return func(cfg *Config) {
-		cfg.Templates[name] = path
+		cfg.Templates[name] = filepath
 	}
 }
 
-// UseDir ...
+// UseDir registers all files in dirs and their subdirectories as templates.
+// The template name will be set to the relative path of the file to the given directory in dirs,
+// where every directory separator is replaced by a dot and the file extensions is removed.
+//
+// Example:
+//	Given the following files:
+// 	/templates/tpl1.html
+//	/templates/tpl2.html
+//	/templates/nested/tpl3.html
+//	/templates/nested/deeper/tpl4.html
+//
+//	UseDir("/templates") will result in the following template names:
+//	- tpl1
+//	- tpl2
+//	- nested.tpl3
+//	- nested.deeper.tpl4
 func UseDir(dirs ...string) Option {
 	return func(cfg *Config) {
 		cfg.TemplateDirs = append(cfg.TemplateDirs, dirs...)
 	}
 }
 
-// ParseTemplates ...
+// ParseTemplates parses the templates that are configured in cfg and returns the root template.
 func (cfg Config) ParseTemplates() (*template.Template, error) {
 	tpls := template.New("templates")
 
@@ -76,7 +91,7 @@ func (cfg Config) ParseTemplates() (*template.Template, error) {
 	return tpls, nil
 }
 
-var slashExpr = regexp.MustCompile("^/")
+var slashExpr = regexp.MustCompile(fmt.Sprintf("^%c", os.PathSeparator))
 var suffixExpr = regexp.MustCompile(`(?i)(\.[a-z0-9]+)+$`)
 
 func extractTemplates(dir string, tpls *template.Template) error {
@@ -104,7 +119,7 @@ func extractTemplates(dir string, tpls *template.Template) error {
 		name := strings.Replace(path, dir, "", 1)
 		name = slashExpr.ReplaceAllString(name, "")
 		name = suffixExpr.ReplaceAllString(name, "")
-		name = strings.ReplaceAll(name, "/", ".")
+		name = strings.ReplaceAll(name, string(os.PathSeparator), ".")
 
 		_, err = tpls.New(name).Parse(string(b))
 

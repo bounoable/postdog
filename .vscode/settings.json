@@ -2,6 +2,7 @@
   "conventionalCommits.scopes": [
     "office",
     "store",
-    "markdown"
+    "markdown",
+    "template"
   ]
 }
