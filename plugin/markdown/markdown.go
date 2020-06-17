@@ -44,7 +44,11 @@ func Plugin(conv Converter, opts ...Option) postdog.PluginFunc {
 func PluginWithConfig(conv Converter, cfg Config) postdog.PluginFunc {
 	return func(pctx postdog.PluginContext) {
 		pctx.WithMiddleware(
-			postdog.MiddlewareFunc(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
+			postdog.MiddlewareFunc(func(
+				ctx context.Context,
+				let letter.Letter,
+				next func(context.Context, letter.Letter) (letter.Letter, error),
+			) (letter.Letter, error) {
 				if Disabled(ctx) {
 					return let, nil
 				}
