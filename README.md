@@ -22,7 +22,7 @@
 
 ## Getting Started
 
-> Visit the docs at [**go.dev**](https://pkg.go.dev/github.com/bounoable/postdog) for more examples.
+> Visit the docs at [**go.dev**](https://pkg.go.dev/github.com/bounoable/postdog) for examples.
 
 ### Installation
 
@@ -131,6 +131,9 @@ func main() {
   po.ConfigureTransport("production", prod, office.DefaultTransport()) // make it the default transport
 
   err = po.Send(context.Background(), letter.Write())
+
+  // or use transport directly
+  err = prod.Send(context.Background(), letter.Write())
 }
 ```
 
