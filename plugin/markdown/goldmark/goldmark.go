@@ -4,7 +4,7 @@ package goldmark
 import (
 	"io"
 
-	"github.com/bounoable/postdog/plugins/markdown"
+	"github.com/bounoable/postdog/plugin/markdown"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
 )

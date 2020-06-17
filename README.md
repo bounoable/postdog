@@ -13,7 +13,7 @@
   </a>
 </p>
 
-`postdog` is a mailing toolkit for GO applications, providing:
+`postdog` is an idiomatic mailing toolkit for GO applications, providing:
 
 - Simple mail writing
 - Sending mails with support for different transports (SMTP, Gmail etc.)
@@ -34,9 +34,11 @@ go get github.com/bounoable/postdog
 
 ### Main packages
 
-- [letter](./letter) provides the `Letter` type and write helpers
-- [office](./office) provides the `Office` type for queued sending and support for logging, middlewares, hooks & plugins
-- [autowire](./autowire) provides automatic `Office` configuration through a YAML config file
+| Package                | Description                                                                   |
+|:-----------------------|:------------------------------------------------------------------------------|
+| [postdog](./)          | Provides queued sending and support for logging, middlewares, hooks & plugins |
+| [letter](./letter)     | provides the `Letter` type and write helpers                                  |
+| [autowire](./autowire) | provides automatic `Office` setup through a YAML config file                  |
 
 ### Configuration
 
@@ -65,6 +67,8 @@ transports:
 ```
 
 ```go
+package main
+
 import (
   "github.com/bounoable/postdog/autowire"
   "github.com/bounoable/postdog/transport/smtp"
@@ -83,7 +87,10 @@ func main() {
     panic(err)
   }
 
-  po, err := cfg.Office(context.Background())
+  po, err := cfg.Office(
+    context.Background(),
+    // Office options ... (plugins etc.)
+  )
   if err != nil {
     panic(err)
   }
@@ -131,3 +138,96 @@ func main() {
 
 ## Plugins
 
+You can extend `postdog` with plugins that register custom middleware and hooks:
+
+| Plugin                         | Description                      |
+|:-------------------------------|:---------------------------------|
+| [Markdown](./plugins/markdown) | Markdown support in letters      |
+| [Store](./plugins/store)       | Store sent letters in a database |
+| [Template](./plugins/template) | Template support in letters      |
+
+## Writing plugins
+
+[Plugins](./plugin.go) have to provide a single `Install()` method that accepts a plugin context. Here is an example of a bad word filter:
+
+```go
+package main
+
+import (
+  "strings"
+
+  "github.com/bounoable/postdog"
+)
+
+type badWordFilterPlugin struct {
+  words []string
+}
+
+func (plug badWordFilterPlugin) Install(ctx postdog.PluginContext) {
+  // register middleware
+  ctx.WithMiddleware(
+    postdog.MiddlewareFunc(
+      ctx context.Context,
+      let letter.Letter,
+      next func(context.Context, letter.Letter) (letter.Letter, error),
+    ) (letter.Letter, error) {
+      for _, word := range plug.words {
+        let.Text = strings.Replace(let.Text, word, "")
+        let.HTML = strings.Replace(let.HTML, word, "")
+      }
+
+      // call the next middleware
+      return next(ctx, let)
+    }),
+  )
+}
+
+func main() {
+  po := postdog.New(
+    postdog.WithPlugin(badWordFilterPlugin{
+      words: []string{"very", "bad", "words"},
+    }),
+  )
+}
+```
+
+You can also use a function as a plugin with `postdog.MiddlewareFunc`:
+
+```go
+package main
+
+import (
+  "strings"
+
+  "github.com/bounoable/postdog"
+)
+
+func BadWordPlugin(words ...string) postdog.PluginFunc {
+  return func(ctx postdog.PluginContext) {
+    // register middleware
+    ctx.WithMiddleware(
+      postdog.MiddlewareFunc(
+        ctx context.Context,
+        let letter.Letter,
+        next func(context.Context, letter.Letter) (letter.Letter, error),
+      ) (letter.Letter, error) {
+        for _, word := range plug.words {
+          let.Text = strings.Replace(let.Text, word, "")
+          let.HTML = strings.Replace(let.HTML, word, "")
+        }
+
+        // call the next middleware
+        return next(ctx, let)
+      }),
+    )
+  }
+}
+
+func main() {
+  po := postdog.New(
+    postdog.WithPlugin(
+      BadWordPlugin("very", "bad", "words"),
+    ),
+  )
+}
+```

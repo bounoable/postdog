@@ -10,8 +10,8 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/mock_postdog"
-	"github.com/bounoable/postdog/plugins/store"
-	"github.com/bounoable/postdog/plugins/store/mock_store"
+	"github.com/bounoable/postdog/plugin/store"
+	"github.com/bounoable/postdog/plugin/store/mock_store"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

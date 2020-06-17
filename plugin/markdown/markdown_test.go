@@ -8,8 +8,8 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/mock_postdog"
-	"github.com/bounoable/postdog/plugins/markdown"
-	"github.com/bounoable/postdog/plugins/markdown/mock_markdown"
+	"github.com/bounoable/postdog/plugin/markdown"
+	"github.com/bounoable/postdog/plugin/markdown/mock_markdown"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

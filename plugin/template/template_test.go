@@ -11,7 +11,7 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/mock_postdog"
-	"github.com/bounoable/postdog/plugins/template"
+	"github.com/bounoable/postdog/plugin/template"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

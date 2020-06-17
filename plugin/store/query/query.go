@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/bounoable/postdog/plugins/store"
+	"github.com/bounoable/postdog/plugin/store"
 )
 
 const (

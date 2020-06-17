@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/plugins/store"
-	"github.com/bounoable/postdog/plugins/store/query"
+	"github.com/bounoable/postdog/plugin/store"
+	"github.com/bounoable/postdog/plugin/store/query"
 	"github.com/bounoable/timefn"
 )
 

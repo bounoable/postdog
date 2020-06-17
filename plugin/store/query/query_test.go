@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bounoable/postdog/plugins/store/query"
-	"github.com/bounoable/postdog/plugins/store/query/mock_query"
+	"github.com/bounoable/postdog/plugin/store/query"
+	"github.com/bounoable/postdog/plugin/store/query/mock_query"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

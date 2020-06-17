@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/plugins/store"
-	"github.com/bounoable/postdog/plugins/store/query"
+	"github.com/bounoable/postdog/plugin/store"
+	"github.com/bounoable/postdog/plugin/store/query"
 	"github.com/bounoable/timefn"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

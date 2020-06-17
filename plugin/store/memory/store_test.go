@@ -3,10 +3,10 @@ package memory_test
 import (
 	"testing"
 
-	"github.com/bounoable/postdog/plugins/store"
-	"github.com/bounoable/postdog/plugins/store/memory"
-	"github.com/bounoable/postdog/plugins/store/query"
-	"github.com/bounoable/postdog/plugins/store/storetest"
+	"github.com/bounoable/postdog/plugin/store"
+	"github.com/bounoable/postdog/plugin/store/memory"
+	"github.com/bounoable/postdog/plugin/store/query"
+	"github.com/bounoable/postdog/plugin/store/storetest"
 )
 
 func TestStore_Insert(t *testing.T) {

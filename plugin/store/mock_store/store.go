@@ -6,7 +6,7 @@ package mock_store
 
 import (
 	context "context"
-	store "github.com/bounoable/postdog/plugins/store"
+	store "github.com/bounoable/postdog/plugin/store"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

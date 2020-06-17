@@ -5,8 +5,8 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/plugins/markdown"
-	gm "github.com/bounoable/postdog/plugins/markdown/goldmark"
+	"github.com/bounoable/postdog/plugin/markdown"
+	gm "github.com/bounoable/postdog/plugin/markdown/goldmark"
 	"github.com/yuin/goldmark"
 )
 

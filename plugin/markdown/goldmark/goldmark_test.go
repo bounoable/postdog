@@ -3,8 +3,8 @@ package goldmark_test
 import (
 	"testing"
 
-	"github.com/bounoable/postdog/plugins/markdown"
-	gm "github.com/bounoable/postdog/plugins/markdown/goldmark"
+	"github.com/bounoable/postdog/plugin/markdown"
+	gm "github.com/bounoable/postdog/plugin/markdown/goldmark"
 	"github.com/stretchr/testify/assert"
 	"github.com/yuin/goldmark"
 )

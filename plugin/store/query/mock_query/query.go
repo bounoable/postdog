@@ -6,8 +6,8 @@ package mock_query
 
 import (
 	context "context"
-	store "github.com/bounoable/postdog/plugins/store"
-	query "github.com/bounoable/postdog/plugins/store/query"
+	store "github.com/bounoable/postdog/plugin/store"
+	query "github.com/bounoable/postdog/plugin/store/query"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
