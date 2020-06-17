@@ -236,7 +236,7 @@ func DispatchWith(transport string) DispatchOption {
 	}
 }
 
-// Run processes the outgoing letter queue with the gives options.
+// Run processes the outgoing letter queue with the given options.
 // Run blocks until ctx is canceled.
 // Available options:
 //	Workers(): Set the queue worker count.
