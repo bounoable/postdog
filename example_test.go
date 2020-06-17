@@ -3,6 +3,7 @@ package postdog_test
 import (
 	"bytes"
 	"context"
+	"strings"
 
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
@@ -20,13 +21,13 @@ func Example() {
 	}
 
 	// Build office
-	po, err := cfg.Office(context.Background())
+	off, err := cfg.Office(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
 	// Send mail with default transport
-	err = po.Send(
+	err = off.Send(
 		context.Background(),
 		letter.Write(
 			letter.From("Bob", "bob@belcher.test"),
@@ -36,12 +37,12 @@ func Example() {
 			letter.Subject("Hi, buddy."),
 			letter.Text("Have a drink later?"),
 			letter.HTML("Have a <strong>drink</strong> later?"),
-			letter.MustAttach(bytes.NewReader([]byte{1, 2, 3}), "My burger recipe"),
+			letter.MustAttach(bytes.NewReader([]byte("secret")), "my_burger_recipe.txt"),
 		),
 	)
 
 	// or use a specific transport
-	err = po.SendWith(
+	err = off.SendWith(
 		context.Background(),
 		"mytransport",
 		letter.Write(
@@ -91,6 +92,27 @@ func Example_useTransportDirectly() {
 	)
 
 	if err := trans.Send(context.Background(), let); err != nil {
+		panic(err)
+	}
+}
+
+func Example_middleware() {
+	off := office.New(
+		office.WithMiddleware(
+			office.MiddlewareFunc(func(
+				ctx context.Context,
+				let letter.Letter,
+				next func(context.Context, letter.Letter) (letter.Letter, error),
+			) (letter.Letter, error) {
+				let.Subject = strings.Title(let.Subject)
+				return next(ctx, let)
+			}),
+		),
+	)
+
+	if err := off.Send(context.Background(), letter.Write(
+		letter.Subject("this is a title"), // will be set to "This Is A Title" by the middleware before sending
+	)); err != nil {
 		panic(err)
 	}
 }
