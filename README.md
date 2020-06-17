@@ -1,7 +1,5 @@
-<center>
 <img src="./.github/logo.svg" width="100px">
 <h1>postdog - GO mailing toolkit</h1>
-</center>
 
 <p>
   <a href="https://pkg.go.dev/github.com/bounoable/postdog">
