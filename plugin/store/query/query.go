@@ -1,3 +1,4 @@
+// Package query provides functions to query letters from a store.
 package query
 
 //go:generate mockgen -source=query.go -destination=./mock_query/query.go
