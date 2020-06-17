@@ -31,7 +31,7 @@ func Plugin(opts ...Option) office.Plugin {
 	return plugin
 }
 
-// TryPlugin creates the template plugin. It doesn't panic then it fails to parse the templates.
+// TryPlugin creates the template plugin. It doesn't panic when it fails to parse the templates.
 func TryPlugin(opts ...Option) (office.Plugin, error) {
 	cfg := newConfig(opts...)
 	tpls, err := cfg.ParseTemplates()
