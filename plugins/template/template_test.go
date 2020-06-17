@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bounoable/postdog/letter"
@@ -54,6 +55,11 @@ func TestPlugin(t *testing.T) {
 		template.Use("test2", filepath.Join(wd, "testdata", "templates", "tpl2.html")),
 		template.UseDir(filepath.Join(wd, "testdata", "templateDirs", "dir1")),
 		template.UseDir(filepath.Join(wd, "testdata", "templateDirs", "dir2")),
+		template.UseFuncs(template.FuncMap{
+			"title": func(val string) string {
+				return strings.Title(val)
+			},
+		}),
 	)
 
 	names := []string{
@@ -94,7 +100,7 @@ func makeExpectedLetter(let letter.Letter, num int) letter.Letter {
 	let.HTML = fmt.Sprintf(`<h1>Template %d</h1>
 
 <p>
-  example body
+  Example Body
 </p>
 `, num)
 	return let

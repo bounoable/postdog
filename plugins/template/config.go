@@ -14,11 +14,13 @@ import (
 type Config struct {
 	Templates    map[string]string
 	TemplateDirs []string
+	Funcs        template.FuncMap
 }
 
 func newConfig(opts ...Option) Config {
 	cfg := Config{
 		Templates: map[string]string{},
+		Funcs:     template.FuncMap{},
 	}
 
 	for _, opt := range opts {
@@ -60,9 +62,27 @@ func UseDir(dirs ...string) Option {
 	}
 }
 
+// UseFuncs ...
+func UseFuncs(funcMaps ...FuncMap) Option {
+	return func(cfg *Config) {
+		fm := make(template.FuncMap, len(cfg.Funcs))
+		for name, fn := range cfg.Funcs {
+			fm[name] = fn
+		}
+
+		for _, funcs := range funcMaps {
+			for name, fn := range funcs {
+				fm[name] = fn
+			}
+		}
+
+		cfg.Funcs = fm
+	}
+}
+
 // ParseTemplates parses the templates that are configured in cfg and returns the root template.
 func (cfg Config) ParseTemplates() (*template.Template, error) {
-	tpls := template.New("templates")
+	tpls := template.New("templates").Funcs(cfg.Funcs)
 
 	for _, dir := range cfg.TemplateDirs {
 		if err := extractTemplates(dir, tpls); err != nil {

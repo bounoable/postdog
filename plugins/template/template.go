@@ -3,11 +3,15 @@ package template
 
 import (
 	"context"
+	"html/template"
 	"strings"
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/office"
 )
+
+// FuncMap is an alias to template.FuncMap.
+type FuncMap template.FuncMap
 
 // Plugin creates the template plugin.
 // It panics if it fails to parse the templates.
