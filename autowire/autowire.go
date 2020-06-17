@@ -8,7 +8,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/bounoable/postdog/office"
+	"github.com/bounoable/postdog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,14 +33,14 @@ type Config struct {
 
 // TransportFactory creates transports from user-provided configuration.
 type TransportFactory interface {
-	CreateTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error)
+	CreateTransport(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error)
 }
 
 // The TransportFactoryFunc allows a transport factory function to be used as a TransportFactory.
-type TransportFactoryFunc func(context.Context, map[string]interface{}) (office.Transport, error)
+type TransportFactoryFunc func(context.Context, map[string]interface{}) (postdog.Transport, error)
 
 // CreateTransport creates a transport from user-provided configuration.
-func (fn TransportFactoryFunc) CreateTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error) {
+func (fn TransportFactoryFunc) CreateTransport(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error) {
 	return fn(ctx, cfg)
 }
 
@@ -216,10 +216,10 @@ func replaceEnvPlaceholders(val string) string {
 	})
 }
 
-// Office builds the *office.Office from the autowire configuration.
+// Office builds the *postdog.Office from the autowire configuration.
 // You have to register the used providers with the provided opts.
-func (cfg Config) Office(ctx context.Context, opts ...office.Option) (*office.Office, error) {
-	off := office.New(opts...)
+func (cfg Config) Office(ctx context.Context, opts ...postdog.Option) (*postdog.Office, error) {
+	off := postdog.New(opts...)
 	for name, transportcfg := range cfg.Transports {
 		factory, ok := cfg.Providers[transportcfg.Provider]
 		if !ok {

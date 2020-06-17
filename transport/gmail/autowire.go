@@ -3,8 +3,8 @@ package gmail
 import (
 	"context"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
-	"github.com/bounoable/postdog/office"
 )
 
 const (
@@ -18,7 +18,7 @@ func Register(cfg *autowire.Config) {
 }
 
 // AutowireTransport autowires gmail transport from the given config.
-func AutowireTransport(ctx context.Context, cfg map[string]interface{}) (office.Transport, error) {
+func AutowireTransport(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error) {
 	var sscopes []string
 	if scopes, ok := cfg["scopes"].([]interface{}); ok {
 		for _, scope := range scopes {

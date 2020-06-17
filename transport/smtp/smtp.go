@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 	"gopkg.in/mail.v2"
 )
 
@@ -15,12 +15,12 @@ type transport struct {
 }
 
 // NewTransport initializes an SMTP transport.
-func NewTransport(host string, port int, username, password string) office.Transport {
+func NewTransport(host string, port int, username, password string) postdog.Transport {
 	return NewTransportDialer(mail.NewDialer(host, port, username, password))
 }
 
 // NewTransportDialer initializes an SMTP transport with a custom dialer.
-func NewTransportDialer(dialer *mail.Dialer) office.Transport {
+func NewTransportDialer(dialer *mail.Dialer) postdog.Transport {
 	return transport{
 		dialer: dialer,
 	}

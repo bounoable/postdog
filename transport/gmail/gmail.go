@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"os"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
@@ -22,7 +22,7 @@ type transport struct {
 // NewTransport initializes a gmail transport.
 // Credentials must be provided, if GMAIL_CREDENTIALS environment variable is not set.
 // If no scopes are provided, the gmail.MailGoogleComScope (https://mail.google.com/) scope is used.
-func NewTransport(ctx context.Context, options ...Option) (office.Transport, error) {
+func NewTransport(ctx context.Context, options ...Option) (postdog.Transport, error) {
 	if credsPath := os.Getenv("GMAIL_CREDENTIALS"); credsPath != "" {
 		options = append([]Option{CredentialsFile(credsPath)}, options...)
 	}

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/mock_office"
+	"github.com/bounoable/postdog/mock_postdog"
 	"github.com/bounoable/postdog/plugins/template"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -80,12 +80,12 @@ func TestPlugin(t *testing.T) {
 			ctx := context.Background()
 			ctx = template.Enable(ctx, name, nil)
 
-			off := office.New(office.WithPlugin(plugin))
+			off := postdog.New(postdog.WithPlugin(plugin))
 
 			let := letter.Write(letter.Text("example body"))
 			expectedLet := makeExpectedLetter(let, i+1)
 
-			trans := mock_office.NewMockTransport(ctrl)
+			trans := mock_postdog.NewMockTransport(ctrl)
 			trans.EXPECT().Send(ctx, expectedLet)
 
 			off.ConfigureTransport("test", trans)

@@ -1,4 +1,4 @@
-package office_test
+package postdog_test
 
 import (
 	"context"
@@ -7,21 +7,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/mock_office"
+	"github.com/bounoable/postdog/mock_postdog"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNew(t *testing.T) {
-	off := office.New(office.QueueBuffer(12))
+	off := postdog.New(postdog.QueueBuffer(12))
 
-	assert.Equal(t, office.Config{
+	assert.Equal(t, postdog.Config{
 		QueueBuffer: 12,
-		Middleware:  make([]office.Middleware, 0),
-		SendHooks:   make(map[office.SendHook][]func(context.Context, letter.Letter)),
-		Logger:      office.DefaultLogger,
+		Middleware:  make([]postdog.Middleware, 0),
+		SendHooks:   make(map[postdog.SendHook][]func(context.Context, letter.Letter)),
+		Logger:      postdog.DefaultLogger,
 	}, off.Config())
 }
 
@@ -29,28 +29,28 @@ func TestNew_withPlugin(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	plugin := mock_office.NewMockPlugin(ctrl)
+	plugin := mock_postdog.NewMockPlugin(ctrl)
 	plugin.EXPECT().Install(gomock.Any())
 
-	office.New(office.WithPlugin(plugin))
+	postdog.New(postdog.WithPlugin(plugin))
 }
 
 func TestOffice_ConfigureTransport(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	off := office.New()
+	off := postdog.New()
 	_, err := off.Transport("test")
 
-	assert.True(t, errors.Is(err, office.UnconfiguredTransportError{
+	assert.True(t, errors.Is(err, postdog.UnconfiguredTransportError{
 		Name: "test",
 	}))
 
 	_, err = off.DefaultTransport()
 
-	assert.True(t, errors.Is(err, office.UnconfiguredTransportError{}))
+	assert.True(t, errors.Is(err, postdog.UnconfiguredTransportError{}))
 
-	mockTrans := mock_office.NewMockTransport(ctrl)
+	mockTrans := mock_postdog.NewMockTransport(ctrl)
 	off.ConfigureTransport("test", mockTrans)
 	trans, err := off.Transport("test")
 
@@ -65,30 +65,30 @@ func TestOffice_ConfigureTransport(t *testing.T) {
 
 func TestOffice_ConfigureTransport_asDefault(t *testing.T) {
 	cases := map[string]struct {
-		configure func(*office.Office, *gomock.Controller)
+		configure func(*postdog.Office, *gomock.Controller)
 		expected  string
 	}{
 		"default default": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
-				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
-				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				off.ConfigureTransport("test1", mock_postdog.NewMockTransport(ctrl))
+				off.ConfigureTransport("test2", mock_postdog.NewMockTransport(ctrl))
+				off.ConfigureTransport("test3", mock_postdog.NewMockTransport(ctrl))
 			},
 			expected: "test1",
 		},
 		"first as default": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
-				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
-				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				off.ConfigureTransport("test1", mock_postdog.NewMockTransport(ctrl), postdog.DefaultTransport())
+				off.ConfigureTransport("test2", mock_postdog.NewMockTransport(ctrl))
+				off.ConfigureTransport("test3", mock_postdog.NewMockTransport(ctrl))
 			},
 			expected: "test1",
 		},
 		"other-than-first as default": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
-				off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl), office.DefaultTransport())
-				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				off.ConfigureTransport("test1", mock_postdog.NewMockTransport(ctrl))
+				off.ConfigureTransport("test2", mock_postdog.NewMockTransport(ctrl), postdog.DefaultTransport())
+				off.ConfigureTransport("test3", mock_postdog.NewMockTransport(ctrl))
 			},
 			expected: "test2",
 		},
@@ -99,7 +99,7 @@ func TestOffice_ConfigureTransport_asDefault(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			off := office.New()
+			off := postdog.New()
 			tcase.configure(off, ctrl)
 
 			expected, err := off.Transport(tcase.expected)
@@ -116,10 +116,10 @@ func TestOffice_MakeDefault(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	off := office.New()
-	off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
-	off.ConfigureTransport("test2", mock_office.NewMockTransport(ctrl))
-	off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+	off := postdog.New()
+	off.ConfigureTransport("test1", mock_postdog.NewMockTransport(ctrl))
+	off.ConfigureTransport("test2", mock_postdog.NewMockTransport(ctrl))
+	off.ConfigureTransport("test3", mock_postdog.NewMockTransport(ctrl))
 
 	assertDefaultTransport(t, off, "test1")
 
@@ -136,10 +136,10 @@ func TestOffice_MakeDefault(t *testing.T) {
 	assertDefaultTransport(t, off, "test3")
 
 	err = off.MakeDefault("test4")
-	assert.True(t, errors.Is(err, office.UnconfiguredTransportError{Name: "test4"}))
+	assert.True(t, errors.Is(err, postdog.UnconfiguredTransportError{Name: "test4"}))
 }
 
-func assertDefaultTransport(t *testing.T, off *office.Office, name string) {
+func assertDefaultTransport(t *testing.T, off *postdog.Office, name string) {
 	trans, err := off.DefaultTransport()
 	assert.Nil(t, err)
 
@@ -151,19 +151,19 @@ func assertDefaultTransport(t *testing.T, off *office.Office, name string) {
 
 func TestOffice_SendWith(t *testing.T) {
 	cases := map[string]struct {
-		configure   func(*office.Office, *gomock.Controller)
+		configure   func(*postdog.Office, *gomock.Controller)
 		name        string
 		expectedErr error
 	}{
 		"unconfigured transport": {
 			name: "test",
-			expectedErr: office.UnconfiguredTransportError{
+			expectedErr: postdog.UnconfiguredTransportError{
 				Name: "test",
 			},
 		},
 		"configured transport": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				trans := mock_office.NewMockTransport(ctrl)
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				trans := mock_postdog.NewMockTransport(ctrl)
 				trans.EXPECT().Send(
 					gomock.AssignableToTypeOf(context.Background()),
 					gomock.AssignableToTypeOf(letter.Write()),
@@ -179,7 +179,7 @@ func TestOffice_SendWith(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			off := office.New()
+			off := postdog.New()
 			if tcase.configure != nil {
 				tcase.configure(off, ctrl)
 			}
@@ -193,15 +193,15 @@ func TestOffice_SendWith(t *testing.T) {
 
 func TestOffice_Send(t *testing.T) {
 	cases := map[string]struct {
-		configure   func(*office.Office, *gomock.Controller)
+		configure   func(*postdog.Office, *gomock.Controller)
 		expectedErr error
 	}{
 		"no transport configured": {
-			expectedErr: office.UnconfiguredTransportError{},
+			expectedErr: postdog.UnconfiguredTransportError{},
 		},
 		"default transport": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				trans := mock_office.NewMockTransport(ctrl)
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				trans := mock_postdog.NewMockTransport(ctrl)
 				trans.EXPECT().Send(
 					gomock.AssignableToTypeOf(context.Background()),
 					gomock.AssignableToTypeOf(letter.Write()),
@@ -216,7 +216,7 @@ func TestOffice_Send(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			off := office.New()
+			off := postdog.New()
 			if tcase.configure != nil {
 				tcase.configure(off, ctrl)
 			}
@@ -235,7 +235,7 @@ func TestOffice_Send_middleware(t *testing.T) {
 
 	err := errors.New("interrupted")
 
-	mw1, mw2, mw3 := mock_office.NewMockMiddleware(ctrl), mock_office.NewMockMiddleware(ctrl), mock_office.NewMockMiddleware(ctrl)
+	mw1, mw2, mw3 := mock_postdog.NewMockMiddleware(ctrl), mock_postdog.NewMockMiddleware(ctrl), mock_postdog.NewMockMiddleware(ctrl)
 	mw1Call := mw1.EXPECT().Handle(ctx, gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
 			return next(ctx, let)
@@ -246,8 +246,8 @@ func TestOffice_Send_middleware(t *testing.T) {
 			return letter.Letter{}, err
 		}).After(mw1Call)
 
-	off := office.New(
-		office.WithMiddleware(
+	off := postdog.New(
+		postdog.WithMiddleware(
 			mw1,
 			mw2,
 			mw3,
@@ -255,7 +255,7 @@ func TestOffice_Send_middleware(t *testing.T) {
 	)
 
 	let := letter.Write(letter.Subject("Test"))
-	trans := mock_office.NewMockTransport(ctrl)
+	trans := mock_postdog.NewMockTransport(ctrl)
 	off.ConfigureTransport("test", trans)
 
 	sendErr := off.Send(context.Background(), let)
@@ -268,13 +268,13 @@ func TestOffice_Send_errorlog(t *testing.T) {
 
 	expectedErr := errors.New("send error")
 
-	logger := mock_office.NewMockLogger(ctrl)
+	logger := mock_postdog.NewMockLogger(ctrl)
 	logger.EXPECT().Log(expectedErr)
 
-	trans := mock_office.NewMockTransport(ctrl)
+	trans := mock_postdog.NewMockTransport(ctrl)
 	trans.EXPECT().Send(gomock.Any(), gomock.Any()).Return(expectedErr)
 
-	off := office.New(office.WithLogger(logger))
+	off := postdog.New(postdog.WithLogger(logger))
 	off.ConfigureTransport("test", trans)
 
 	go off.Run(context.Background())
@@ -293,14 +293,14 @@ func TestOffice_Send_beforeSendHook(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	off := office.New(
-		office.WithSendHook(office.BeforeSend, func(_ context.Context, hlet letter.Letter) {
+	off := postdog.New(
+		postdog.WithSendHook(postdog.BeforeSend, func(_ context.Context, hlet letter.Letter) {
 			defer wg.Done()
 			assert.Equal(t, let, hlet)
 		}),
 	)
 
-	trans := mock_office.NewMockTransport(ctrl)
+	trans := mock_postdog.NewMockTransport(ctrl)
 	trans.EXPECT().Send(context.Background(), let).Return(nil)
 	off.ConfigureTransport("test", trans)
 
@@ -329,15 +329,15 @@ func TestOffice_Send_afterSendHook(t *testing.T) {
 			var wg sync.WaitGroup
 			wg.Add(1)
 
-			off := office.New(
-				office.WithSendHook(office.AfterSend, func(ctx context.Context, hlet letter.Letter) {
+			off := postdog.New(
+				postdog.WithSendHook(postdog.AfterSend, func(ctx context.Context, hlet letter.Letter) {
 					defer wg.Done()
 					assert.Equal(t, let, hlet)
-					assert.Equal(t, tcase.sendErr, office.SendError(ctx))
+					assert.Equal(t, tcase.sendErr, postdog.SendError(ctx))
 				}),
 			)
 
-			trans := mock_office.NewMockTransport(ctrl)
+			trans := mock_postdog.NewMockTransport(ctrl)
 			trans.EXPECT().Send(context.Background(), let).Return(tcase.sendErr)
 			off.ConfigureTransport("test", trans)
 
@@ -351,23 +351,23 @@ func TestOffice_Send_afterSendHook(t *testing.T) {
 
 func TestOffice_Dispatch(t *testing.T) {
 	cases := map[string]struct {
-		office      func(*gomock.Controller) *office.Office
+		office      func(*gomock.Controller) *postdog.Office
 		run         bool
 		expectedErr error
 	}{
 		"unbuffered queue, not running": {
-			office: func(ctrl *gomock.Controller) *office.Office {
-				off := office.New()
-				trans := mock_office.NewMockTransport(ctrl)
+			office: func(ctrl *gomock.Controller) *postdog.Office {
+				off := postdog.New()
+				trans := mock_postdog.NewMockTransport(ctrl)
 				off.ConfigureTransport("test", trans)
 				return off
 			},
 			expectedErr: context.DeadlineExceeded,
 		},
 		"unbuffered queue, running": {
-			office: func(ctrl *gomock.Controller) *office.Office {
-				off := office.New()
-				trans := mock_office.NewMockTransport(ctrl)
+			office: func(ctrl *gomock.Controller) *postdog.Office {
+				off := postdog.New()
+				trans := mock_postdog.NewMockTransport(ctrl)
 				trans.EXPECT().Send(
 					gomock.Any(),
 					gomock.AssignableToTypeOf(letter.Write()),
@@ -378,17 +378,17 @@ func TestOffice_Dispatch(t *testing.T) {
 			run: true,
 		},
 		"buffered queue, not running": {
-			office: func(ctrl *gomock.Controller) *office.Office {
-				off := office.New(office.QueueBuffer(1))
-				trans := mock_office.NewMockTransport(ctrl)
+			office: func(ctrl *gomock.Controller) *postdog.Office {
+				off := postdog.New(postdog.QueueBuffer(1))
+				trans := mock_postdog.NewMockTransport(ctrl)
 				off.ConfigureTransport("test", trans)
 				return off
 			},
 		},
 		"buffered queue, running": {
-			office: func(ctrl *gomock.Controller) *office.Office {
-				off := office.New(office.QueueBuffer(1))
-				trans := mock_office.NewMockTransport(ctrl)
+			office: func(ctrl *gomock.Controller) *postdog.Office {
+				off := postdog.New(postdog.QueueBuffer(1))
+				trans := mock_postdog.NewMockTransport(ctrl)
 				trans.EXPECT().Send(
 					gomock.Any(),
 					gomock.AssignableToTypeOf(letter.Write()),
@@ -427,21 +427,21 @@ func TestOffice_Dispatch(t *testing.T) {
 
 func TestOffice_Dispatch_options(t *testing.T) {
 	cases := map[string]struct {
-		configure func(*office.Office, *gomock.Controller)
-		options   []office.DispatchOption
+		configure func(*postdog.Office, *gomock.Controller)
+		options   []postdog.DispatchOption
 	}{
 		"unconfigured transport": {
-			options: []office.DispatchOption{office.DispatchWith("test")},
+			options: []postdog.DispatchOption{postdog.DispatchWith("test")},
 		},
 		"specify transport": {
-			configure: func(off *office.Office, ctrl *gomock.Controller) {
-				trans := mock_office.NewMockTransport(ctrl)
+			configure: func(off *postdog.Office, ctrl *gomock.Controller) {
+				trans := mock_postdog.NewMockTransport(ctrl)
 				trans.EXPECT().Send(gomock.Any(), gomock.AssignableToTypeOf(letter.Write()))
-				off.ConfigureTransport("test1", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test1", mock_postdog.NewMockTransport(ctrl))
 				off.ConfigureTransport("test2", trans)
-				off.ConfigureTransport("test3", mock_office.NewMockTransport(ctrl))
+				off.ConfigureTransport("test3", mock_postdog.NewMockTransport(ctrl))
 			},
-			options: []office.DispatchOption{office.DispatchWith("test2")},
+			options: []postdog.DispatchOption{postdog.DispatchWith("test2")},
 		},
 	}
 
@@ -450,7 +450,7 @@ func TestOffice_Dispatch_options(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			off := office.New(office.QueueBuffer(1))
+			off := postdog.New(postdog.QueueBuffer(1))
 			if tcase.configure != nil {
 				tcase.configure(off, ctrl)
 			}
@@ -468,8 +468,8 @@ func TestOffice_Run(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	off := office.New()
-	trans := mock_office.NewMockTransport(ctrl)
+	off := postdog.New()
+	trans := mock_postdog.NewMockTransport(ctrl)
 	off.ConfigureTransport("test1", trans)
 
 	ctx, cancel := context.WithCancel(context.Background())

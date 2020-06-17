@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +63,7 @@ func TestConfig_LoadFile(t *testing.T) {
 func TestConfig_Office(t *testing.T) {
 	cfg := autowire.New()
 	cfg.RegisterProvider("test", autowire.TransportFactoryFunc(
-		func(ctx context.Context, cfg map[string]interface{}) (office.Transport, error) {
+		func(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error) {
 			return testTransport{val: cfg["val"].(int)}, nil
 		},
 	))

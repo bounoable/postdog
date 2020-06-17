@@ -5,9 +5,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/mock_office"
+	"github.com/bounoable/postdog/mock_postdog"
 	"github.com/bounoable/postdog/plugins/markdown"
 	"github.com/bounoable/postdog/plugins/markdown/mock_markdown"
 	"github.com/golang/mock/gomock"
@@ -71,9 +71,9 @@ func TestPlugin(t *testing.T) {
 				tcase.configureConverter(converter)
 			}
 
-			off := office.New(office.WithPlugin(markdown.Plugin(converter, tcase.opts...)))
+			off := postdog.New(postdog.WithPlugin(markdown.Plugin(converter, tcase.opts...)))
 
-			trans := mock_office.NewMockTransport(ctrl)
+			trans := mock_postdog.NewMockTransport(ctrl)
 			trans.EXPECT().Send(ctx, gomock.Any()).Return(nil)
 			off.ConfigureTransport("test", trans)
 
@@ -100,8 +100,8 @@ func TestDisable(t *testing.T) {
 
 	conv := mock_markdown.NewMockConverter(ctrl)
 
-	off := office.New(office.WithPlugin(markdown.Plugin(conv)))
-	trans := mock_office.NewMockTransport(ctrl)
+	off := postdog.New(postdog.WithPlugin(markdown.Plugin(conv)))
+	trans := mock_postdog.NewMockTransport(ctrl)
 	off.ConfigureTransport("test", trans)
 
 	let := letter.Write(letter.Text("# Heading"))

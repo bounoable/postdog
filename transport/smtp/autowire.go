@@ -3,8 +3,8 @@ package smtp
 import (
 	"context"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
-	"github.com/bounoable/postdog/office"
 )
 
 const (
@@ -18,7 +18,7 @@ func Register(cfg *autowire.Config) {
 }
 
 // AutowireTransport autowires SMTP transport from the given configuration.
-func AutowireTransport(_ context.Context, cfg map[string]interface{}) (office.Transport, error) {
+func AutowireTransport(_ context.Context, cfg map[string]interface{}) (postdog.Transport, error) {
 	host, ok := cfg["host"].(string)
 	if !ok {
 		host = ""

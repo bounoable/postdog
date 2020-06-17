@@ -10,8 +10,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 )
 
 // Converter converts a Markdown source to HTML.
@@ -35,16 +35,16 @@ type Config struct {
 
 // Plugin is the install function for the Markdown plugin.
 // It takes the Text field of the outgoing letters, converts them and sets the HTML field to the result.
-func Plugin(conv Converter, opts ...Option) office.PluginFunc {
+func Plugin(conv Converter, opts ...Option) postdog.PluginFunc {
 	return PluginWithConfig(conv, newConfig(opts...))
 }
 
 // PluginWithConfig is the install function for the Markdown plugin.
 // It takes the Text field of the outgoing letters, converts them and sets the HTML field to the result.
-func PluginWithConfig(conv Converter, cfg Config) office.PluginFunc {
-	return func(pctx office.PluginContext) {
+func PluginWithConfig(conv Converter, cfg Config) postdog.PluginFunc {
+	return func(pctx postdog.PluginContext) {
 		pctx.WithMiddleware(
-			office.MiddlewareFunc(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
+			postdog.MiddlewareFunc(func(ctx context.Context, let letter.Letter, next func(context.Context, letter.Letter) (letter.Letter, error)) (letter.Letter, error) {
 				if Disabled(ctx) {
 					return let, nil
 				}

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
-	"github.com/bounoable/postdog/office/mock_office"
+	"github.com/bounoable/postdog/mock_postdog"
 	"github.com/bounoable/postdog/plugins/store"
 	"github.com/bounoable/postdog/plugins/store/mock_store"
 	"github.com/golang/mock/gomock"
@@ -42,7 +42,7 @@ func TestPlugin(t *testing.T) {
 
 			var wg sync.WaitGroup
 
-			logger := mock_office.NewMockLogger(ctrl)
+			logger := mock_postdog.NewMockLogger(ctrl)
 			let := letter.Write(letter.Subject("Hello"))
 
 			if tcase.sendError != nil {
@@ -73,12 +73,12 @@ func TestPlugin(t *testing.T) {
 				return tcase.insertError
 			})
 
-			trans := mock_office.NewMockTransport(ctrl)
+			trans := mock_postdog.NewMockTransport(ctrl)
 			trans.EXPECT().Send(context.Background(), let).Return(tcase.sendError)
 
-			off := office.New(
-				office.WithLogger(logger),
-				office.WithPlugin(store.Plugin(repo)),
+			off := postdog.New(
+				postdog.WithLogger(logger),
+				postdog.WithPlugin(store.Plugin(repo)),
 			)
 			off.ConfigureTransport("test", trans)
 
@@ -106,8 +106,8 @@ func TestDisable(t *testing.T) {
 	ctx = store.Disable(ctx)
 
 	repo := mock_store.NewMockStore(ctrl)
-	off := office.New(office.WithPlugin(store.Plugin(repo)))
-	trans := mock_office.NewMockTransport(ctrl)
+	off := postdog.New(postdog.WithPlugin(store.Plugin(repo)))
+	trans := mock_postdog.NewMockTransport(ctrl)
 	trans.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
 	off.ConfigureTransport("test", trans)
 

@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 )
 
 // FuncMap is an alias to template.FuncMap.
@@ -21,7 +21,7 @@ type FuncMap template.FuncMap
 //	plugin := template.Plugin(
 //		template.UseDir("/templates")
 //	)
-func Plugin(opts ...Option) office.PluginFunc {
+func Plugin(opts ...Option) postdog.PluginFunc {
 	plugin, err := TryPlugin(opts...)
 	if err != nil {
 		panic(err)
@@ -30,16 +30,16 @@ func Plugin(opts ...Option) office.PluginFunc {
 }
 
 // TryPlugin creates the template plugin. It doesn't panic when it fails to parse the templates.
-func TryPlugin(opts ...Option) (office.PluginFunc, error) {
+func TryPlugin(opts ...Option) (postdog.PluginFunc, error) {
 	cfg := newConfig(opts...)
 	tpls, err := cfg.ParseTemplates()
 	if err != nil {
 		return nil, err
 	}
 
-	return func(pctx office.PluginContext) {
+	return func(pctx postdog.PluginContext) {
 		pctx.WithMiddleware(
-			office.MiddlewareFunc(func(
+			postdog.MiddlewareFunc(func(
 				ctx context.Context,
 				let letter.Letter,
 				next func(context.Context, letter.Letter) (letter.Letter, error),

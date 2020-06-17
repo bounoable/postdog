@@ -3,16 +3,16 @@ package markdown_test
 import (
 	"context"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 	"github.com/bounoable/postdog/plugins/markdown"
 	gm "github.com/bounoable/postdog/plugins/markdown/goldmark"
 	"github.com/yuin/goldmark"
 )
 
 func Example_basic() {
-	off := office.New(
-		office.WithPlugin(
+	off := postdog.New(
+		postdog.WithPlugin(
 			markdown.Plugin(
 				gm.Converter(goldmark.New()), // use goldmark Markdown parser
 				markdown.OverrideHTML(true),  // plugin options
@@ -24,8 +24,8 @@ func Example_basic() {
 }
 
 func Example_disable() {
-	off := office.New(
-		office.WithPlugin(
+	off := postdog.New(
+		postdog.WithPlugin(
 			markdown.Plugin(gm.Converter(goldmark.New())),
 		),
 	)

@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 )
 
 // Store inserts letters into a repository.
@@ -23,16 +23,16 @@ type Letter struct {
 }
 
 // Plugin is the install function for the store plugin.
-// It hooks into the office.AfterSend hook and inserts all sent letters into the store implementation.
-func Plugin(store Store) office.PluginFunc {
-	return func(pctx office.PluginContext) {
-		pctx.WithSendHook(office.AfterSend, func(ctx context.Context, let letter.Letter) {
+// It hooks into the postdog.AfterSend hook and inserts all sent letters into the store implementation.
+func Plugin(store Store) postdog.PluginFunc {
+	return func(pctx postdog.PluginContext) {
+		pctx.WithSendHook(postdog.AfterSend, func(ctx context.Context, let letter.Letter) {
 			if Disabled(ctx) {
 				return
 			}
 
 			var sendError string
-			sendErr := office.SendError(ctx)
+			sendErr := postdog.SendError(ctx)
 			if sendErr != nil {
 				sendError = sendErr.Error()
 			}

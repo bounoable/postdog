@@ -1,6 +1,6 @@
-package office
+package postdog
 
-//go:generate mockgen -source=office.go -destination=./mock_office/office.go
+//go:generate mockgen -source=office.go -destination=./mock_postdog/office.go
 
 import (
 	"context"

@@ -5,9 +5,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/office"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
 )
@@ -53,7 +53,7 @@ func Example() {
 }
 
 func Example_manualConfiguration() {
-	po := office.New()
+	po := postdog.New()
 
 	smtpTransport := smtp.NewTransport("smtp.mailtrap.io", 587, "abcdef123456", "123456abcdef")
 
@@ -66,7 +66,7 @@ func Example_manualConfiguration() {
 	}
 
 	po.ConfigureTransport("mytransport1", smtpTransport)
-	po.ConfigureTransport("mytransport2", gmailTransport, office.DefaultTransport()) // Make "mytransport2" the default
+	po.ConfigureTransport("mytransport2", gmailTransport, postdog.DefaultTransport()) // Make "mytransport2" the default
 
 	err = po.Send(
 		context.Background(),
@@ -97,9 +97,9 @@ func Example_useTransportDirectly() {
 }
 
 func Example_middleware() {
-	off := office.New(
-		office.WithMiddleware(
-			office.MiddlewareFunc(func(
+	off := postdog.New(
+		postdog.WithMiddleware(
+			postdog.MiddlewareFunc(func(
 				ctx context.Context,
 				let letter.Letter,
 				next func(context.Context, letter.Letter) (letter.Letter, error),
