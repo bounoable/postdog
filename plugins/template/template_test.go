@@ -22,15 +22,28 @@ func TestEnable(t *testing.T) {
 	assert.Empty(t, name)
 	assert.False(t, ok)
 
-	ctx = template.Enable(ctx, "test")
+	ctx = template.Enable(ctx, "test", map[string]interface{}{
+		"A": true,
+		"B": 1,
+		"C": "test",
+	})
+
 	name, ok = template.Name(ctx)
+	data := template.Data(ctx)
 	assert.Equal(t, "test", name)
 	assert.True(t, ok)
+	assert.Equal(t, map[string]interface{}{
+		"A": true,
+		"B": 1,
+		"C": "test",
+	}, data)
 
 	ctx = template.Disable(ctx)
 	name, ok = template.Name(ctx)
+	data = template.Data(ctx)
 	assert.Empty(t, name)
 	assert.False(t, ok)
+	assert.Nil(t, data)
 }
 
 func TestPlugin(t *testing.T) {
@@ -59,7 +72,7 @@ func TestPlugin(t *testing.T) {
 			defer ctrl.Finish()
 
 			ctx := context.Background()
-			ctx = template.Enable(ctx, name)
+			ctx = template.Enable(ctx, name, nil)
 
 			off := office.New(office.WithPlugin(plugin))
 
