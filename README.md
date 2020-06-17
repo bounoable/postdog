@@ -34,11 +34,11 @@ go get github.com/bounoable/postdog
 
 ### Main packages
 
-| Package                | Description                                                                   |
-|:-----------------------|:------------------------------------------------------------------------------|
-| [postdog](./)          | Provides queued sending and support for logging, middlewares, hooks & plugins |
-| [letter](./letter)     | provides the `Letter` type and write helpers                                  |
-| [autowire](./autowire) | provides automatic `Office` setup through a YAML config file                  |
+| Package                | Description                                                          |
+|:-----------------------|:---------------------------------------------------------------------|
+| [postdog](./)          | Queued sending and support for logging, middlewares, hooks & plugins |
+| [letter](./letter)     | Provides the `Letter` type and write helpers                         |
+| [autowire](./autowire) | Automatic `Office` setup through a YAML config file                  |
 
 ### Configuration
 
