@@ -143,9 +143,9 @@ You can extend `postdog` with plugins that register custom middleware and hooks:
 
 | Plugin                         | Description                      |
 |:-------------------------------|:---------------------------------|
-| [Markdown](./plugins/markdown) | Markdown support in letters      |
-| [Store](./plugins/store)       | Store sent letters in a database |
-| [Template](./plugins/template) | Template support in letters      |
+| [Markdown](./plugin/markdown) | Markdown support in letters      |
+| [Store](./plugin/store)       | Store sent letters in a database |
+| [Template](./plugin/template) | Template support in letters      |
 
 ## Writing plugins
 
