@@ -40,7 +40,7 @@ func TryPlugin(opts ...Option) (office.PluginFunc, error) {
 				let letter.Letter,
 				next func(context.Context, letter.Letter) (letter.Letter, error),
 			) (letter.Letter, error) {
-				name, ok := Name(ctx)
+				name, data, ok := For(ctx)
 				if !ok {
 					return next(ctx, let)
 				}
@@ -52,7 +52,7 @@ func TryPlugin(opts ...Option) (office.PluginFunc, error) {
 					Data   interface{}
 				}{
 					Letter: let,
-					Data:   Data(ctx),
+					Data:   data,
 				}); err != nil {
 					return let, err
 				}
@@ -78,7 +78,7 @@ func Disable(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxData, nil)
 }
 
-// Name returns the template that should be used for sending letter with ctx.
+// Name returns the template that should be used for sending letters with ctx.
 // Returns false if ctx has no template set.
 func Name(ctx context.Context) (string, bool) {
 	name, ok := ctx.Value(ctxTemplate).(string)
@@ -88,6 +88,13 @@ func Name(ctx context.Context) (string, bool) {
 // Data returns the data that is attached to ctx.
 func Data(ctx context.Context) interface{} {
 	return ctx.Value(ctxData)
+}
+
+// For returns the template and data that should be used for sending letters with ctx.
+// Returns false if ctx has no template set.
+func For(ctx context.Context) (string, interface{}, bool) {
+	name, ok := Name(ctx)
+	return name, Data(ctx), ok
 }
 
 type ctxKey string
