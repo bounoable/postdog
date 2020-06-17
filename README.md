@@ -68,7 +68,10 @@ transports:
 package main
 
 import (
+  "context"
+
   "github.com/bounoable/postdog/autowire"
+  "github.com/bounoable/postdog/letter"
   "github.com/bounoable/postdog/transport/smtp"
   "github.com/bounoable/postdog/transport/gmail"
 )
@@ -118,6 +121,17 @@ func main() {
 You can also configure the transports manually or use them directly:
 
 ```go
+package main
+
+import (
+  "context"
+
+  "github.com/bounoable/postdog"
+  "github.com/bounoable/postdog/letter"
+  "github.com/bounoable/postdog/transport/smtp"
+  "github.com/bounoable/postdog/transport/gmail"
+)
+
 func main() {
   test := smtp.NewTransport("smtp.mailtrap.io", 587, "abcdef123456", "123456abcdef")
   prod, err := gmail.NewTransport(context.Background(), gmail.CredentialsFile("/path/to/google/service/account.json"))
@@ -126,9 +140,9 @@ func main() {
     panic(err)
   }
 
-  po := office.New()
+  po := postdog.New()
   po.ConfigureTransport("test", test)
-  po.ConfigureTransport("production", prod, office.DefaultTransport()) // make it the default transport
+  po.ConfigureTransport("production", prod, postdog.DefaultTransport()) // make it the default transport
 
   err = po.Send(context.Background(), letter.Write())
 
@@ -155,9 +169,11 @@ You can extend `postdog` with plugins that register custom middleware and hooks:
 package main
 
 import (
+  "context"
   "strings"
 
   "github.com/bounoable/postdog"
+  "github.com/bounoable/postdog/letter"
 )
 
 type badWordFilterPlugin struct {
@@ -198,9 +214,11 @@ You can also use a function as a plugin with `postdog.MiddlewareFunc`:
 package main
 
 import (
+  "context"
   "strings"
 
   "github.com/bounoable/postdog"
+  "github.com/bounoable/postdog/letter"
 )
 
 func BadWordPlugin(words ...string) postdog.PluginFunc {
