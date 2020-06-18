@@ -6,13 +6,13 @@ import (
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/store"
-	"github.com/bounoable/postdog/plugin/store/memory"
+	"github.com/bounoable/postdog/plugin/store/memorystore"
 	"github.com/bounoable/postdog/plugin/store/query"
 )
 
 func ExampleRun() {
 	// Usually this would be a persistent implementation
-	repo := memory.NewStore(
+	repo := memorystore.New(
 		store.Letter{Letter: letter.Write(letter.Subject("Letter 1"))},
 		store.Letter{Letter: letter.Write(letter.Subject("Letter 2"))},
 	)

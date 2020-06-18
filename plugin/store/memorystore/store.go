@@ -1,4 +1,4 @@
-package memory
+package memorystore
 
 import (
 	"context"
@@ -18,8 +18,8 @@ type Store struct {
 	letters []store.Letter
 }
 
-// NewStore creates a new in-memory store.
-func NewStore(letters ...store.Letter) *Store {
+// New creates a new in-memory store.
+func New(letters ...store.Letter) *Store {
 	return &Store{
 		letters: letters,
 	}
