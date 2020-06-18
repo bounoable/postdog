@@ -250,7 +250,7 @@ func main() {
 }
 ```
 
-You can also use a function as a plugin with `postdog.MiddlewareFunc`:
+You can also use a function as a plugin with `postdog.PluginFunc`:
 
 ```go
 package main
