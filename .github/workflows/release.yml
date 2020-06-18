@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Create release for tag
         uses: actions/create-release@v1.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.GITHUB_REF }}
-          release_name: ${{ github.GITHUB_REF }}
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
