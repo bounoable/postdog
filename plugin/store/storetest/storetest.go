@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Insert tests the Insert() function of s.
+// Insert tests the Insert() method of s.
 func Insert(t *testing.T, s store.Store) {
 	assert.Nil(t, s.Insert(context.Background(), store.Letter{
 		Letter: letter.Write(),
@@ -23,7 +23,7 @@ func Insert(t *testing.T, s store.Store) {
 	}))
 }
 
-// Query tests the Query() function of a query repository.
+// Query tests the Query() method of a query repository.
 func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 	letters := []store.Letter{
 		{
@@ -35,7 +35,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letter.BCC("BCC Recipient 1", "bcc1@example.test"),
 				letter.MustAttach(bytes.NewReader([]byte{1}), "Attachment 1", letter.ContentType("text/plain")),
 			),
-			SentAt: timefn.StartOfDay(time.Now()),
+			SentAt: timefn.StartOfDay(time.Now()).UTC(),
 		},
 		{
 			Letter: letter.Write(
@@ -46,7 +46,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letter.BCC("BCC Recipient 2", "bcc2@example.test"),
 				letter.MustAttach(bytes.NewReader([]byte{2, 2}), "Attachment 2", letter.ContentType("text/html")),
 			),
-			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 1)),
+			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 1)).UTC(),
 		},
 		{
 			Letter: letter.Write(
@@ -57,7 +57,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letter.BCC("BCC Recipient 3", "bcc3@example.test"),
 				letter.MustAttach(bytes.NewReader([]byte{3, 3, 3}), "Attachment 3", letter.ContentType("application/octet-stream")),
 			),
-			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 2)),
+			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 2)).UTC(),
 		},
 		{
 			Letter: letter.Write(
@@ -68,7 +68,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letter.BCC("BCC Recipient 4", "bcc4@example.test"),
 				letter.MustAttach(bytes.NewReader([]byte{4, 4, 4, 4}), "Attachment 4", letter.ContentType("application/pdf")),
 			),
-			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 3)),
+			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 3)).UTC(),
 		},
 	}
 
@@ -87,15 +87,6 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 			query:    query.New(query.SentAfter(timefn.StartOfDay(time.Now()))),
 			expected: letters[1:],
 		},
-		"SentAt.Between": {
-			query: query.New(
-				query.SentBetween(
-					timefn.StartOfDay(time.Now()),
-					timefn.StartOfDay(time.Now().AddDate(0, 0, 3)),
-				),
-			),
-			expected: letters,
-		},
 		"SentAt.InBetween": {
 			query: query.New(
 				query.SentInBetween(
@@ -104,6 +95,15 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				),
 			),
 			expected: letters[1:3],
+		},
+		"SentAt.Between": {
+			query: query.New(
+				query.SentBetween(
+					timefn.StartOfDay(time.Now()),
+					timefn.StartOfDay(time.Now().AddDate(0, 0, 3)),
+				),
+			),
+			expected: letters,
 		},
 		"Subject": {
 			query: query.New(query.Subject("1", "4")),

@@ -10,7 +10,6 @@ import (
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/query"
-	"github.com/bounoable/timefn"
 )
 
 // Store is the in-memory store and query repository implementation.
@@ -50,11 +49,11 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 }
 
 func filterLetter(let store.Letter, q query.Query) bool {
-	if !q.SentAt.Before.IsZero() && timefn.SameOrAfter(let.SentAt, q.SentAt.Before) {
+	if !q.SentAt.Before.IsZero() && !let.SentAt.Before(q.SentAt.Before) {
 		return false
 	}
 
-	if !q.SentAt.After.IsZero() && timefn.SameOrBefore(let.SentAt, q.SentAt.After) {
+	if !q.SentAt.After.IsZero() && !let.SentAt.After(q.SentAt.After) {
 		return false
 	}
 
@@ -66,19 +65,19 @@ func filterLetter(let store.Letter, q query.Query) bool {
 		return false
 	}
 
-	if len(q.To) > 0 && !filterAddresses(let.To, q.To) {
+	if len(q.To) > 0 && !filterAddresses(let.Letter.To, q.To) {
 		return false
 	}
 
-	if len(q.CC) > 0 && !filterAddresses(let.CC, q.CC) {
+	if len(q.CC) > 0 && !filterAddresses(let.Letter.CC, q.CC) {
 		return false
 	}
 
-	if len(q.BCC) > 0 && !filterAddresses(let.BCC, q.BCC) {
+	if len(q.BCC) > 0 && !filterAddresses(let.Letter.BCC, q.BCC) {
 		return false
 	}
 
-	if !filterAttachments(let.Attachments, q.Attachment) {
+	if !filterAttachments(let.Letter.Attachments, q.Attachment) {
 		return false
 	}
 
@@ -87,7 +86,7 @@ func filterLetter(let store.Letter, q query.Query) bool {
 
 func filterSubject(let store.Letter, subjects []string) bool {
 	for _, subject := range subjects {
-		if strings.Contains(let.Subject, subject) {
+		if strings.Contains(let.Letter.Subject, subject) {
 			return true
 		}
 	}
@@ -96,7 +95,7 @@ func filterSubject(let store.Letter, subjects []string) bool {
 
 func filterFrom(let store.Letter, from []string) bool {
 	for _, f := range from {
-		if strings.Contains(let.From.Name, f) || strings.Contains(let.From.Address, f) {
+		if strings.Contains(let.Letter.From.Name, f) || strings.Contains(let.Letter.From.Address, f) {
 			return true
 		}
 	}

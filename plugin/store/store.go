@@ -4,6 +4,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/bounoable/postdog"
@@ -20,6 +21,14 @@ type Letter struct {
 	letter.Letter
 	SentAt    time.Time
 	SendError string
+}
+
+func (let Letter) String() string {
+	b, err := json.Marshal(let)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }
 
 // Plugin is the install function for the store plugin.

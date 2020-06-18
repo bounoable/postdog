@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  mongo:
+    hostname: mongo
+    image: mongo:latest
+    logging:
+      driver: none
+  
+  postdog:
+    build:
+      context: ..
+      dockerfile: deployments/testing.Dockerfile
+    environment:
+      - TZ=UTC
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - mongo
