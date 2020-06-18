@@ -11,9 +11,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-    - name: Setup Docker
-      uses: docker-practice/actions-setup-docker@0.0.1
-
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
