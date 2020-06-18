@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  mongo:
+    hostname: mongo
+    image: mongo:latest
+
+  postdog:
+    build:
+      context: ..
+      dockerfile: deployments/testing.Dockerfile
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - CGO_ENABLED=0
+    depends_on:
+      - mongo
