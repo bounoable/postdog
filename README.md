@@ -1,7 +1,8 @@
 <img src="./.github/logo.svg" width="100px">
 <h1>postdog - GO mailing toolkit</h1>
 
-<p>
+<p> 
+  <img alt="GO" src="https://github.com/bounoable/postdog/workflows/Go/badge.svg?branch=master">
   <a href="https://pkg.go.dev/github.com/bounoable/postdog">
     <img alt="GoDoc" src="https://img.shields.io/badge/godoc-reference-purple">
   </a>
