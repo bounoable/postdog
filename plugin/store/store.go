@@ -1,3 +1,4 @@
+// Package store provides a storage plugin for sent letters.
 package store
 
 //go:generate mockgen -source=store.go -destination=./mock_store/store.go

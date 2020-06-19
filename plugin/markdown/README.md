@@ -1,4 +1,4 @@
-# postdog - Markdown Plugin
+# postdog - Markdown plugin
 
 This plugin provides Markdown support for mails.
 
