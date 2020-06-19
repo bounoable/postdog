@@ -62,21 +62,14 @@ func UseDir(dirs ...string) Option {
 	}
 }
 
-// UseFuncs ...
+// UseFuncs adds the functions in funcMaps the templates' function maps.
 func UseFuncs(funcMaps ...FuncMap) Option {
 	return func(cfg *Config) {
-		fm := make(FuncMap, len(cfg.Funcs))
-		for name, fn := range cfg.Funcs {
-			fm[name] = fn
-		}
-
 		for _, funcs := range funcMaps {
 			for name, fn := range funcs {
-				fm[name] = fn
+				cfg.Funcs[name] = fn
 			}
 		}
-
-		cfg.Funcs = fm
 	}
 }
 
