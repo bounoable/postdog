@@ -85,7 +85,7 @@ func (cfg Config) ParseTemplates() (*template.Template, error) {
 	tpls := template.New("templates").Funcs(template.FuncMap(cfg.Funcs))
 
 	for _, dir := range cfg.TemplateDirs {
-		if err := extractTemplates(dir, tpls); err != nil {
+		if err := parseTemplates(dir, tpls); err != nil {
 			return nil, err
 		}
 	}
@@ -114,7 +114,7 @@ func (cfg Config) ParseTemplates() (*template.Template, error) {
 var slashExpr = regexp.MustCompile(fmt.Sprintf("^%c", os.PathSeparator))
 var suffixExpr = regexp.MustCompile(`(?i)(\.[a-z0-9]+)+$`)
 
-func extractTemplates(dir string, tpls *template.Template) error {
+func parseTemplates(dir string, tpls *template.Template) error {
 	dir = filepath.Clean(dir)
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
