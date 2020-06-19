@@ -41,7 +41,7 @@ func TestNewConfig(t *testing.T) {
 					"tpl1": "/path/to/tpl1.html",
 					"tpl2": "/path/to/tpl2.html",
 				},
-				Funcs: template.FuncMap{},
+				Funcs: FuncMap{},
 			},
 		},
 		"UseDir": {
@@ -56,7 +56,7 @@ func TestNewConfig(t *testing.T) {
 					"/path/to/tpls2",
 					"/path/to/tpls3",
 				},
-				Funcs: template.FuncMap{},
+				Funcs: FuncMap{},
 			},
 		},
 		"UseFuncs": {
@@ -65,7 +65,7 @@ func TestNewConfig(t *testing.T) {
 			},
 			expected: Config{
 				Templates: map[string]string{},
-				Funcs: template.FuncMap{
+				Funcs: FuncMap{
 					"title": stubTitleFn,
 					"lower": stubLowerFn,
 				},
