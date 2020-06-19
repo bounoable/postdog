@@ -11,7 +11,7 @@ import (
 )
 
 func Example_basic() {
-	off := postdog.New(
+	po := postdog.New(
 		postdog.WithPlugin(
 			markdown.Plugin(
 				gm.Converter(goldmark.New()), // use goldmark Markdown parser
@@ -20,11 +20,15 @@ func Example_basic() {
 		),
 	)
 
-	off.Send(context.Background(), letter.Write(letter.Text("# Heading"))) // letter.HTML will be set to <h1>Heading</h1>
+	err := po.Send(context.Background(), letter.Write(
+		letter.Text("# Heading 1\n# Heading 2"), // The HTML body of the letter will be replaced with the generated HTML
+	))
+
+	_ = err
 }
 
 func Example_disable() {
-	off := postdog.New(
+	po := postdog.New(
 		postdog.WithPlugin(
 			markdown.Plugin(gm.Converter(goldmark.New())),
 		),
@@ -32,5 +36,5 @@ func Example_disable() {
 
 	ctx := markdown.Disable(context.Background()) // disable Markdown conversion for this context
 
-	off.Send(ctx, letter.Write(letter.Text("# Heading"))) // letter.HTML will stay empty
+	po.Send(ctx, letter.Write(letter.Text("# Heading"))) // letter.HTML will stay empty
 }
