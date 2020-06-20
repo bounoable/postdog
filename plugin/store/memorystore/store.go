@@ -12,6 +12,19 @@ import (
 	"github.com/bounoable/postdog/plugin/store/query"
 )
 
+var (
+	// Provider is the store provider name.
+	Provider = "memory"
+)
+
+func init() {
+	store.RegisterProvider(Provider, store.FactoryFunc(
+		func(_ context.Context, _ map[string]interface{}) (store.Store, error) {
+			return New(), nil
+		}),
+	)
+}
+
 // Store is the in-memory store and query repository implementation.
 type Store struct {
 	mux     sync.RWMutex

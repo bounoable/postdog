@@ -7,33 +7,10 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"sync"
 
 	"github.com/bounoable/postdog"
 	"gopkg.in/yaml.v3"
 )
-
-var (
-	globalTransportFactoriesMux sync.RWMutex
-	globalTransportFactories    = map[string]TransportFactory{}
-
-	globalPluginsFactoriesMux sync.RWMutex
-	globalPluginFactories     = map[string]PluginFactory{}
-)
-
-// RegisterProvider globally registers a transport factory for the given provider name.
-func RegisterProvider(name string, factory TransportFactory) {
-	globalTransportFactoriesMux.Lock()
-	defer globalTransportFactoriesMux.Unlock()
-	globalTransportFactories[name] = factory
-}
-
-// RegisterPlugin globally registers a plugin factory for the given plugin name.
-func RegisterPlugin(name string, factory PluginFactory) {
-	globalPluginsFactoriesMux.Lock()
-	defer globalPluginsFactoriesMux.Unlock()
-	globalPluginFactories[name] = factory
-}
 
 // Load reads the configuration from r and returns the autowire config.
 func Load(r io.Reader, opts ...Option) (Config, error) {
@@ -101,13 +78,6 @@ func New(opts ...Option) Config {
 		TransportFactories: make(map[string]TransportFactory),
 		Transports:         make(map[string]TransportConfig),
 		PluginFactories:    make(map[string]PluginFactory),
-	}
-
-	globalTransportFactoriesMux.RLock()
-	defer globalTransportFactoriesMux.RUnlock()
-
-	for name, factory := range globalTransportFactories {
-		cfg.TransportFactories[name] = factory
 	}
 
 	for _, opt := range opts {
@@ -231,7 +201,15 @@ func (cfg yamlConfig) apply(config *Config) error {
 		config.Transports[name] = transportcfg
 	}
 
-	config.Plugins = append(config.Plugins, cfg.Plugins...)
+	for _, plugincfg := range cfg.Plugins {
+		pcfg := make(map[string]interface{}, len(plugincfg.Config))
+		for key, val := range plugincfg.Config {
+			pcfg[key] = val
+		}
+		applyEnvVars(pcfg)
+		plugincfg.Config = pcfg
+		config.Plugins = append(config.Plugins, plugincfg)
+	}
 
 	return nil
 }

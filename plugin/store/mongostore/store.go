@@ -40,6 +40,10 @@ func init() {
 				return nil, err
 			}
 
+			if err = client.Ping(ctx, nil); err != nil {
+				return nil, err
+			}
+
 			var opts []Option
 
 			if db, ok := cfg["database"].(string); ok {

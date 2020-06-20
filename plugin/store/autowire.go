@@ -17,10 +17,6 @@ var (
 	providers    = map[string]Factory{}
 )
 
-func init() {
-	autowire.RegisterPlugin(Name, autowire.PluginFactoryFunc(AutowirePlugin))
-}
-
 // Factory is a store factory.
 type Factory interface {
 	CreateStore(context.Context, map[string]interface{}) (Store, error)

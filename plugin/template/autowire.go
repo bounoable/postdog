@@ -10,10 +10,6 @@ import (
 // Name is the plugin name.
 var Name = "template"
 
-func init() {
-	autowire.RegisterPlugin(Name, autowire.PluginFactoryFunc(AutowirePlugin))
-}
-
 // Register registers the plugin factory in the autowire config.
 func Register(cfg *autowire.Config) {
 	cfg.RegisterPlugin(Name, autowire.PluginFactoryFunc(AutowirePlugin))

@@ -10,7 +10,6 @@ import (
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/markdown"
-	"github.com/bounoable/postdog/transport"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
 	"github.com/stretchr/testify/assert"
@@ -20,28 +19,6 @@ var (
 	globalTransportProvider = "global"
 	globalPluginName        = "someplugin"
 )
-
-func init() {
-	autowire.RegisterProvider(
-		globalTransportProvider,
-		autowire.TransportFactoryFunc(func(
-			ctx context.Context,
-			cfg map[string]interface{},
-		) (postdog.Transport, error) {
-			return transport.Nop, nil
-		}),
-	)
-
-	autowire.RegisterPlugin(
-		globalPluginName,
-		autowire.PluginFactoryFunc(func(
-			ctx context.Context,
-			cfg map[string]interface{},
-		) (postdog.Plugin, error) {
-			return postdog.PluginFunc(func(_ postdog.PluginContext) {}), nil
-		}),
-	)
-}
 
 func TestConfig_LoadFile(t *testing.T) {
 	wd, _ := os.Getwd()

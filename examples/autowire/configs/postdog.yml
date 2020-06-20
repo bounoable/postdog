@@ -1,0 +1,31 @@
+default: dev
+
+transports:
+  dev:
+    provider: nop
+  
+  prod:
+    provider: smtp
+    config:
+      host: smtp.mailtrap.io
+      username: abcdef123456
+      password: 123456abcdef
+
+plugins:
+  - name: markdown
+    config:
+      use: goldmark
+      overrideHTML: true
+  
+  - name: template
+    config:
+      dirs:
+        - ${APP_ROOT}/templates
+        - ${APP_ROOT}/more-templates
+      templates:
+        welcome: ${APP_ROOT}/mails/welcome.html
+        passwordReset: ${APP_ROOT}/mails/password_reset.html
+  
+  - name: store
+    config:
+      use: memory
