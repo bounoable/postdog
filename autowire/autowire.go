@@ -7,10 +7,23 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"sync"
 
 	"github.com/bounoable/postdog"
 	"gopkg.in/yaml.v3"
 )
+
+var (
+	globalProvidersMux sync.RWMutex
+	globalProviders    = map[string]TransportFactory{}
+)
+
+// RegisterProvider globally registers a transport factory for the given provider name.
+func RegisterProvider(name string, factory TransportFactory) {
+	globalProvidersMux.Lock()
+	defer globalProvidersMux.Unlock()
+	globalProviders[name] = factory
+}
 
 // Load reads the configuration from r and returns the autowire config.
 func Load(r io.Reader, opts ...Option) (Config, error) {
@@ -56,6 +69,13 @@ func New(opts ...Option) Config {
 	cfg := Config{
 		Providers:  make(map[string]TransportFactory),
 		Transports: make(map[string]TransportConfig),
+	}
+
+	globalProvidersMux.RLock()
+	defer globalProvidersMux.RUnlock()
+
+	for name, factory := range globalProviders {
+		cfg.Providers[name] = factory
 	}
 
 	for _, opt := range opts {

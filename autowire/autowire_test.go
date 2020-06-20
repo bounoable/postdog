@@ -9,10 +9,27 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/transport"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
 	"github.com/stretchr/testify/assert"
 )
+
+var (
+	globalProvider = "global"
+)
+
+func init() {
+	autowire.RegisterProvider(
+		globalProvider,
+		autowire.TransportFactoryFunc(func(
+			ctx context.Context,
+			cfg map[string]interface{},
+		) (postdog.Transport, error) {
+			return transport.Nop, nil
+		}),
+	)
+}
 
 func TestConfig_LoadFile(t *testing.T) {
 	wd, _ := os.Getwd()
@@ -48,6 +65,14 @@ func TestConfig_LoadFile(t *testing.T) {
 					"https://www.googleapis.com/auth/gmail.addons.current.action.compose",
 					"https://www.googleapis.com/auth/gmail.send",
 				},
+			},
+		},
+		{
+			name:     "test3",
+			provider: globalProvider,
+			config: map[string]interface{}{
+				"field1": "test",
+				"field2": true,
 			},
 		},
 	}

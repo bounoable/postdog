@@ -15,3 +15,9 @@ transports:
       scopes:
         - https://www.googleapis.com/auth/gmail.addons.current.action.compose
         - https://www.googleapis.com/auth/gmail.send
+
+  test3:
+    provider: global
+    config:
+      field1: test
+      field2: true
