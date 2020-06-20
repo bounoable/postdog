@@ -2,6 +2,7 @@
   "conventionalCommits.scopes": [
     "store",
     "markdown",
-    "template"
+    "template",
+    "autowire"
   ]
 }
