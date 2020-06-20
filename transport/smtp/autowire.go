@@ -12,6 +12,10 @@ const (
 	Provider = "smtp"
 )
 
+func init() {
+	autowire.RegisterProvider(Provider, autowire.TransportFactoryFunc(AutowireTransport))
+}
+
 // Register registers the transport factory in the autowire config.
 func Register(cfg *autowire.Config) {
 	cfg.RegisterProvider(Provider, autowire.TransportFactoryFunc(AutowireTransport))
