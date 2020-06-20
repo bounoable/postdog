@@ -14,15 +14,25 @@ import (
 )
 
 var (
-	globalProvidersMux sync.RWMutex
-	globalProviders    = map[string]TransportFactory{}
+	globalTransportFactoriesMux sync.RWMutex
+	globalTransportFactories    = map[string]TransportFactory{}
+
+	globalPluginsFactoriesMux sync.RWMutex
+	globalPluginFactories     = map[string]PluginFactory{}
 )
 
 // RegisterProvider globally registers a transport factory for the given provider name.
 func RegisterProvider(name string, factory TransportFactory) {
-	globalProvidersMux.Lock()
-	defer globalProvidersMux.Unlock()
-	globalProviders[name] = factory
+	globalTransportFactoriesMux.Lock()
+	defer globalTransportFactoriesMux.Unlock()
+	globalTransportFactories[name] = factory
+}
+
+// RegisterPlugin globally registers a plugin factory for the given plugin name.
+func RegisterPlugin(name string, factory PluginFactory) {
+	globalPluginsFactoriesMux.Lock()
+	defer globalPluginsFactoriesMux.Unlock()
+	globalPluginFactories[name] = factory
 }
 
 // Load reads the configuration from r and returns the autowire config.
@@ -40,12 +50,13 @@ func File(path string, opts ...Option) (Config, error) {
 // Config is the autowire configuration.
 // You should use the Load() or File() functions to build the configuration.
 type Config struct {
-	Providers  map[string]TransportFactory
-	Transports map[string]TransportConfig
-	Plugins    []PluginConfig
+	TransportFactories map[string]TransportFactory
+	Transports         map[string]TransportConfig
+	PluginFactories    map[string]PluginFactory
+	Plugins            []PluginConfig
 }
 
-// TransportFactory creates transports from user-provided configuration.
+// TransportFactory create the transport from the given cfg.
 type TransportFactory interface {
 	CreateTransport(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error)
 }
@@ -64,6 +75,19 @@ type TransportConfig struct {
 	Config   map[string]interface{}
 }
 
+// PluginFactory creates the plugin from the given cfg.
+type PluginFactory interface {
+	CreatePlugin(ctx context.Context, cfg map[string]interface{}) (postdog.Plugin, error)
+}
+
+// PluginFactoryFunc allows functions to be used as a PluginFactory.
+type PluginFactoryFunc func(context.Context, map[string]interface{}) (postdog.Plugin, error)
+
+// CreatePlugin creates the plugin from the given cfg.
+func (fn PluginFactoryFunc) CreatePlugin(ctx context.Context, cfg map[string]interface{}) (postdog.Plugin, error) {
+	return fn(ctx, cfg)
+}
+
 // PluginConfig is the configuration for a plugin.
 type PluginConfig struct {
 	Name   string
@@ -74,15 +98,16 @@ type PluginConfig struct {
 // Instead of calling New() directly, you should use Load() or File() instead.
 func New(opts ...Option) Config {
 	cfg := Config{
-		Providers:  make(map[string]TransportFactory),
-		Transports: make(map[string]TransportConfig),
+		TransportFactories: make(map[string]TransportFactory),
+		Transports:         make(map[string]TransportConfig),
+		PluginFactories:    make(map[string]PluginFactory),
 	}
 
-	globalProvidersMux.RLock()
-	defer globalProvidersMux.RUnlock()
+	globalTransportFactoriesMux.RLock()
+	defer globalTransportFactoriesMux.RUnlock()
 
-	for name, factory := range globalProviders {
-		cfg.Providers[name] = factory
+	for name, factory := range globalTransportFactories {
+		cfg.TransportFactories[name] = factory
 	}
 
 	for _, opt := range opts {
@@ -99,13 +124,13 @@ type Option func(*Config)
 // Providers have to be registered in order to be used in the configuration file.
 func Provider(name string, factory TransportFactory) Option {
 	return func(cfg *Config) {
-		cfg.Providers[name] = factory
+		cfg.TransportFactories[name] = factory
 	}
 }
 
 // RegisterProvider registers a transport factory for the given provider name.
 func (cfg Config) RegisterProvider(name string, factory TransportFactory) {
-	cfg.Providers[name] = factory
+	cfg.TransportFactories[name] = factory
 }
 
 // Get returns the parsed configuration for the given transport name.
@@ -127,6 +152,11 @@ type UnconfiguredTransportError struct {
 
 func (err UnconfiguredTransportError) Error() string {
 	return fmt.Sprintf("unconfigured transport: %s", err.Name)
+}
+
+// RegisterPlugin registers the factory for the given plugin name.
+func (cfg Config) RegisterPlugin(name string, factory PluginFactory) {
+	cfg.PluginFactories[name] = factory
 }
 
 // LoadFile loads the YAML autowire configuration from the file at the given path.
@@ -247,11 +277,30 @@ func replaceEnvPlaceholders(val string) string {
 }
 
 // Office builds the *postdog.Office from the autowire configuration.
-// You have to register the used providers with the provided opts.
+// You have to register the used providers with opts, if they haven't been globally registered.
 func (cfg Config) Office(ctx context.Context, opts ...postdog.Option) (*postdog.Office, error) {
-	off := postdog.New(opts...)
+	var pluginOpts []postdog.Option
+
+	for _, plugincfg := range cfg.Plugins {
+		factory, ok := cfg.PluginFactories[plugincfg.Name]
+		if !ok {
+			return nil, UnregisteredPluginError{
+				Name: plugincfg.Name,
+			}
+		}
+
+		plugin, err := factory.CreatePlugin(ctx, plugincfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("could not create plugin '%s': %w", plugincfg.Name, err)
+		}
+
+		pluginOpts = append(pluginOpts, postdog.WithPlugin(plugin))
+	}
+
+	off := postdog.New(append(pluginOpts, opts...)...)
+
 	for name, transportcfg := range cfg.Transports {
-		factory, ok := cfg.Providers[transportcfg.Provider]
+		factory, ok := cfg.TransportFactories[transportcfg.Provider]
 		if !ok {
 			return nil, UnregisteredProviderError{
 				Name: transportcfg.Provider,
@@ -265,6 +314,7 @@ func (cfg Config) Office(ctx context.Context, opts ...postdog.Option) (*postdog.
 
 		off.ConfigureTransport(name, trans)
 	}
+
 	return off, nil
 }
 
@@ -275,4 +325,13 @@ type UnregisteredProviderError struct {
 
 func (err UnregisteredProviderError) Error() string {
 	return fmt.Sprintf("unregistered provider: %s", err.Name)
+}
+
+// UnregisteredPluginError means the autowire configuration uses a plugin that hasn't been registered.
+type UnregisteredPluginError struct {
+	Name string
+}
+
+func (err UnregisteredPluginError) Error() string {
+	return fmt.Sprintf("unregistered plugin: %s", err.Name)
 }

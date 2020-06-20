@@ -9,6 +9,7 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/markdown"
 	"github.com/bounoable/postdog/transport"
 	"github.com/bounoable/postdog/transport/gmail"
 	"github.com/bounoable/postdog/transport/smtp"
@@ -16,17 +17,28 @@ import (
 )
 
 var (
-	globalProvider = "global"
+	globalTransportProvider = "global"
+	globalPluginName        = "someplugin"
 )
 
 func init() {
 	autowire.RegisterProvider(
-		globalProvider,
+		globalTransportProvider,
 		autowire.TransportFactoryFunc(func(
 			ctx context.Context,
 			cfg map[string]interface{},
 		) (postdog.Transport, error) {
 			return transport.Nop, nil
+		}),
+	)
+
+	autowire.RegisterPlugin(
+		globalPluginName,
+		autowire.PluginFactoryFunc(func(
+			ctx context.Context,
+			cfg map[string]interface{},
+		) (postdog.Plugin, error) {
+			return postdog.PluginFunc(func(_ postdog.PluginContext) {}), nil
 		}),
 	)
 }
@@ -37,6 +49,7 @@ func TestConfig_LoadFile(t *testing.T) {
 	cfg := autowire.New(
 		smtp.Register,
 		gmail.Register,
+		markdown.Register,
 	)
 
 	err := cfg.LoadFile(filepath.Join(wd, "testdata/config.yml"))
@@ -69,7 +82,7 @@ func TestConfig_LoadFile(t *testing.T) {
 		},
 		{
 			name:     "test3",
-			provider: globalProvider,
+			provider: globalTransportProvider,
 			config: map[string]interface{}{
 				"field1": "test",
 				"field2": true,
@@ -112,6 +125,7 @@ func TestConfig_LoadFile(t *testing.T) {
 
 func TestConfig_Office(t *testing.T) {
 	cfg := autowire.New()
+
 	cfg.RegisterProvider("test", autowire.TransportFactoryFunc(
 		func(ctx context.Context, cfg map[string]interface{}) (postdog.Transport, error) {
 			return testTransport{val: cfg["val"].(int)}, nil

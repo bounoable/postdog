@@ -9,6 +9,17 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
+// Name is the name of the converter.
+var Name = "goldmark"
+
+func init() {
+	markdown.RegisterConverter(Name, markdown.ConverterFactoryFunc(
+		func(_ map[string]interface{}) (markdown.Converter, error) {
+			return Converter(goldmark.New()), nil
+		}),
+	)
+}
+
 // Converter creates a markdown.Converter from md.
 func Converter(md goldmark.Markdown, opts ...Option) markdown.Converter {
 	a := adapter{md: md}
