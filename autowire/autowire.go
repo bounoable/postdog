@@ -42,6 +42,7 @@ func File(path string, opts ...Option) (Config, error) {
 type Config struct {
 	Providers  map[string]TransportFactory
 	Transports map[string]TransportConfig
+	Plugins    []PluginConfig
 }
 
 // TransportFactory creates transports from user-provided configuration.
@@ -61,6 +62,12 @@ func (fn TransportFactoryFunc) CreateTransport(ctx context.Context, cfg map[stri
 type TransportConfig struct {
 	Provider string
 	Config   map[string]interface{}
+}
+
+// PluginConfig is the configuration for a plugin.
+type PluginConfig struct {
+	Name   string
+	Config map[string]interface{}
 }
 
 // New initializes a new autowire configuration.
@@ -123,7 +130,7 @@ func (err UnconfiguredTransportError) Error() string {
 }
 
 // LoadFile loads the YAML autowire configuration from the file at the given path.
-func (cfg Config) LoadFile(path string) error {
+func (cfg *Config) LoadFile(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -133,7 +140,7 @@ func (cfg Config) LoadFile(path string) error {
 }
 
 // Load loads the YAML autowire configuration from r.
-func (cfg Config) Load(r io.Reader) error {
+func (cfg *Config) Load(r io.Reader) error {
 	var yamlCfg yamlConfig
 	if err := yaml.NewDecoder(r).Decode(&yamlCfg); err != nil {
 		return err
@@ -144,11 +151,12 @@ func (cfg Config) Load(r io.Reader) error {
 type yamlConfig struct {
 	// map[TRANSPORT_NAME]map[CONFIGKEY]interface{}
 	Transports map[string]map[string]interface{}
+	Plugins    []PluginConfig
 	// Default is the name of the default transport.
 	Default string
 }
 
-func (cfg yamlConfig) apply(config Config) error {
+func (cfg yamlConfig) apply(config *Config) error {
 	transports := make(map[string]TransportConfig)
 
 	for name, transportcfg := range cfg.Transports {
@@ -192,6 +200,8 @@ func (cfg yamlConfig) apply(config Config) error {
 	for name, transportcfg := range transports {
 		config.Transports[name] = transportcfg
 	}
+
+	config.Plugins = append(config.Plugins, cfg.Plugins...)
 
 	return nil
 }

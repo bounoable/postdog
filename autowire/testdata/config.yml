@@ -21,3 +21,13 @@ transports:
     config:
       field1: test
       field2: true
+
+plugins:
+  - name: someplugin
+    config:
+      field1: hello
+      field2: false
+  - name: otherplugin
+    config:
+      field1: true
+      field2: test

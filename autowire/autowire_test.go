@@ -42,7 +42,7 @@ func TestConfig_LoadFile(t *testing.T) {
 	err := cfg.LoadFile(filepath.Join(wd, "testdata/config.yml"))
 	assert.Nil(t, err)
 
-	cases := []struct {
+	expectedTransports := []struct {
 		name     string
 		provider string
 		config   map[string]interface{}
@@ -77,11 +77,36 @@ func TestConfig_LoadFile(t *testing.T) {
 		},
 	}
 
-	for _, tcase := range cases {
+	for _, tcase := range expectedTransports {
 		transportcfg, err := cfg.Get(tcase.name)
 		assert.Nil(t, err)
 		assert.Equal(t, tcase.provider, transportcfg.Provider)
 		assert.Equal(t, tcase.config, transportcfg.Config)
+	}
+
+	expectedPlugins := []struct {
+		name   string
+		config map[string]interface{}
+	}{
+		{
+			name: "someplugin",
+			config: map[string]interface{}{
+				"field1": "hello",
+				"field2": false,
+			},
+		},
+		{
+			name: "otherplugin",
+			config: map[string]interface{}{
+				"field1": true,
+				"field2": "test",
+			},
+		},
+	}
+
+	for i, tcase := range expectedPlugins {
+		assert.Equal(t, tcase.name, cfg.Plugins[i].Name)
+		assert.Equal(t, tcase.config, cfg.Plugins[i].Config)
 	}
 }
 
