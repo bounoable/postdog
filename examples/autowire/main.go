@@ -8,14 +8,10 @@ import (
 
 	"github.com/bounoable/postdog/autowire"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/markdown"
 	"github.com/bounoable/postdog/plugin/template"
-
-	// Register packages for autowiring
-	_ "github.com/bounoable/postdog/plugin/markdown/goldmark"
-	_ "github.com/bounoable/postdog/plugin/store/memorystore"
-	_ "github.com/bounoable/postdog/plugin/template"
-	_ "github.com/bounoable/postdog/transport/nop"
-	_ "github.com/bounoable/postdog/transport/smtp"
+	"github.com/bounoable/postdog/transport/nop"
+	"github.com/bounoable/postdog/transport/smtp"
 )
 
 func main() {
@@ -23,7 +19,13 @@ func main() {
 	os.Setenv("APP_ROOT", wd)
 
 	configPath := filepath.Join(wd, "configs/postdog.yml")
-	cfg, err := autowire.File(configPath)
+	cfg, err := autowire.File(
+		configPath,
+		smtp.Register,
+		nop.Register,
+		markdown.Register,
+		template.Register,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
