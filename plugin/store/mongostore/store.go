@@ -16,12 +16,48 @@ import (
 )
 
 var (
+	// Provider is the store provider name.
+	Provider = "mongo"
+
 	defaultConfig = Config{
 		DatabaseName:   "postdog",
 		CollectionName: "letters",
 		CreateIndexes:  true,
 	}
 )
+
+func init() {
+	store.RegisterProvider(
+		Provider,
+		store.FactoryFunc(func(ctx context.Context, cfg map[string]interface{}) (store.Store, error) {
+			clientOpts := options.Client()
+			if uri, _ := cfg["uri"].(string); uri != "" {
+				clientOpts.ApplyURI(uri)
+			}
+
+			client, err := mongo.Connect(ctx, clientOpts)
+			if err != nil {
+				return nil, err
+			}
+
+			var opts []Option
+
+			if db, ok := cfg["database"].(string); ok {
+				opts = append(opts, Database(db))
+			}
+
+			if col, ok := cfg["collection"].(string); ok {
+				opts = append(opts, Collection(col))
+			}
+
+			if ci, ok := cfg["createIndexes"].(bool); ok {
+				opts = append(opts, CreateIndexes(ci))
+			}
+
+			return New(client, opts...)
+		}),
+	)
+}
 
 // Store is the mongodb store.
 type Store struct {
