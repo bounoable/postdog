@@ -82,23 +82,11 @@ func Disable(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxData, nil)
 }
 
-// Name returns the template that should be used for sending letters with ctx.
-// Returns false if ctx has no template set.
-func Name(ctx context.Context) (string, bool) {
-	name, ok := ctx.Value(ctxTemplate).(string)
-	return name, ok
-}
-
-// Data returns the data that is attached to ctx.
-func Data(ctx context.Context) interface{} {
-	return ctx.Value(ctxData)
-}
-
 // For returns the template and data that should be used for sending letters with ctx.
 // Returns false if ctx has no template set.
 func For(ctx context.Context) (string, interface{}, bool) {
-	name, ok := Name(ctx)
-	return name, Data(ctx), ok
+	name, ok := ctx.Value(ctxTemplate).(string)
+	return name, ctx.Value(ctxData), ok
 }
 
 type ctxKey string

@@ -19,8 +19,9 @@ import (
 func TestEnable(t *testing.T) {
 	ctx := context.Background()
 
-	name, ok := template.Name(ctx)
+	name, data, ok := template.For(ctx)
 	assert.Empty(t, name)
+	assert.Nil(t, data)
 	assert.False(t, ok)
 
 	ctx = template.Enable(ctx, "test", map[string]interface{}{
@@ -29,8 +30,7 @@ func TestEnable(t *testing.T) {
 		"C": "test",
 	})
 
-	name, ok = template.Name(ctx)
-	data := template.Data(ctx)
+	name, data, ok = template.For(ctx)
 	assert.Equal(t, "test", name)
 	assert.True(t, ok)
 	assert.Equal(t, map[string]interface{}{
@@ -40,8 +40,7 @@ func TestEnable(t *testing.T) {
 	}, data)
 
 	ctx = template.Disable(ctx)
-	name, ok = template.Name(ctx)
-	data = template.Data(ctx)
+	name, data, ok = template.For(ctx)
 	assert.Empty(t, name)
 	assert.False(t, ok)
 	assert.Nil(t, data)
