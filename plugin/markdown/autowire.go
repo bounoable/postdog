@@ -46,7 +46,7 @@ func Register(cfg *autowire.Config) {
 
 // AutowirePlugin creates the Markdown plugin from the autowire config.
 func AutowirePlugin(_ context.Context, cfg map[string]interface{}) (postdog.Plugin, error) {
-	converterName, ok := cfg["use"].(string)
+	converterName, _ := cfg["use"].(string)
 	overrideHTML, _ := cfg["overrideHTML"].(bool)
 
 	convertersMux.RLock()
