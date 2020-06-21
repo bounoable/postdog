@@ -1,0 +1,29 @@
+syntax = "proto3";
+package postdog;
+option go_package = "github.com/bounoable/postdog/api/proto";
+
+message Letter {
+  string subject = 1;
+  Address from = 2;
+  repeated Address to = 3;
+  repeated Address cc = 4;
+  repeated Address bcc = 5;
+  string text = 6;
+  string html = 7;
+  repeated Attachment attachments = 8;
+}
+
+message Address {
+  string name = 1;
+  string address = 2;
+}
+
+message Attachment {
+  string filename = 1;
+  map<string, HeaderValues> header = 2;
+  bytes content = 3;
+}
+
+message HeaderValues {
+  repeated string values = 1;
+}

@@ -7,6 +7,7 @@ require (
 	github.com/bounoable/mongoutil v0.3.3
 	github.com/bounoable/timefn v0.1.2
 	github.com/golang/mock v1.4.3
+	github.com/golang/protobuf v1.4.2
 	github.com/klauspost/compress v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1
@@ -20,6 +21,7 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/api v0.28.0
 	google.golang.org/genproto v0.0.0-20200620020550-bd6e04640131 // indirect
+	google.golang.org/protobuf v1.24.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
