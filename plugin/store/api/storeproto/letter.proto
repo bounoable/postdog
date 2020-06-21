@@ -6,7 +6,8 @@ import "google/protobuf/timestamp.proto";
 import "api/proto/letter.proto";
 
 message Letter {
-  postdog.Letter letter = 1;
-  google.protobuf.Timestamp sentAt = 2;
-  string sendError = 3;
+  string id = 1;
+  postdog.Letter letter = 2;
+  google.protobuf.Timestamp sentAt = 3;
+  string sendError = 4;
 }

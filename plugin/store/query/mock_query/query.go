@@ -9,6 +9,7 @@ import (
 	store "github.com/bounoable/postdog/plugin/store"
 	query "github.com/bounoable/postdog/plugin/store/query"
 	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/google/uuid"
 	reflect "reflect"
 )
 
@@ -48,6 +49,21 @@ func (m *MockRepository) Query(arg0 context.Context, arg1 query.Query) (query.Cu
 func (mr *MockRepositoryMockRecorder) Query(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockRepository)(nil).Query), arg0, arg1)
+}
+
+// Get mocks base method
+func (m *MockRepository) Get(arg0 context.Context, arg1 uuid.UUID) (store.Letter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(store.Letter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockRepositoryMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), arg0, arg1)
 }
 
 // MockCursor is a mock of Cursor interface

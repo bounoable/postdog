@@ -13,6 +13,7 @@ import (
 	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/mock_store"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,6 +62,7 @@ func TestPlugin(t *testing.T) {
 			).DoAndReturn(func(_ context.Context, slet store.Letter) error {
 				defer wg.Done()
 
+				assert.False(t, slet.ID == uuid.Nil)
 				assert.Equal(t, let, slet.Letter)
 				assert.InDelta(t, time.Now().Unix(), slet.SentAt.Unix(), 1)
 

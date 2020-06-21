@@ -2,12 +2,17 @@ package query_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/query"
 	"github.com/bounoable/postdog/plugin/store/query/mock_query"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -193,4 +198,58 @@ func TestRun(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedCursor, cur)
+}
+
+func TestFind(t *testing.T) {
+	ctx := context.Background()
+
+	cases := map[string]struct {
+		repoError   error
+		assertError func(*testing.T, uuid.UUID, error, error)
+	}{
+		"found": {
+			assertError: func(t *testing.T, _ uuid.UUID, repoError, findError error) {
+				assert.Nil(t, repoError)
+				assert.Nil(t, findError)
+			},
+		},
+		"not found": {
+			repoError: errors.New("not found"),
+			assertError: func(t *testing.T, id uuid.UUID, repoError, findError error) {
+				var notFoundError query.LetterNotFoundError
+				assert.True(t, errors.As(findError, &notFoundError))
+				assert.Equal(t, id, notFoundError.ID)
+				assert.Equal(t, repoError, notFoundError.Err)
+				assert.Equal(t, repoError, notFoundError.Unwrap())
+			},
+		},
+	}
+
+	for name, tcase := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			let := store.Letter{
+				ID:     uuid.New(),
+				Letter: letter.Write(letter.Subject(fmt.Sprintf("Test: %s", name))),
+			}
+
+			repo := mock_query.NewMockRepository(ctrl)
+
+			if tcase.repoError != nil {
+				repo.EXPECT().Get(ctx, let.ID).Return(store.Letter{}, tcase.repoError)
+			} else {
+				repo.EXPECT().Get(ctx, let.ID).Return(let, nil)
+			}
+
+			flet, err := query.Find(ctx, repo, let.ID)
+
+			if tcase.repoError == nil {
+				assert.Equal(t, let, flet)
+			}
+
+			tcase.assertError(t, let.ID, tcase.repoError, err)
+		})
+	}
 }

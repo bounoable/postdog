@@ -8,6 +8,7 @@ require (
 	github.com/bounoable/timefn v0.1.2
 	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.4.2
+	github.com/google/uuid v1.1.1
 	github.com/klauspost/compress v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1

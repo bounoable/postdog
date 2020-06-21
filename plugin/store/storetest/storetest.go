@@ -12,6 +12,7 @@ import (
 	"github.com/bounoable/postdog/plugin/store/query"
 	"github.com/bounoable/timefn"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,6 +28,7 @@ func Insert(t *testing.T, s store.Store) {
 func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 	letters := []store.Letter{
 		{
+			ID: uuid.New(),
 			Letter: letter.Write(
 				letter.Subject("Letter 1"),
 				letter.From("Sender 1", "sender1@example.test"),
@@ -38,6 +40,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 			SentAt: timefn.StartOfDay(time.Now()).UTC(),
 		},
 		{
+			ID: uuid.New(),
 			Letter: letter.Write(
 				letter.Subject("Letter 2"),
 				letter.From("Sender 2", "sender2@example.test"),
@@ -49,6 +52,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 1)).UTC(),
 		},
 		{
+			ID: uuid.New(),
 			Letter: letter.Write(
 				letter.Subject("Letter 3"),
 				letter.From("Sender 3", "sender3@example.test"),
@@ -60,6 +64,7 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 			SentAt: timefn.StartOfDay(time.Now().AddDate(0, 0, 2)).UTC(),
 		},
 		{
+			ID: uuid.New(),
 			Letter: letter.Write(
 				letter.Subject("Letter 4"),
 				letter.From("Sender 4", "sender4@example.test"),
@@ -263,4 +268,28 @@ func testQuery(t *testing.T, s query.Repository, q query.Query, expected []store
 
 	assert.Nil(t, cur.Err())
 	assert.Equal(t, expected, letters)
+}
+
+// Get tests the Get() method of a query repository.
+func Get(t *testing.T, createRepo func(...store.Letter) query.Repository) {
+	getExists(t, createRepo)
+	getNotExists(t, createRepo)
+}
+
+func getExists(t *testing.T, createRepo func(...store.Letter) query.Repository) {
+	let := store.Letter{
+		ID:     uuid.New(),
+		Letter: letter.Write(letter.Subject("Hello")),
+	}
+
+	repo := createRepo(let)
+	flet, err := repo.Get(context.Background(), let.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, let, flet)
+}
+
+func getNotExists(t *testing.T, createRepo func(...store.Letter) query.Repository) {
+	repo := createRepo()
+	_, err := repo.Get(context.Background(), uuid.New())
+	assert.NotNil(t, err)
 }

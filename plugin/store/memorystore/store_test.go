@@ -18,3 +18,9 @@ func TestStore_Query(t *testing.T) {
 		return memorystore.New(letters...)
 	})
 }
+
+func TestStore_Get(t *testing.T) {
+	storetest.Get(t, func(letters ...store.Letter) query.Repository {
+		return memorystore.New(letters...)
+	})
+}

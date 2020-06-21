@@ -2,6 +2,7 @@ package memorystore
 
 import (
 	"context"
+	"fmt"
 	"net/mail"
 	"sort"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/query"
+	"github.com/google/uuid"
 )
 
 var (
@@ -247,4 +249,14 @@ func (cur *cursor) Close(_ context.Context) error {
 
 func (cur *cursor) Err() error {
 	return nil
+}
+
+// Get retrieves the letter with the given id from memory.
+func (s *Store) Get(ctx context.Context, id uuid.UUID) (store.Letter, error) {
+	for _, let := range s.letters {
+		if let.ID == id {
+			return let, nil
+		}
+	}
+	return store.Letter{}, fmt.Errorf("letter not found: %s", id)
 }

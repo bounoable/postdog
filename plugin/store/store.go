@@ -10,6 +10,7 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/google/uuid"
 )
 
 // Store inserts letters into a repository.
@@ -20,6 +21,7 @@ type Store interface {
 // Letter adds additional info to a letter.Letter.
 type Letter struct {
 	letter.Letter
+	ID        uuid.UUID
 	SentAt    time.Time
 	SendError string
 }
@@ -48,6 +50,7 @@ func Plugin(store Store) postdog.PluginFunc {
 			}
 
 			if err := store.Insert(ctx, Letter{
+				ID:        uuid.New(),
 				Letter:    let,
 				SentAt:    time.Now(),
 				SendError: sendError,

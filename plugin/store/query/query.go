@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/plugin/store"
+	"github.com/google/uuid"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 // Repository is the query repository.
 type Repository interface {
 	Query(context.Context, Query) (Cursor, error)
+	Get(context.Context, uuid.UUID) (store.Letter, error)
 }
 
 // Cursor is used to iterate over a stream of letters.
@@ -199,4 +201,17 @@ func Sort(by Sorting, dir SortDirection) Option {
 			Dir:    dir,
 		}
 	}
+}
+
+// Find tries to retrieve the letter with the given id from repo.
+// If it can't find the letter, a `LetterNotFoundError` is returned.
+func Find(ctx context.Context, repo Repository, id uuid.UUID) (store.Letter, error) {
+	let, err := repo.Get(ctx, id)
+	if err != nil {
+		return store.Letter{}, LetterNotFoundError{
+			ID:  id,
+			Err: err,
+		}
+	}
+	return let, nil
 }

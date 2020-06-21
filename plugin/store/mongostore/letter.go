@@ -7,9 +7,11 @@ import (
 
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/store"
+	"github.com/google/uuid"
 )
 
 type dbLetter struct {
+	ID          uuid.UUID      `bson:"id"`
 	Subject     string         `bson:"subject"`
 	From        mail.Address   `bson:"from"`
 	To          []mail.Address `bson:"to"`
@@ -32,6 +34,7 @@ type attachment struct {
 
 func mapLetter(let store.Letter) dbLetter {
 	return dbLetter{
+		ID:          let.ID,
 		Subject:     let.Subject,
 		From:        let.From,
 		To:          let.To,
@@ -61,6 +64,7 @@ func mapAttachments(attachments []letter.Attachment) []attachment {
 
 func (let dbLetter) store() store.Letter {
 	return store.Letter{
+		ID: let.ID,
 		Letter: letter.Letter{
 			Subject:     let.Subject,
 			From:        let.From,

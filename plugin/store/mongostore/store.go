@@ -9,6 +9,7 @@ import (
 	"github.com/bounoable/mongoutil/index"
 	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/query"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -283,6 +284,7 @@ func (s *Store) createIndexes() error {
 
 	_, err := index.CreateFromConfig(ctx, s.col.Database(), index.Config{
 		s.cfg.CollectionName: []mongo.IndexModel{
+			{Keys: bson.D{{Key: "id", Value: 1}}, Options: options.Index().SetUnique(true)},
 			{Keys: bson.D{{Key: "sentAt", Value: 1}}},
 			{Keys: bson.D{{Key: "size", Value: 1}}},
 			{Keys: bson.D{{Key: "subject", Value: 1}}},
@@ -335,4 +337,16 @@ func (cur *cursor) Close(ctx context.Context) error {
 
 func (cur *cursor) Err() error {
 	return cur.err
+}
+
+// Get retrieves the letter with the given id
+func (s *Store) Get(ctx context.Context, id uuid.UUID) (store.Letter, error) {
+	res := s.col.FindOne(ctx, bson.M{"id": id})
+
+	var dblet dbLetter
+	if err := res.Decode(&dblet); err != nil {
+		return store.Letter{}, err
+	}
+
+	return dblet.store(), nil
 }

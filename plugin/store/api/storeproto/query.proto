@@ -7,6 +7,7 @@ import "letter.proto";
 
 service QueryService {
   rpc Run(Query) returns (QueryResult);
+  rpc Get(UUID) returns (Letter);
 }
 
 message Query {
@@ -57,4 +58,8 @@ enum SortDirection {
 
 message QueryResult {
   repeated Letter letters = 1;
+}
+
+message UUID {
+  string id = 1;
 }

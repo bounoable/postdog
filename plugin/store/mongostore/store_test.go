@@ -85,7 +85,7 @@ func TestStore_Insert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	store, err := mongostore.New(client, mongostore.Database("mailing"), mongostore.Collection("mails"))
+	store, err := mongostore.New(client)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestStore_Query(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		store, err := mongostore.New(client, mongostore.Database("mailing"), mongostore.Collection("mails"))
+		store, err := mongostore.New(client)
 		if err != nil {
 			t.Fatal(t, err)
 		}
@@ -113,6 +113,33 @@ func TestStore_Query(t *testing.T) {
 		for _, let := range letters {
 			if err := store.Insert(ctx, let); err != nil {
 				t.Fatal(err)
+			}
+		}
+
+		return store
+	})
+}
+
+func TestStore_Get(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	storetest.Get(t, func(letters ...store.Letter) query.Repository {
+		ctx := context.Background()
+		client, err := connect(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		store, err := mongostore.New(client)
+		if err != nil {
+			t.Fatal(t, err)
+		}
+
+		for _, let := range letters {
+			if err := store.Insert(ctx, let); err != nil {
+				t.Fatal(t, err)
 			}
 		}
 

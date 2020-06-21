@@ -552,6 +552,53 @@ func (x *QueryResult) GetLetters() []*Letter {
 	return nil
 }
 
+type UUID struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *UUID) Reset() {
+	*x = UUID{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_query_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UUID) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UUID) ProtoMessage() {}
+
+func (x *UUID) ProtoReflect() protoreflect.Message {
+	mi := &file_query_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UUID.ProtoReflect.Descriptor instead.
+func (*UUID) Descriptor() ([]byte, []int) {
+	return file_query_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UUID) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
 var File_query_proto protoreflect.FileDescriptor
 
 var file_query_proto_rawDesc = []byte{
@@ -614,20 +661,24 @@ var file_query_proto_rawDesc = []byte{
 	0x72, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x2f, 0x0a, 0x07, 0x6c, 0x65, 0x74, 0x74,
 	0x65, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x70, 0x6f, 0x73, 0x74,
 	0x64, 0x6f, 0x67, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4c, 0x65, 0x74, 0x74, 0x65, 0x72,
-	0x52, 0x07, 0x6c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x2a, 0x19, 0x0a, 0x07, 0x53, 0x6f, 0x72,
-	0x74, 0x69, 0x6e, 0x67, 0x12, 0x0e, 0x0a, 0x0a, 0x42, 0x79, 0x53, 0x65, 0x6e, 0x64, 0x44, 0x61,
-	0x74, 0x65, 0x10, 0x00, 0x2a, 0x22, 0x0a, 0x0d, 0x53, 0x6f, 0x72, 0x74, 0x44, 0x69, 0x72, 0x65,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x73, 0x63, 0x10, 0x00, 0x12, 0x08,
-	0x0a, 0x04, 0x44, 0x65, 0x73, 0x63, 0x10, 0x01, 0x32, 0x47, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x37, 0x0a, 0x03, 0x52, 0x75, 0x6e, 0x12,
-	0x14, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x1a, 0x1a, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2e,
-	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x42, 0x3a, 0x5a, 0x38, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x62, 0x6f, 0x75, 0x6e, 0x6f, 0x61, 0x62, 0x6c, 0x65, 0x2f, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f,
-	0x67, 0x2f, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x07, 0x6c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x73, 0x22, 0x16, 0x0a, 0x04, 0x55, 0x55, 0x49,
+	0x44, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x2a, 0x19, 0x0a, 0x07, 0x53, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x0e, 0x0a, 0x0a,
+	0x42, 0x79, 0x53, 0x65, 0x6e, 0x64, 0x44, 0x61, 0x74, 0x65, 0x10, 0x00, 0x2a, 0x22, 0x0a, 0x0d,
+	0x53, 0x6f, 0x72, 0x74, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x07, 0x0a,
+	0x03, 0x41, 0x73, 0x63, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x44, 0x65, 0x73, 0x63, 0x10, 0x01,
+	0x32, 0x7a, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x12, 0x37, 0x0a, 0x03, 0x52, 0x75, 0x6e, 0x12, 0x14, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f,
+	0x67, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x1a, 0x1a, 0x2e,
+	0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x31, 0x0a, 0x03, 0x47, 0x65, 0x74,
+	0x12, 0x13, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65,
+	0x2e, 0x55, 0x55, 0x49, 0x44, 0x1a, 0x15, 0x2e, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x4c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x42, 0x3a, 0x5a, 0x38,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x6f, 0x75, 0x6e, 0x6f,
+	0x61, 0x62, 0x6c, 0x65, 0x2f, 0x70, 0x6f, 0x73, 0x74, 0x64, 0x6f, 0x67, 0x2f, 0x70, 0x6c, 0x75,
+	0x67, 0x69, 0x6e, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -643,7 +694,7 @@ func file_query_proto_rawDescGZIP() []byte {
 }
 
 var file_query_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_query_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_query_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_query_proto_goTypes = []interface{}{
 	(Sorting)(0),                 // 0: postdog.store.Sorting
 	(SortDirection)(0),           // 1: postdog.store.SortDirection
@@ -654,24 +705,27 @@ var file_query_proto_goTypes = []interface{}{
 	(*AttachmentSizeRange)(nil),  // 6: postdog.store.AttachmentSizeRange
 	(*SortConfig)(nil),           // 7: postdog.store.SortConfig
 	(*QueryResult)(nil),          // 8: postdog.store.QueryResult
-	(*timestamp.Timestamp)(nil),  // 9: google.protobuf.Timestamp
-	(*Letter)(nil),               // 10: postdog.store.Letter
+	(*UUID)(nil),                 // 9: postdog.store.UUID
+	(*timestamp.Timestamp)(nil),  // 10: google.protobuf.Timestamp
+	(*Letter)(nil),               // 11: postdog.store.Letter
 }
 var file_query_proto_depIdxs = []int32{
 	3,  // 0: postdog.store.Query.sentAt:type_name -> postdog.store.SentAtFilter
 	4,  // 1: postdog.store.Query.attachment:type_name -> postdog.store.AttachmentFilter
 	7,  // 2: postdog.store.Query.sort:type_name -> postdog.store.SortConfig
-	9,  // 3: postdog.store.SentAtFilter.before:type_name -> google.protobuf.Timestamp
-	9,  // 4: postdog.store.SentAtFilter.after:type_name -> google.protobuf.Timestamp
+	10, // 3: postdog.store.SentAtFilter.before:type_name -> google.protobuf.Timestamp
+	10, // 4: postdog.store.SentAtFilter.after:type_name -> google.protobuf.Timestamp
 	5,  // 5: postdog.store.AttachmentFilter.size:type_name -> postdog.store.AttachmentSizeFilter
 	6,  // 6: postdog.store.AttachmentSizeFilter.ranges:type_name -> postdog.store.AttachmentSizeRange
 	0,  // 7: postdog.store.SortConfig.sortBy:type_name -> postdog.store.Sorting
 	1,  // 8: postdog.store.SortConfig.direction:type_name -> postdog.store.SortDirection
-	10, // 9: postdog.store.QueryResult.letters:type_name -> postdog.store.Letter
+	11, // 9: postdog.store.QueryResult.letters:type_name -> postdog.store.Letter
 	2,  // 10: postdog.store.QueryService.Run:input_type -> postdog.store.Query
-	8,  // 11: postdog.store.QueryService.Run:output_type -> postdog.store.QueryResult
-	11, // [11:12] is the sub-list for method output_type
-	10, // [10:11] is the sub-list for method input_type
+	9,  // 11: postdog.store.QueryService.Get:input_type -> postdog.store.UUID
+	8,  // 12: postdog.store.QueryService.Run:output_type -> postdog.store.QueryResult
+	11, // 13: postdog.store.QueryService.Get:output_type -> postdog.store.Letter
+	12, // [12:14] is the sub-list for method output_type
+	10, // [10:12] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -768,6 +822,18 @@ func file_query_proto_init() {
 				return nil
 			}
 		}
+		file_query_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UUID); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -775,7 +841,7 @@ func file_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_query_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -803,6 +869,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryServiceClient interface {
 	Run(ctx context.Context, in *Query, opts ...grpc.CallOption) (*QueryResult, error)
+	Get(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Letter, error)
 }
 
 type queryServiceClient struct {
@@ -822,9 +889,19 @@ func (c *queryServiceClient) Run(ctx context.Context, in *Query, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *queryServiceClient) Get(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Letter, error) {
+	out := new(Letter)
+	err := c.cc.Invoke(ctx, "/postdog.store.QueryService/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServiceServer is the server API for QueryService service.
 type QueryServiceServer interface {
 	Run(context.Context, *Query) (*QueryResult, error)
+	Get(context.Context, *UUID) (*Letter, error)
 }
 
 // UnimplementedQueryServiceServer can be embedded to have forward compatible implementations.
@@ -833,6 +910,9 @@ type UnimplementedQueryServiceServer struct {
 
 func (*UnimplementedQueryServiceServer) Run(context.Context, *Query) (*QueryResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Run not implemented")
+}
+func (*UnimplementedQueryServiceServer) Get(context.Context, *UUID) (*Letter, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 
 func RegisterQueryServiceServer(s *grpc.Server, srv QueryServiceServer) {
@@ -857,6 +937,24 @@ func _QueryService_Run_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/postdog.store.QueryService/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).Get(ctx, req.(*UUID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _QueryService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "postdog.store.QueryService",
 	HandlerType: (*QueryServiceServer)(nil),
@@ -864,6 +962,10 @@ var _QueryService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Run",
 			Handler:    _QueryService_Run_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _QueryService_Get_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

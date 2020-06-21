@@ -94,7 +94,12 @@ func New(opts ...WriteOption) Letter {
 
 // Write builds a letter with the provided options.
 func Write(opts ...WriteOption) Letter {
-	var let Letter
+	let := Letter{
+		To:          []mail.Address{},
+		CC:          []mail.Address{},
+		BCC:         []mail.Address{},
+		Attachments: []Attachment{},
+	}
 	for _, opt := range opts {
 		opt(&let)
 	}
