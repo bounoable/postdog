@@ -3,6 +3,7 @@
     "store",
     "markdown",
     "template",
-    "autowire"
+    "autowire",
+    "letter"
   ]
 }
