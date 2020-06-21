@@ -12,6 +12,7 @@ import (
 	"net/mail"
 	"net/textproto"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -292,7 +293,9 @@ func ContentType(ct string) AttachOption {
 	}
 }
 
-// ContentType returns the "Content-Type" header.
+var attachmentNameExpr = regexp.MustCompile(`^(.+); name=".+"$`)
+
+// ContentType returns the "Content-Type" of the attachment.
 func (attach Attachment) ContentType() string {
-	return attach.Header.Get("Content-Type")
+	return attachmentNameExpr.ReplaceAllString(attach.Header.Get("Content-Type"), "$1")
 }

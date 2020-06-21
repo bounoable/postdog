@@ -23,10 +23,11 @@ type dbLetter struct {
 }
 
 type attachment struct {
-	Filename string               `bson:"filename"`
-	Header   textproto.MIMEHeader `bson:"header"`
-	Content  []byte               `bson:"content"`
-	Size     int                  `bson:"size"`
+	Filename    string               `bson:"filename"`
+	Header      textproto.MIMEHeader `bson:"header"`
+	ContentType string               `bson:"contentType"`
+	Content     []byte               `bson:"content"`
+	Size        int                  `bson:"size"`
 }
 
 func mapLetter(let store.Letter) dbLetter {
@@ -48,10 +49,11 @@ func mapAttachments(attachments []letter.Attachment) []attachment {
 	mapped := make([]attachment, len(attachments))
 	for i, attach := range attachments {
 		mapped[i] = attachment{
-			Filename: attach.Filename,
-			Header:   attach.Header,
-			Content:  attach.Content,
-			Size:     len(attach.Content),
+			Filename:    attach.Filename,
+			Header:      attach.Header,
+			ContentType: attach.ContentType(),
+			Content:     attach.Content,
+			Size:        len(attach.Content),
 		}
 	}
 	return mapped
