@@ -1,0 +1,12 @@
+syntax = "proto3";
+package postdog.store;
+option go_package = "github.com/bounoable/postdog/plugin/store/api/proto";
+
+import "google/protobuf/timestamp.proto";
+import "api/proto/letter.proto";
+
+message Letter {
+  postdog.Letter letter = 1;
+  google.protobuf.Timestamp sentAt = 2;
+  string sendError = 3;
+}

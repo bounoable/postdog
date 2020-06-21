@@ -1,0 +1,60 @@
+syntax = "proto3";
+package postdog.store;
+option go_package = "github.com/bounoable/postdog/plugin/store/api/proto";
+
+import "google/protobuf/timestamp.proto";
+import "letter.proto";
+
+service QueryService {
+  rpc Run(Query) returns (QueryResult);
+}
+
+message Query {
+  SentAtFilter sentAt = 1;
+  repeated string subjects = 2;
+  repeated string from = 3;
+  repeated string to = 4;
+  repeated string cc = 5;
+  repeated string bcc = 6;
+  AttachmentFilter attachment = 7;
+  SortConfig sort = 8;
+}
+
+message SentAtFilter {
+  google.protobuf.Timestamp before = 1;
+  google.protobuf.Timestamp after = 2;
+}
+
+message AttachmentFilter {
+  repeated string names = 1;
+  repeated string contentTypes = 2;
+  AttachmentSizeFilter size = 3;
+}
+
+message AttachmentSizeFilter {
+  repeated int64 exact = 1;
+  repeated AttachmentSizeRange ranges = 2;
+}
+
+message AttachmentSizeRange {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message SortConfig {
+  Sorting sortBy = 1;
+  SortDirection direction = 2;
+}
+
+enum Sorting {
+  BySendDate = 0;
+}
+
+enum SortDirection {
+  Asc = 0;
+  Desc = 1;
+}
+
+message QueryResult {
+  repeated Letter letters = 1;
+}
