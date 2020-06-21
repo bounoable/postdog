@@ -479,6 +479,8 @@ func TestOffice_Run(t *testing.T) {
 		assert.Nil(t, off.Run(ctx))
 	}()
 
+	<-time.After(time.Millisecond * 100)
+
 	let1, let2, let3 := letter.Write(), letter.Write(), letter.Write()
 
 	trans.EXPECT().Send(ctx, let1)
