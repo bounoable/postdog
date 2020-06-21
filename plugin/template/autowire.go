@@ -20,7 +20,10 @@ func AutowirePlugin(_ context.Context, cfg map[string]interface{}) (postdog.Plug
 	dirs, _ := cfg["dirs"].([]string)
 	templates, _ := cfg["templates"].(map[string]interface{})
 
-	opts := []Option{UseDir(dirs...)}
+	var opts []Option
+	for _, dir := range dirs {
+		opts = append(opts, UseDir(dir))
+	}
 
 	for name, path := range templates {
 		spath, ok := path.(string)

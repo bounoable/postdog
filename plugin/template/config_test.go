@@ -2,7 +2,7 @@ package template
 
 import (
 	"errors"
-	"html/template"
+	htmltemplate "html/template"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,15 +46,16 @@ func TestNewConfig(t *testing.T) {
 		},
 		"UseDir": {
 			opts: []Option{
-				UseDir("/path/to/tpls1", "/path/to/tpls2"),
+				UseDir("/path/to/tpls1"),
+				UseDir("/path/to/tpls2"),
 				UseDir("/path/to/tpls3"),
 			},
 			expected: Config{
 				Templates: map[string]string{},
-				TemplateDirs: []string{
-					"/path/to/tpls1",
-					"/path/to/tpls2",
-					"/path/to/tpls3",
+				TemplateDirs: []DirectoryConfig{
+					{Dir: "/path/to/tpls1"},
+					{Dir: "/path/to/tpls2"},
+					{Dir: "/path/to/tpls3"},
 				},
 				Funcs: FuncMap{},
 			},
@@ -125,7 +126,8 @@ func TestConfig_ParseTemplates(t *testing.T) {
 		},
 		"template dirs": {
 			opts: []Option{
-				UseDir(tplDirPath("dir1"), tplDirPath("dir2")),
+				UseDir(tplDirPath("dir1")),
+				UseDir(tplDirPath("dir2")),
 				UseFuncs(stubFuncMapA),
 			},
 			expectedTpls: []string{"tpl3", "tpl4", "tpl5", "tpl6", "nested.tpl7"},
@@ -137,11 +139,20 @@ func TestConfig_ParseTemplates(t *testing.T) {
 			},
 			expectedErr: &os.PathError{},
 		},
+		"template dir with exclude": {
+			opts: []Option{
+				UseDir(tplDirPath("dir2"), Exclude(func(path string) bool {
+					return strings.Contains(path, "tpl6")
+				})),
+				UseFuncs(stubFuncMapA),
+			},
+			expectedTpls: []string{"tpl5", "nested.tpl7"},
+		},
 		"missing func": {
 			opts: []Option{
 				UseDir(tplDirPath("dir1")),
 			},
-			expectedErr: &template.Error{},
+			expectedErr: &htmltemplate.Error{},
 		},
 	}
 
@@ -155,6 +166,8 @@ func TestConfig_ParseTemplates(t *testing.T) {
 				assert.True(t, errors.As(err, &tcase.expectedErr))
 				return
 			}
+
+			assert.NotNil(t, tpls)
 
 			for _, tplname := range tcase.expectedTpls {
 				tpl := tpls.Lookup(tplname)

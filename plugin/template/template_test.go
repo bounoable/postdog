@@ -53,7 +53,9 @@ func TestPlugin(t *testing.T) {
 		template.Use("test1", filepath.Join(wd, "testdata", "templates", "tpl1.html")),
 		template.Use("test2", filepath.Join(wd, "testdata", "templates", "tpl2.html")),
 		template.UseDir(filepath.Join(wd, "testdata", "templateDirs", "dir1")),
-		template.UseDir(filepath.Join(wd, "testdata", "templateDirs", "dir2")),
+		template.UseDir(filepath.Join(wd, "testdata", "templateDirs", "dir2"), template.Exclude(func(path string) bool {
+			return strings.Contains(path, "tpl6")
+		})),
 		template.UseFuncs(template.FuncMap{
 			"title": func(val string) string {
 				return strings.Title(val)
@@ -61,23 +63,30 @@ func TestPlugin(t *testing.T) {
 		}),
 	)
 
-	names := []string{
-		"test1",
-		"test2",
-		"tpl3",
-		"tpl4",
-		"tpl5",
-		"tpl6",
-		"nested.tpl7",
+	cases := []struct {
+		name        string
+		shouldExist bool
+	}{
+		{name: "test1", shouldExist: true},
+		{name: "test2", shouldExist: true},
+		{name: "tpl3", shouldExist: true},
+		{name: "tpl4", shouldExist: true},
+		{name: "tpl5", shouldExist: true},
+		{name: "tpl6", shouldExist: false},
+		{name: "nested.tpl7", shouldExist: true},
 	}
 
-	for i, name := range names {
-		t.Run(name, func(t *testing.T) {
+	for i, tcase := range cases {
+		t.Run(tcase.name, func(t *testing.T) {
+			if !tcase.shouldExist {
+				return
+			}
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			ctx := context.Background()
-			ctx = template.Enable(ctx, name, nil)
+			ctx = template.Enable(ctx, tcase.name, nil)
 
 			off := postdog.New(postdog.WithPlugin(plugin))
 

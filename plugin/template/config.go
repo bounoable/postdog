@@ -13,7 +13,7 @@ import (
 // Config is the plugin configuration.
 type Config struct {
 	Templates    map[string]string
-	TemplateDirs []string
+	TemplateDirs []DirectoryConfig
 	Funcs        FuncMap
 }
 
@@ -56,10 +56,45 @@ func Use(name, filepath string) Option {
 //	- tpl2
 //	- nested.tpl3
 //	- nested.deeper.tpl4
-func UseDir(dirs ...string) Option {
-	return func(cfg *Config) {
-		cfg.TemplateDirs = append(cfg.TemplateDirs, dirs...)
+//
+// Use the `Exclude()` option to filter templates based on their filepath.
+func UseDir(dir string, opts ...UseDirOption) Option {
+	dirCfg := DirectoryConfig{Dir: dir}
+	for _, opt := range opts {
+		opt(&dirCfg)
 	}
+	return func(cfg *Config) {
+		cfg.TemplateDirs = append(cfg.TemplateDirs, dirCfg)
+	}
+}
+
+// UseDirOption is an option for the `UseDir()` function.
+type UseDirOption func(*DirectoryConfig)
+
+// Exclude filters templates by their filepath.
+func Exclude(fn func(string) bool) UseDirOption {
+	return func(cfg *DirectoryConfig) {
+		cfg.Exclude = fn
+	}
+}
+
+// ExcludePattern filters templates by a pattern.
+// This function panics if it can't compile the pattern.
+func ExcludePattern(pattern string) UseDirOption {
+	return ExcludeRegex(regexp.MustCompile(pattern))
+}
+
+// ExcludeRegex filters templates by a regular expression.
+func ExcludeRegex(expr *regexp.Regexp) UseDirOption {
+	return Exclude(func(path string) bool {
+		return expr.MatchString(path)
+	})
+}
+
+// DirectoryConfig is the configuration for a template directory.
+type DirectoryConfig struct {
+	Dir     string
+	Exclude func(string) bool
 }
 
 // UseFuncs adds the functions in funcMaps the templates' function maps.
@@ -77,8 +112,8 @@ func UseFuncs(funcMaps ...FuncMap) Option {
 func (cfg Config) ParseTemplates() (*template.Template, error) {
 	tpls := template.New("templates").Funcs(template.FuncMap(cfg.Funcs))
 
-	for _, dir := range cfg.TemplateDirs {
-		if err := parseTemplates(dir, tpls); err != nil {
+	for _, dirCfg := range cfg.TemplateDirs {
+		if err := parseTemplates(dirCfg, tpls); err != nil {
 			return nil, err
 		}
 	}
@@ -107,14 +142,18 @@ func (cfg Config) ParseTemplates() (*template.Template, error) {
 var slashExpr = regexp.MustCompile(fmt.Sprintf("^%c", os.PathSeparator))
 var suffixExpr = regexp.MustCompile(`(?i)(\.[a-z0-9]+)+$`)
 
-func parseTemplates(dir string, tpls *template.Template) error {
-	dir = filepath.Clean(dir)
+func parseTemplates(dirCfg DirectoryConfig, tpls *template.Template) error {
+	dir := filepath.Clean(dirCfg.Dir)
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if info.IsDir() {
+			return nil
+		}
+
+		if dirCfg.Exclude != nil && dirCfg.Exclude(path) {
 			return nil
 		}
 

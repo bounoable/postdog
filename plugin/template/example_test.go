@@ -18,13 +18,16 @@ func Example() {
 	po := postdog.New(
 		postdog.WithPlugin(
 			template.Plugin(
-				template.UseDir( // add template directories
-					filepath.Join(wd, "testdata/templateDirs/dir1"),
-					filepath.Join(wd, "testdata/templateDirs/dir2"),
-				),
-				template.Use("custom1", filepath.Join(wd, "testdata/templates/tpl1.html")), // add single template
+				// add template directories
+				template.UseDir(filepath.Join(wd, "testdata/templateDirs/dir1")),
+				template.UseDir(filepath.Join(wd, "testdata/templateDirs/dir2")),
+
+				// add single templates
+				template.Use("custom1", filepath.Join(wd, "testdata/templates/tpl1.html")),
 				template.Use("custom2", filepath.Join(wd, "testdata/templates/tpl2.html")),
-				template.UseFuncs(template.FuncMap{ // register template functions
+
+				// add template funcs
+				template.UseFuncs(template.FuncMap{
 					"title": strings.Title,
 					"upper": strings.ToUpper,
 				}),
