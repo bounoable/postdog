@@ -81,10 +81,9 @@ func (let Letter) String() string {
 
 // Attachment is a file attachment.
 type Attachment struct {
-	Filename    string
-	Header      textproto.MIMEHeader
-	ContentType string
-	Content     []byte
+	Filename string
+	Header   textproto.MIMEHeader
+	Content  []byte
 }
 
 // New is an alias to Write()
@@ -236,21 +235,21 @@ func Attach(r io.Reader, filename string, opts ...AttachOption) (WriteOption, er
 		opt(&attach)
 	}
 
-	if attach.ContentType == "" {
+	ct := attach.ContentType()
+
+	if ct == "" {
 		if ext := filepath.Ext(filename); ext != "" {
-			attach.ContentType = mime.TypeByExtension(ext)
-		} else {
-			if err == nil {
-				attach.ContentType = http.DetectContentType(b)
-			}
+			ct = mime.TypeByExtension(ext)
+		} else if err == nil {
+			ct = http.DetectContentType(b)
 		}
 	}
 
-	if attach.ContentType == "" {
-		attach.ContentType = "application/octet-stream"
+	if ct == "" {
+		ct = "application/octet-stream"
 	}
 
-	attach.Header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, attach.ContentType, filename))
+	attach.Header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, ct, filename))
 	attach.Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	attach.Header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(attach.Content))[:12], filename))
 	attach.Header.Set("Content-Transfer-Encoding", "base64")
@@ -289,6 +288,11 @@ type AttachOption func(*Attachment)
 // ContentType sets the "Content-Type" header of an attachment.
 func ContentType(ct string) AttachOption {
 	return func(attach *Attachment) {
-		attach.ContentType = ct
+		attach.Header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, ct, attach.Filename))
 	}
+}
+
+// ContentType returns the "Content-Type" header.
+func (attach Attachment) ContentType() string {
+	return attach.Header.Get("Content-Type")
 }

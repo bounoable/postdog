@@ -160,7 +160,7 @@ func filterAttachmentNames(attachments []letter.Attachment, names []string) bool
 func filterAttachmentContentTypes(attachments []letter.Attachment, cts []string) bool {
 	for _, attach := range attachments {
 		for _, ct := range cts {
-			if strings.Contains(attach.ContentType, ct) {
+			if strings.Contains(attach.ContentType(), ct) {
 				return true
 			}
 		}
