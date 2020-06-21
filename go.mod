@@ -21,6 +21,7 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/api v0.28.0
 	google.golang.org/genproto v0.0.0-20200620020550-bd6e04640131 // indirect
+	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.24.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1
