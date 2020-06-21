@@ -31,6 +31,7 @@ type Config struct {
 	Transports         map[string]TransportConfig
 	PluginFactories    map[string]PluginFactory
 	Plugins            []PluginConfig
+	Queue              QueueConfig
 }
 
 // TransportFactory create the transport from the given cfg.
@@ -69,6 +70,11 @@ func (fn PluginFactoryFunc) CreatePlugin(ctx context.Context, cfg map[string]int
 type PluginConfig struct {
 	Name   string
 	Config map[string]interface{}
+}
+
+// QueueConfig is the send queue configuration.
+type QueueConfig struct {
+	Buffer int
 }
 
 // New initializes a new autowire configuration.
@@ -154,6 +160,7 @@ type yamlConfig struct {
 	Plugins    []PluginConfig
 	// Default is the name of the default transport.
 	Default string
+	Queue   QueueConfig
 }
 
 func (cfg yamlConfig) apply(config *Config) error {
@@ -210,6 +217,8 @@ func (cfg yamlConfig) apply(config *Config) error {
 		plugincfg.Config = pcfg
 		config.Plugins = append(config.Plugins, plugincfg)
 	}
+
+	config.Queue = cfg.Queue
 
 	return nil
 }
@@ -274,6 +283,10 @@ func (cfg Config) Office(ctx context.Context, opts ...postdog.Option) (*postdog.
 
 		pluginOpts = append(pluginOpts, postdog.WithPlugin(plugin))
 	}
+
+	opts = append([]postdog.Option{
+		postdog.QueueBuffer(cfg.Queue.Buffer),
+	}, opts...)
 
 	off := postdog.New(append(pluginOpts, opts...)...)
 

@@ -98,6 +98,8 @@ func TestConfig_LoadFile(t *testing.T) {
 		assert.Equal(t, tcase.name, cfg.Plugins[i].Name)
 		assert.Equal(t, tcase.config, cfg.Plugins[i].Config)
 	}
+
+	assert.Equal(t, 24, cfg.Queue.Buffer)
 }
 
 func TestConfig_Office(t *testing.T) {
@@ -117,6 +119,8 @@ func TestConfig_Office(t *testing.T) {
 		Config:   map[string]interface{}{"val": 2},
 	}
 
+	cfg.Queue.Buffer = 10
+
 	off, err := cfg.Office(context.Background())
 	assert.Nil(t, err)
 
@@ -128,6 +132,7 @@ func TestConfig_Office(t *testing.T) {
 
 	assert.Equal(t, testTransport{val: 1}, trans1)
 	assert.Equal(t, testTransport{val: 2}, trans2)
+	assert.Equal(t, 10, off.Config().QueueBuffer)
 }
 
 type testTransport struct {

@@ -1,5 +1,8 @@
 default: test2
 
+queue:
+  buffer: 24
+
 transports:
   test1:
     provider: smtp
