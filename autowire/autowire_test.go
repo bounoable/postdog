@@ -33,9 +33,10 @@ func TestConfig_LoadFile(t *testing.T) {
 	assert.Nil(t, err)
 
 	expectedTransports := []struct {
-		name     string
-		provider string
-		config   map[string]interface{}
+		name            string
+		provider        string
+		config          map[string]interface{}
+		shouldBeDefault bool
 	}{
 		{
 			name:     "test1",
@@ -56,6 +57,7 @@ func TestConfig_LoadFile(t *testing.T) {
 					"https://www.googleapis.com/auth/gmail.send",
 				},
 			},
+			shouldBeDefault: true,
 		},
 		{
 			name:     "test3",
@@ -72,6 +74,10 @@ func TestConfig_LoadFile(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, tcase.provider, transportcfg.Provider)
 		assert.Equal(t, tcase.config, transportcfg.Config)
+
+		if tcase.shouldBeDefault {
+			assert.Equal(t, cfg.DefaultTransport, tcase.name)
+		}
 	}
 
 	expectedPlugins := []struct {

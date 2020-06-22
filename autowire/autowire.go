@@ -29,6 +29,7 @@ func File(path string, opts ...Option) (Config, error) {
 type Config struct {
 	TransportFactories map[string]TransportFactory
 	Transports         map[string]TransportConfig
+	DefaultTransport   string
 	PluginFactories    map[string]PluginFactory
 	Plugins            []PluginConfig
 	Queue              QueueConfig
@@ -207,6 +208,8 @@ func (cfg yamlConfig) apply(config *Config) error {
 	for name, transportcfg := range transports {
 		config.Transports[name] = transportcfg
 	}
+
+	config.DefaultTransport = replaceEnvPlaceholders(cfg.Default)
 
 	for _, plugincfg := range cfg.Plugins {
 		pcfg := make(map[string]interface{}, len(plugincfg.Config))
