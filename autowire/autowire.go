@@ -306,7 +306,12 @@ func (cfg Config) Office(ctx context.Context, opts ...postdog.Option) (*postdog.
 			return nil, fmt.Errorf("could not create transport '%s': %w", name, err)
 		}
 
-		off.ConfigureTransport(name, trans)
+		var confOpts []postdog.ConfigureOption
+		if cfg.DefaultTransport == name {
+			confOpts = append(confOpts, postdog.DefaultTransport())
+		}
+
+		off.ConfigureTransport(name, trans, confOpts...)
 	}
 
 	return off, nil

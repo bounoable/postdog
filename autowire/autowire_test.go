@@ -125,6 +125,7 @@ func TestConfig_Office(t *testing.T) {
 		Config:   map[string]interface{}{"val": 2},
 	}
 
+	cfg.DefaultTransport = "test2"
 	cfg.Queue.Buffer = 10
 
 	off, err := cfg.Office(context.Background())
@@ -139,6 +140,10 @@ func TestConfig_Office(t *testing.T) {
 	assert.Equal(t, testTransport{val: 1}, trans1)
 	assert.Equal(t, testTransport{val: 2}, trans2)
 	assert.Equal(t, 10, off.Config().QueueBuffer)
+
+	defTrans, err := off.DefaultTransport()
+	assert.Nil(t, err)
+	assert.Equal(t, trans2, defTrans)
 }
 
 type testTransport struct {
