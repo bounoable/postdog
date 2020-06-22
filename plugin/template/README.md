@@ -17,6 +17,7 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/template"
+	"github.com/bounoable/postdog/plugin/template/i18n"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 					"title": strings.Title,
 					"upper": strings.ToUpper,
 				}),
+				i18n.Use(nil /* `i18n.Translator` implementation */), // register `$t` (translate) template function
 			),
 		),
 	)
