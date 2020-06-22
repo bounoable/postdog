@@ -475,9 +475,7 @@ func TestOffice_Run(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go func() {
-		assert.Nil(t, off.Run(ctx))
-	}()
+	go off.Run(ctx)
 
 	<-time.After(time.Millisecond * 100)
 
@@ -485,11 +483,14 @@ func TestOffice_Run(t *testing.T) {
 
 	trans.EXPECT().Send(gomock.Any(), let1).Return(nil)
 	trans.EXPECT().Send(gomock.Any(), let2).Return(nil)
-	trans.EXPECT().Send(gomock.Any(), let3).Return(nil)
+	trans.EXPECT().Send(gomock.Any(), let3).DoAndReturn(func(ctx context.Context, _ letter.Letter) error {
+		assert.Equal(t, "somevalue", ctx.Value("somekey"))
+		return nil
+	})
 
 	assert.Nil(t, off.Dispatch(context.Background(), let1))
 	assert.Nil(t, off.Dispatch(context.Background(), let2))
-	assert.Nil(t, off.Dispatch(context.Background(), let3))
+	assert.Nil(t, off.Dispatch(context.WithValue(ctx, "somekey", "somevalue"), let3))
 
 	<-time.After(time.Millisecond * 100)
 }
