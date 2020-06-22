@@ -40,6 +40,7 @@ type Transport interface {
 }
 
 type dispatchJob struct {
+	values    context.Context
 	letter    letter.Letter
 	transport string
 }
@@ -213,7 +214,10 @@ func (o *Office) Send(ctx context.Context, let letter.Letter) error {
 // Available options:
 //	DispatchWith(): Set the name of the transport to use.
 func (o *Office) Dispatch(ctx context.Context, let letter.Letter, opts ...DispatchOption) error {
-	job := dispatchJob{letter: let}
+	job := dispatchJob{
+		values: ctx,
+		letter: let,
+	}
 	for _, opt := range opts {
 		opt(&job)
 	}
@@ -273,13 +277,30 @@ func (o *Office) run(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case job := <-o.queue:
+			dispatchCtx := &dispatchContext{
+				Context: ctx,
+				values:  job.values,
+			}
+
 			if job.transport == "" {
-				o.Send(ctx, job.letter)
+				o.Send(dispatchCtx, job.letter)
 			} else {
-				o.SendWith(ctx, job.transport, job.letter)
+				o.SendWith(dispatchCtx, job.transport, job.letter)
 			}
 		}
 	}
+}
+
+type dispatchContext struct {
+	context.Context
+	values context.Context
+}
+
+func (ctx *dispatchContext) Value(key interface{}) interface{} {
+	if val := ctx.Context.Value(key); val != nil {
+		return val
+	}
+	return ctx.values.Value(key)
 }
 
 func (o *Office) log(v ...interface{}) {

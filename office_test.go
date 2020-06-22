@@ -483,9 +483,9 @@ func TestOffice_Run(t *testing.T) {
 
 	let1, let2, let3 := letter.Write(), letter.Write(), letter.Write()
 
-	trans.EXPECT().Send(ctx, let1)
-	trans.EXPECT().Send(ctx, let2)
-	trans.EXPECT().Send(ctx, let3)
+	trans.EXPECT().Send(gomock.Any(), let1).Return(nil)
+	trans.EXPECT().Send(gomock.Any(), let2).Return(nil)
+	trans.EXPECT().Send(gomock.Any(), let3).Return(nil)
 
 	assert.Nil(t, off.Dispatch(context.Background(), let1))
 	assert.Nil(t, off.Dispatch(context.Background(), let2))
