@@ -50,11 +50,11 @@ func PluginWithConfig(conv Converter, cfg Config) postdog.PluginFunc {
 				next func(context.Context, letter.Letter) (letter.Letter, error),
 			) (letter.Letter, error) {
 				if Disabled(ctx) {
-					return let, nil
+					return next(ctx, let)
 				}
 
 				if len(let.HTML) > 0 && !cfg.OverrideHTML {
-					return let, nil
+					return next(ctx, let)
 				}
 
 				var buf bytes.Buffer
