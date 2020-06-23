@@ -1,6 +1,8 @@
 package i18n
 
-import "github.com/bounoable/postdog/plugin/template"
+import (
+	"github.com/bounoable/postdog/plugin/template"
+)
 
 //go:generate mockgen -source=i18n.go -destination=./mock_i18n/i18n.go
 
