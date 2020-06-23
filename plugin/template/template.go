@@ -62,6 +62,9 @@ func TryPlugin(opts ...Option) (postdog.PluginFunc, error) {
 				}
 
 				let.HTML = builder.String()
+				if let.Text == "" {
+					let.Text = let.HTML
+				}
 
 				return next(ctx, let)
 			}),
