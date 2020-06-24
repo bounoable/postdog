@@ -148,6 +148,30 @@ func TestConfig_ParseTemplates(t *testing.T) {
 			},
 			expectedTpls: []string{"tpl5", "nested.tpl7"},
 		},
+		"template dir with include": {
+			opts: []Option{
+				UseDir(tplDirPath("dir2"), Include(func(path string) bool {
+					return strings.Contains(path, "tpl5")
+				})),
+				UseFuncs(stubFuncMapA),
+			},
+			expectedTpls: []string{"tpl5"},
+		},
+		"template dir with include and exclude": {
+			opts: []Option{
+				UseDir(
+					tplDirPath("dir2"),
+					Include(func(path string) bool {
+						return !strings.Contains(path, "nested")
+					}),
+					Exclude(func(path string) bool {
+						return strings.Contains(path, "tpl6")
+					}),
+				),
+				UseFuncs(stubFuncMapA),
+			},
+			expectedTpls: []string{"tpl5"},
+		},
 		"missing func": {
 			opts: []Option{
 				UseDir(tplDirPath("dir1")),
@@ -167,6 +191,7 @@ func TestConfig_ParseTemplates(t *testing.T) {
 				return
 			}
 
+			assert.Nil(t, err)
 			assert.NotNil(t, tpls)
 
 			for _, tplname := range tcase.expectedTpls {

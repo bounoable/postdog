@@ -91,10 +91,31 @@ func ExcludeRegex(expr *regexp.Regexp) UseDirOption {
 	})
 }
 
+// Include filters templates by their filepath.
+func Include(fn func(string) bool) UseDirOption {
+	return func(cfg *DirectoryConfig) {
+		cfg.Include = fn
+	}
+}
+
+// IncludePattern filters templates by a pattern.
+// This function panics if it can't compile the pattern.
+func IncludePattern(pattern string) UseDirOption {
+	return IncludeRegex(regexp.MustCompile(pattern))
+}
+
+// IncludeRegex filters templates by a regular expression.
+func IncludeRegex(expr *regexp.Regexp) UseDirOption {
+	return Include(func(path string) bool {
+		return expr.MatchString(path)
+	})
+}
+
 // DirectoryConfig is the configuration for a template directory.
 type DirectoryConfig struct {
 	Dir     string
 	Exclude func(string) bool
+	Include func(string) bool
 }
 
 // UseFuncs adds the functions in funcMaps the templates' function maps.
@@ -150,6 +171,10 @@ func parseTemplates(dirCfg DirectoryConfig, tpls *template.Template) error {
 		}
 
 		if info.IsDir() {
+			return nil
+		}
+
+		if dirCfg.Include != nil && !dirCfg.Include(path) {
 			return nil
 		}
 
