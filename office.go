@@ -169,6 +169,7 @@ func (o *Office) SendWith(ctx context.Context, transport string, let letter.Lett
 	}
 
 	if let, err = o.applyMiddleware(ctx, let); err != nil {
+		o.log(err)
 		return err
 	}
 
