@@ -3,7 +3,7 @@ package postdog.store;
 option go_package = "github.com/bounoable/postdog/plugin/store/api/storeproto";
 
 import "google/protobuf/timestamp.proto";
-import "letter.proto";
+import "storeletter.proto";
 
 service QueryService {
   rpc Run(Query) returns (QueryResult);
