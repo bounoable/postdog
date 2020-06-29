@@ -3,13 +3,13 @@ module github.com/bounoable/postdog
 go 1.14
 
 require (
-	cloud.google.com/go v0.58.0 // indirect
+	cloud.google.com/go v0.59.0 // indirect
 	github.com/bounoable/mongoutil v0.3.3
 	github.com/bounoable/timefn v0.1.2
 	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
-	github.com/klauspost/compress v1.10.9 // indirect
+	github.com/klauspost/compress v1.10.10 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/yuin/goldmark v1.1.32
@@ -21,8 +21,7 @@ require (
 	golang.org/x/sys v0.0.0-20200620081246-981b61492c35 // indirect
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/api v0.28.0
-	google.golang.org/genproto v0.0.0-20200620020550-bd6e04640131 // indirect
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf v1.24.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/mail.v2 v2.3.1

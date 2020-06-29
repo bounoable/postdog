@@ -41,6 +41,10 @@ func QueryProto(q query.Query) (*storeproto.Query, error) {
 			SortBy:    storeproto.Sorting(q.Sort.SortBy),
 			Direction: storeproto.SortDirection(q.Sort.Dir),
 		},
+		Paginate: &storeproto.PaginateConfig{
+			Page:    int64(q.Paginate.Page),
+			PerPage: int64(q.Paginate.PerPage),
+		},
 	}, nil
 }
 
@@ -110,6 +114,10 @@ func Query(q *storeproto.Query) (query.Query, error) {
 		Sort: query.SortConfig{
 			SortBy: query.Sorting(q.GetSort().GetSortBy()),
 			Dir:    query.SortDirection(q.GetSort().GetDirection()),
+		},
+		Paginate: query.PaginateConfig{
+			Page:    int(q.GetPaginate().GetPage()),
+			PerPage: int(q.GetPaginate().GetPerPage()),
 		},
 	}, nil
 }

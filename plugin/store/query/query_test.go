@@ -163,6 +163,17 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		"Paginate": {
+			options: []query.Option{
+				query.Paginate(3, 35),
+			},
+			expected: query.Query{
+				Paginate: query.PaginateConfig{
+					Page:    3,
+					PerPage: 35,
+				},
+			},
+		},
 	}
 
 	for name, tcase := range cases {

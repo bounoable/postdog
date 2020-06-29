@@ -59,6 +59,7 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 	}
 
 	letters = sortLetters(letters, q.Sort)
+	letters = paginate(letters, q.Paginate)
 
 	return newCursor(letters), nil
 }
@@ -214,6 +215,25 @@ func sortLettersBySendDate(letters []store.Letter, dir query.SortDirection) []st
 		}
 	})
 	return letters
+}
+
+func paginate(letters []store.Letter, cfg query.PaginateConfig) []store.Letter {
+	if cfg.Page == 0 || cfg.PerPage == 0 {
+		return letters
+	}
+
+	start := (cfg.Page - 1) * cfg.PerPage
+	end := cfg.Page * cfg.PerPage
+
+	if start > (len(letters) - 1) {
+		start = len(letters) - 1
+	}
+
+	if end > len(letters) {
+		end = len(letters)
+	}
+
+	return letters[start:end]
 }
 
 func newCursor(letters []store.Letter) query.Cursor {

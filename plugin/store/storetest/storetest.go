@@ -241,6 +241,10 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 				letters[0],
 			},
 		},
+		"Paginate": {
+			query:    query.New(query.Paginate(2, 2)),
+			expected: letters[2:],
+		},
 	}
 
 	for name, tcase := range cases {

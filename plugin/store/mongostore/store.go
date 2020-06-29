@@ -147,6 +147,12 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 	filter := buildFilter(q)
 	opts := options.Find().SetSort(buildSort(q.Sort))
 
+	if q.Paginate.Page != 0 && q.Paginate.PerPage != 0 {
+		opts = opts.
+			SetSkip(int64((q.Paginate.Page - 1) * q.Paginate.PerPage)).
+			SetLimit(int64(q.Paginate.Page * q.Paginate.PerPage))
+	}
+
 	cur, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err

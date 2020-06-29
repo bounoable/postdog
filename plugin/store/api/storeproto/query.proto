@@ -19,6 +19,7 @@ message Query {
   repeated string bcc = 6;
   AttachmentFilter attachment = 7;
   SortConfig sort = 8;
+  PaginateConfig paginate = 9;
 }
 
 message SentAtFilter {
@@ -54,6 +55,11 @@ enum Sorting {
 enum SortDirection {
   Asc = 0;
   Desc = 1;
+}
+
+message PaginateConfig {
+  int64 page = 1;
+  int64 perPage = 2;
 }
 
 message QueryResult {

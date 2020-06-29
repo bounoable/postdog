@@ -47,6 +47,7 @@ type Query struct {
 	BCC        []string
 	Attachment AttachmentFilter
 	Sort       SortConfig
+	Paginate   PaginateConfig
 }
 
 // SentAtFilter filters letters by their send date.
@@ -79,6 +80,12 @@ type Sorting int
 
 // SortDirection is the direction of the sorting.
 type SortDirection int
+
+// PaginateConfig defines the pagination of the query.
+type PaginateConfig struct {
+	Page    int
+	PerPage int
+}
 
 // New builds and returns a new Query, configured by opts.
 func New(opts ...Option) Query {
@@ -199,6 +206,16 @@ func Sort(by Sorting, dir SortDirection) Option {
 		q.Sort = SortConfig{
 			SortBy: by,
 			Dir:    dir,
+		}
+	}
+}
+
+// Paginate paginates the query.
+func Paginate(page, perPage int) Option {
+	return func(q *Query) {
+		q.Paginate = PaginateConfig{
+			Page:    page,
+			PerPage: perPage,
 		}
 	}
 }
