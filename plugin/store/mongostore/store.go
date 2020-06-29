@@ -150,7 +150,7 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 	if q.Paginate.Page != 0 && q.Paginate.PerPage != 0 {
 		opts = opts.
 			SetSkip(int64((q.Paginate.Page - 1) * q.Paginate.PerPage)).
-			SetLimit(int64(q.Paginate.Page * q.Paginate.PerPage))
+			SetLimit(int64(q.Paginate.PerPage))
 	}
 
 	cur, err := s.col.Find(ctx, filter, opts)
