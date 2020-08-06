@@ -9,6 +9,7 @@
     "markdown",
     "template",
     "autowire",
-    "letter"
+    "letter",
+    "gmail"
   ]
 }
