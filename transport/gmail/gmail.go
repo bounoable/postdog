@@ -93,7 +93,7 @@ func (trans *transport) createService(ctx context.Context) error {
 func (trans transport) Send(ctx context.Context, let letter.Letter) error {
 	msg := let.RFC()
 	gmsg := gmail.Message{Raw: base64.RawURLEncoding.EncodeToString([]byte(msg))}
-	if _, err := trans.svc.Users.Messages.Send("me", &gmsg).Do(); err != nil {
+	if _, err := trans.svc.Users.Messages.Send(let.From.Address, &gmsg).Do(); err != nil {
 		return err
 	}
 	return nil
