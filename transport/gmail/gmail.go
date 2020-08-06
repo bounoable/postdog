@@ -82,7 +82,13 @@ func ClientOptions(options ...option.ClientOption) Option {
 }
 
 func (trans *transport) createService(ctx context.Context) error {
-	svc, err := gmail.NewService(ctx, trans.clientOptions...)
+	var opts []option.ClientOption
+	if len(trans.scopes) > 0 {
+		opts = append(opts, option.WithScopes(trans.scopes...))
+	}
+	opts = append(opts, trans.clientOptions...)
+
+	svc, err := gmail.NewService(ctx, opts...)
 	if err != nil {
 		return err
 	}
