@@ -11,7 +11,6 @@ import (
 	"github.com/bounoable/postdog/plugin/store"
 	"github.com/bounoable/postdog/plugin/store/query"
 	"github.com/bounoable/timefn"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -249,9 +248,6 @@ func Query(t *testing.T, createRepo func(...store.Letter) query.Repository) {
 
 	for name, tcase := range cases {
 		t.Run(name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
 			testQuery(t, createRepo(letters...), tcase.query, tcase.expected)
 		})
 	}

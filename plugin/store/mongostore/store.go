@@ -4,6 +4,7 @@ package mongostore
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/bounoable/mongoutil/index"
@@ -66,6 +67,7 @@ func init() {
 
 // Store is the mongodb store.
 type Store struct {
+	mux sync.RWMutex
 	cfg Config
 	col *mongo.Collection
 }
@@ -75,6 +77,7 @@ type Config struct {
 	DatabaseName   string
 	CollectionName string
 	CreateIndexes  bool
+	Projection     interface{} // Custom mongodb *mongo.Collection.Find() projection
 }
 
 // New creates a mongodb store.
@@ -131,6 +134,13 @@ func CreateIndexes(create bool) Option {
 	}
 }
 
+// Projection configures proj to be the used as the projection in the queries.
+func Projection(proj interface{}) Option {
+	return func(cfg *Config) {
+		cfg.Projection = proj
+	}
+}
+
 // Config returns the store configuration.
 func (s *Store) Config() Config {
 	return s.cfg
@@ -153,12 +163,23 @@ func (s *Store) Query(ctx context.Context, q query.Query) (query.Cursor, error) 
 			SetLimit(int64(q.Paginate.PerPage))
 	}
 
+	opts = s.configureProjection(opts)
+
 	cur, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return &cursor{cur: cur}, nil
+}
+
+func (s *Store) configureProjection(opts *options.FindOptions) *options.FindOptions {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
+	if s.cfg.Projection == nil {
+		return opts
+	}
+	return opts.SetProjection(s.cfg.Projection)
 }
 
 func buildFilter(q query.Query) bson.D {
@@ -355,4 +376,11 @@ func (s *Store) Get(ctx context.Context, id uuid.UUID) (store.Letter, error) {
 	}
 
 	return dblet.store(), nil
+}
+
+// SetProjection sets proj to be used as the projection in the queries.
+func (s *Store) SetProjection(proj interface{}) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.cfg.Projection = proj
 }
