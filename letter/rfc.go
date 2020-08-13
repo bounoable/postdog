@@ -89,7 +89,7 @@ func (msg *rfcMessage) build() {
 	msg.lines = nil
 
 	msg.keyValue("MIME-Version", "1.0")
-	msg.keyValue("Subject", msg.subject)
+	msg.keyValue("Subject", encodeSubject(msg.subject))
 	msg.keyValue("From", msg.from)
 
 	if msg.to != "" {
@@ -109,14 +109,14 @@ func (msg *rfcMessage) build() {
 
 		msg.beginBoundary(bd)
 		msg.contentTypeIf(msg.text != "" && msg.html != "", "multipart/alternative", func(msg *rfcMessage, bd string) {
-			if msg.text != "" {
+			if strings.TrimSpace(msg.text) != "" {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/plain; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
 				msg.line("", msg.text)
 			}
 
-			if msg.html != "" {
+			if strings.TrimSpace(msg.html) != "" {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/html; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
@@ -152,4 +152,8 @@ func (msg *rfcMessage) build() {
 
 func (msg *rfcMessage) String() string {
 	return strings.Join(msg.lines, "\r\n")
+}
+
+func encodeSubject(subject string) string {
+	return fmt.Sprintf("=?utf-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(subject)))
 }
