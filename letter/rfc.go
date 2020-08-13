@@ -113,14 +113,14 @@ func (msg *rfcMessage) build() {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/plain; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
-				msg.line("", msg.text)
+				msg.line("", base64.StdEncoding.EncodeToString([]byte(msg.text)))
 			}
 
 			if strings.TrimSpace(msg.html) != "" {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/html; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
-				msg.line("", msg.html)
+				msg.line("", base64.StdEncoding.EncodeToString([]byte(msg.html)))
 			}
 
 			if msg.text != "" || msg.html != "" {
