@@ -1,6 +1,7 @@
 package letter
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"math/rand"
@@ -46,7 +47,8 @@ func (msg *rfcMessage) keyValue(key, val string) {
 
 func (msg *rfcMessage) contentType(ct string, fn func(msg *rfcMessage, bd string)) {
 	bd := boundary()
-	msg.keyValue("Content-Type", fmt.Sprintf("%s; boundary=%s", ct, bd))
+	msg.keyValue("Content-Type", fmt.Sprintf(`%s; boundary="%s"`, ct, bd))
+	msg.line("", "") // preamble
 	fn(msg, bd)
 }
 
@@ -113,14 +115,14 @@ func (msg *rfcMessage) build() {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/plain; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
-				msg.line("", base64.StdEncoding.EncodeToString([]byte(msg.text)))
+				msg.line("", fold(base64.StdEncoding.EncodeToString([]byte(msg.text)), 78), "")
 			}
 
 			if strings.TrimSpace(msg.html) != "" {
 				msg.beginBoundary(bd)
 				msg.keyValue("Content-Type", `text/html; charset="utf-8"`)
 				msg.keyValue("Content-Transfer-Encoding", "base64")
-				msg.line("", base64.StdEncoding.EncodeToString([]byte(msg.html)))
+				msg.line("", fold(base64.StdEncoding.EncodeToString([]byte(msg.html)), 78), "")
 			}
 
 			if msg.text != "" || msg.html != "" {
@@ -140,7 +142,7 @@ func (msg *rfcMessage) build() {
 				msg.keyValue("Content-Disposition", a.Header.Get("Content-Disposition"))
 				msg.keyValue("Content-ID", a.Header.Get("Content-ID"))
 				msg.keyValue("Content-Transfer-Encoding", a.Header.Get("Content-Transfer-Encoding"))
-				msg.line("", base64.StdEncoding.EncodeToString(a.Content))
+				msg.line("", fold(base64.StdEncoding.EncodeToString(a.Content), 78), "")
 			}
 		}
 
@@ -156,4 +158,23 @@ func (msg *rfcMessage) String() string {
 
 func encodeSubject(subject string) string {
 	return fmt.Sprintf("=?utf-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(subject)))
+}
+
+func fold(s string, after int) string {
+	sub := ""
+	subs := []string{}
+
+	runes := bytes.Runes([]byte(s))
+	l := len(runes)
+	for i, r := range runes {
+		sub = sub + string(r)
+		if (i+1)%after == 0 {
+			subs = append(subs, sub)
+			sub = ""
+		} else if (i + 1) == l {
+			subs = append(subs, sub)
+		}
+	}
+
+	return strings.Join(subs, "\r\n")
 }
