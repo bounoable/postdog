@@ -18,6 +18,8 @@ transports:
       scopes:
         - https://www.googleapis.com/auth/gmail.addons.current.action.compose
         - https://www.googleapis.com/auth/gmail.send
+      jwt:
+        subject: bob@belcher.test
 
   test3:
     provider: global

@@ -56,6 +56,9 @@ func TestConfig_LoadFile(t *testing.T) {
 					"https://www.googleapis.com/auth/gmail.addons.current.action.compose",
 					"https://www.googleapis.com/auth/gmail.send",
 				},
+				"jwt": map[string]interface{}{
+					"subject": "bob@belcher.test",
+				},
 			},
 			shouldBeDefault: true,
 		},

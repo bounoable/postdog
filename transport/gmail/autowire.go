@@ -33,5 +33,17 @@ func AutowireTransport(ctx context.Context, cfg map[string]interface{}) (postdog
 		serviceAccountPath = ""
 	}
 
-	return NewTransport(ctx, []Option{Scopes(sscopes...), CredentialsFile(serviceAccountPath)}...)
+	var jwtOptions []JWTConfigOption
+
+	if jwt, ok := cfg["jwt"].(map[string]interface{}); ok {
+		if subj, ok := jwt["subject"].(string); ok {
+			jwtOptions = append(jwtOptions, JWTSubject(subj))
+		}
+	}
+
+	return NewTransport(
+		ctx,
+		Scopes(sscopes...),
+		CredentialsFile(serviceAccountPath, jwtOptions...),
+	)
 }
