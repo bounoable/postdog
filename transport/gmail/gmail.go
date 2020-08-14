@@ -4,19 +4,28 @@ package gmail
 import (
 	"context"
 	"encoding/base64"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
 )
 
 type transport struct {
-	scopes        []string
-	clientOptions []option.ClientOption
-	svc           *gmail.Service
+	scopes         []string
+	clientOptions  []option.ClientOption
+	getTokenSource func(context.Context) (oauth2.TokenSource, error)
+	mux            sync.RWMutex
+	tokenSource    oauth2.TokenSource
+	svc            *gmail.Service
 }
 
 // NewTransport initializes a gmail transport.
@@ -36,11 +45,15 @@ func NewTransport(ctx context.Context, options ...Option) (postdog.Transport, er
 		trans.scopes = []string{gmail.MailGoogleComScope}
 	}
 
-	if err := trans.createService(ctx); err != nil {
-		return nil, err
+	if trans.getTokenSource == nil {
+		trans.getTokenSource = trans.getDefaultTokenSource
 	}
 
-	return trans, nil
+	if err := trans.createService(ctx); err != nil {
+		return nil, fmt.Errorf("create gmail service: %w", err)
+	}
+
+	return &trans, nil
 }
 
 // Option is a gmail transport option.
@@ -53,24 +66,67 @@ func Scopes(scopes ...string) Option {
 	}
 }
 
-// Credentials adds an option.ClientOption that authenticates API calls.
+// Credentials authenticates API calls with the creds.TokenSource.
 func Credentials(creds *google.Credentials) Option {
 	return func(trans *transport) {
-		ClientOptions(option.WithCredentials(creds))(trans)
+		trans.getTokenSource = func(_ context.Context) (oauth2.TokenSource, error) {
+			if creds == nil {
+				return nil, errors.New("nil credentials")
+			}
+
+			return creds.TokenSource, nil
+		}
 	}
 }
 
-// CredentialsJSON adds an option.ClientOption that authenticates API calls with the given service account or refresh token JSON credentials.
-func CredentialsJSON(p []byte) Option {
+// CredentialsJSON authenticates API calls with the JSON credentials in p.
+func CredentialsJSON(p []byte, opts ...JWTConfigOption) Option {
 	return func(trans *transport) {
-		ClientOptions(option.WithCredentialsJSON(p))(trans)
+		trans.getTokenSource = func(ctx context.Context) (oauth2.TokenSource, error) {
+			cfg, err := google.JWTConfigFromJSON(p, trans.scopes...)
+			if err != nil {
+				return nil, fmt.Errorf("parse credentials: %w", err)
+			}
+
+			for _, opt := range opts {
+				opt(cfg)
+			}
+
+			return cfg.TokenSource(ctx), nil
+		}
 	}
 }
 
-// CredentialsFile adds an option.ClientOption that authenticates API calls with the given service account or refresh token JSON credentials file.
-func CredentialsFile(filename string) Option {
+// JWTConfigOption ...
+type JWTConfigOption func(*jwt.Config)
+
+// JWTSubject ...
+func JWTSubject(subject string) JWTConfigOption {
+	return func(cfg *jwt.Config) {
+		cfg.Subject = subject
+	}
+}
+
+// CredentialsFile authenticates API calls with the given credentials file.
+func CredentialsFile(filename string, opts ...JWTConfigOption) Option {
 	return func(trans *transport) {
-		ClientOptions(option.WithCredentialsFile(filename))(trans)
+		trans.getTokenSource = func(ctx context.Context) (oauth2.TokenSource, error) {
+			b, err := ioutil.ReadFile(filename)
+			if err != nil {
+				return nil, fmt.Errorf("read credentials file: %w", err)
+			}
+
+			cfg, err := google.JWTConfigFromJSON(b, trans.scopes...)
+			if err != nil {
+				return nil, fmt.Errorf("parse credentials: %w", err)
+			}
+
+			for _, opt := range opts {
+				opt(cfg)
+			}
+
+			return cfg.TokenSource(ctx), nil
+		}
 	}
 }
 
@@ -82,24 +138,50 @@ func ClientOptions(options ...option.ClientOption) Option {
 }
 
 func (trans *transport) createService(ctx context.Context) error {
-	var opts []option.ClientOption
-	if len(trans.scopes) > 0 {
-		opts = append(opts, option.WithScopes(trans.scopes...))
-	}
-	opts = append(opts, trans.clientOptions...)
+	ts, err := trans.getCachedTokenSource(ctx)
 
-	svc, err := gmail.NewService(ctx, opts...)
+	svc, err := gmail.NewService(ctx, append(
+		[]option.ClientOption{option.WithTokenSource(ts)},
+		trans.clientOptions...,
+	)...)
+
 	if err != nil {
 		return err
 	}
 	trans.svc = svc
+
 	return nil
 }
 
-func (trans transport) Send(ctx context.Context, let letter.Letter) error {
+func (trans *transport) getCachedTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+	trans.mux.RLock()
+	if trans.tokenSource != nil {
+		trans.mux.RUnlock()
+		return trans.tokenSource, nil
+	}
+	trans.mux.RUnlock()
+	trans.mux.Lock()
+	defer trans.mux.Unlock()
+
+	ts, err := trans.getTokenSource(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get token source: %w", err)
+	}
+	trans.tokenSource = ts
+	return trans.tokenSource, nil
+}
+
+func (trans *transport) getDefaultTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+	ts, err := google.DefaultTokenSource(ctx, trans.scopes...)
+	if err != nil {
+		return nil, fmt.Errorf("get default token source: %w", err)
+	}
+	return ts, nil
+}
+
+func (trans *transport) Send(ctx context.Context, let letter.Letter) error {
 	msg := let.RFC()
-	gmsg := gmail.Message{Raw: base64.RawURLEncoding.EncodeToString([]byte(msg))}
-	// have to use "me" ?
+	gmsg := gmail.Message{Raw: base64.URLEncoding.EncodeToString([]byte(msg))}
 	if _, err := trans.svc.Users.Messages.Send("me", &gmsg).Do(); err != nil {
 		return err
 	}
