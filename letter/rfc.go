@@ -111,7 +111,6 @@ func (msg *rfcMessage) build() {
 		msg.keyValue("Bcc", msg.bcc)
 	}
 
-	fmt.Println(msg.replyTo)
 	if msg.replyTo != "" {
 		msg.keyValue("Reply-To", msg.replyTo)
 	}

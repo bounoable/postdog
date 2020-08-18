@@ -23,7 +23,7 @@ type Letter struct {
 	To          []mail.Address
 	CC          []mail.Address
 	BCC         []mail.Address
-	ReplyTo     mail.Address
+	ReplyTo     []mail.Address
 	Text        string
 	HTML        string
 	Attachments []Attachment
@@ -43,14 +43,19 @@ func containsAddress(addr mail.Address, addresses ...mail.Address) bool {
 	return false
 }
 
-// HasCC determines of the letter has addr as a "CC" recipient.
+// HasCC determines if the letter has addr as a "CC" recipient.
 func (let Letter) HasCC(addr mail.Address) bool {
 	return containsAddress(addr, let.CC...)
 }
 
-// HasBCC determines of the letter has addr as a "BCC" recipient.
+// HasBCC determines if the letter has addr as a "BCC" recipient.
 func (let Letter) HasBCC(addr mail.Address) bool {
 	return containsAddress(addr, let.BCC...)
+}
+
+// HasReplyTo determines if the letter has addr as a "ReplyTo" header.
+func (let Letter) HasReplyTo(addr mail.Address) bool {
+	return containsAddress(addr, let.ReplyTo...)
 }
 
 // RFC builds the mail according to the RFC 2822 spec.
@@ -58,17 +63,14 @@ func (let Letter) RFC() string {
 	toHeader := RecipientsHeader(let.To)
 	ccHeader := RecipientsHeader(let.CC)
 	bccHeader := RecipientsHeader(let.BCC)
-	var replyTo string
-	if let.ReplyTo.Address != "" {
-		replyTo = let.ReplyTo.String()
-	}
+	replyToHeader := RecipientsHeader(let.ReplyTo)
 
 	return rfc(
 		let.From.String(),
 		toHeader,
 		ccHeader,
 		bccHeader,
-		replyTo,
+		replyToHeader,
 		let.Subject,
 		let.Text,
 		let.HTML,
@@ -223,9 +225,14 @@ func ReplyTo(name, addr string) WriteOption {
 }
 
 // ReplyToAddress sets the "Reply-To" header of the mail.
-func ReplyToAddress(addr mail.Address) WriteOption {
+func ReplyToAddress(addresses ...mail.Address) WriteOption {
 	return func(let *Letter) {
-		let.ReplyTo = addr
+		for _, addr := range addresses {
+			if let.HasReplyTo(addr) {
+				continue
+			}
+			let.ReplyTo = append(let.ReplyTo, addr)
+		}
 	}
 }
 
