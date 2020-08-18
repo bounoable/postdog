@@ -45,6 +45,10 @@ func (trans transport) Send(ctx context.Context, let letter.Letter) error {
 		msg.SetHeader("Bcc", letter.RecipientsHeader(let.BCC))
 	}
 
+	if len(let.ReplyTo) > 0 {
+		msg.SetHeader("Reply-To", letter.RecipientsHeader(let.ReplyTo))
+	}
+
 	if let.Subject != "" {
 		msg.SetHeader("Subject", let.Subject)
 	}
