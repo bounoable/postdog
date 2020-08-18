@@ -23,6 +23,7 @@ type Letter struct {
 	To          []mail.Address
 	CC          []mail.Address
 	BCC         []mail.Address
+	ReplyTo     mail.Address
 	Text        string
 	HTML        string
 	Attachments []Attachment
@@ -57,8 +58,22 @@ func (let Letter) RFC() string {
 	toHeader := RecipientsHeader(let.To)
 	ccHeader := RecipientsHeader(let.CC)
 	bccHeader := RecipientsHeader(let.BCC)
+	var replyTo string
+	if let.ReplyTo.Address != "" {
+		replyTo = let.ReplyTo.String()
+	}
 
-	return rfc(let.From.String(), toHeader, ccHeader, bccHeader, let.Subject, let.Text, let.HTML, let.Attachments).String()
+	return rfc(
+		let.From.String(),
+		toHeader,
+		ccHeader,
+		bccHeader,
+		replyTo,
+		let.Subject,
+		let.Text,
+		let.HTML,
+		let.Attachments,
+	)
 }
 
 // RecipientsHeader builds the mail header value for the given recipients.
@@ -197,6 +212,21 @@ func BCC(name, addr string) WriteOption {
 		Name:    name,
 		Address: addr,
 	})
+}
+
+// ReplyTo sets the "Reply-To" header of the mail.
+func ReplyTo(name, addr string) WriteOption {
+	return ReplyToAddress(mail.Address{
+		Name:    name,
+		Address: addr,
+	})
+}
+
+// ReplyToAddress sets the "Reply-To" header of the mail.
+func ReplyToAddress(addr mail.Address) WriteOption {
+	return func(let *Letter) {
+		let.ReplyTo = addr
+	}
 }
 
 // HTML sets the HTML body of a letter.

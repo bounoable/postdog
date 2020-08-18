@@ -13,6 +13,7 @@ type rfcMessage struct {
 	to          string
 	cc          string
 	bcc         string
+	replyTo     string
 	subject     string
 	text        string
 	html        string
@@ -20,12 +21,16 @@ type rfcMessage struct {
 	lines       []string
 }
 
-func rfc(from, to, cc, bcc, subject, text, html string, attachments []Attachment) *rfcMessage {
+func rfc(
+	from, to, cc, bcc, subject, text, html, replyTo string,
+	attachments []Attachment,
+) string {
 	msg := &rfcMessage{
 		from:        from,
 		to:          to,
 		cc:          cc,
 		bcc:         bcc,
+		replyTo:     replyTo,
 		subject:     subject,
 		text:        text,
 		html:        html,
@@ -34,7 +39,7 @@ func rfc(from, to, cc, bcc, subject, text, html string, attachments []Attachment
 
 	msg.build()
 
-	return msg
+	return msg.String()
 }
 
 func (msg *rfcMessage) line(lines ...string) {
@@ -104,6 +109,10 @@ func (msg *rfcMessage) build() {
 
 	if msg.bcc != "" {
 		msg.keyValue("Bcc", msg.bcc)
+	}
+
+	if msg.replyTo != "" {
+		msg.keyValue("Reply-To", msg.replyTo)
 	}
 
 	msg.contentTypeIf(len(msg.attachments) > 0, "multipart/mixed", func(msg *rfcMessage, bd string) {
