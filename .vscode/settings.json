@@ -10,6 +10,7 @@
     "template",
     "autowire",
     "letter",
-    "gmail"
+    "gmail",
+    "smtp"
   ]
 }
