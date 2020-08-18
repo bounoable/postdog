@@ -22,7 +22,7 @@ type rfcMessage struct {
 }
 
 func rfc(
-	from, to, cc, bcc, subject, text, html, replyTo string,
+	from, to, cc, bcc, replyTo, subject, text, html string,
 	attachments []Attachment,
 ) string {
 	msg := &rfcMessage{
@@ -111,6 +111,7 @@ func (msg *rfcMessage) build() {
 		msg.keyValue("Bcc", msg.bcc)
 	}
 
+	fmt.Println(msg.replyTo)
 	if msg.replyTo != "" {
 		msg.keyValue("Reply-To", msg.replyTo)
 	}
