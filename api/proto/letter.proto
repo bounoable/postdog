@@ -8,9 +8,10 @@ message Letter {
   repeated Address to = 3;
   repeated Address cc = 4;
   repeated Address bcc = 5;
-  string text = 6;
-  string html = 7;
-  repeated Attachment attachments = 8;
+  repeated Address replyTo = 6;
+  string text = 7;
+  string html = 8;
+  repeated Attachment attachments = 9;
 }
 
 message Address {
