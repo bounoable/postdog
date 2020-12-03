@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/bounoable/postdog/internal/encode"
+	"github.com/bounoable/postdog/letter/rfc"
 )
 
 // Write a letter with the given opts.
@@ -308,6 +309,37 @@ func (l Letter) Content() (text string, html string) {
 // Attachments returns the attachments of the letter.
 func (l Letter) Attachments() []Attachment {
 	return l.attachments
+}
+
+// RFC returns the letter as a RFC 5322 string.
+func (l Letter) RFC() string {
+	return rfc.Build(rfc.Mail{
+		Subject:     l.Subject(),
+		From:        l.From(),
+		To:          l.To(),
+		CC:          l.CC(),
+		BCC:         l.BCC(),
+		ReplyTo:     l.ReplyTo(),
+		Text:        l.Text(),
+		HTML:        l.HTML(),
+		Attachments: rfcAttachments(l.Attachments()),
+	})
+}
+
+func (l Letter) String() string {
+	return l.RFC()
+}
+
+func rfcAttachments(ats []Attachment) []rfc.Attachment {
+	res := make([]rfc.Attachment, len(ats))
+	for i, at := range ats {
+		res[i] = rfc.Attachment{
+			Filename: at.Filename(),
+			Content:  at.Content(),
+			Header:   at.Header(),
+		}
+	}
+	return res
 }
 
 func containsAddress(addrs []mail.Address, addr mail.Address) bool {
