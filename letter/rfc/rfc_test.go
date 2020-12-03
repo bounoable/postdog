@@ -228,7 +228,7 @@ func TestBuild(t *testing.T) {
 				Text:        let.Text(),
 				HTML:        let.HTML(),
 				Attachments: mapAttachments(let.Attachments()...),
-			}, rfc.DeterministicBoundaries())
+			})
 
 			assert.Equal(t, test.expected, s)
 		})

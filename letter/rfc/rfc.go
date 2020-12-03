@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -13,14 +12,8 @@ import (
 )
 
 // Build the mail according to RFC 5322.
-func Build(mail Mail, opts ...Option) string {
+func Build(mail Mail) string {
 	var b builder
-	for _, opt := range opts {
-		opt(&b)
-	}
-	if b.newBoundary == nil {
-		b.newBoundary = newBoundary
-	}
 	return b.build(mail)
 }
 
@@ -44,28 +37,13 @@ type Attachment struct {
 	Header   textproto.MIMEHeader
 }
 
-// Option is a builder option.
-type Option func(*builder)
-
 type builder struct {
-	newBoundary func() string
-}
-
-// DeterministicBoundaries forces the builder to generate the encapsulation boundaries deterministically.
-func DeterministicBoundaries() func(b *builder) {
-	var index int
-	return func(b *builder) {
-		b.newBoundary = func() string {
-			bd := fmt.Sprintf("%064d", index+1)
-			index++
-			return bd
-		}
-	}
+	boundaries int
 }
 
 var emptyAddr mail.Address
 
-func (b builder) build(mail Mail) string {
+func (b *builder) build(mail Mail) string {
 	lines := []string{"MIME-Version: 1.0"}
 
 	if mail.Subject != "" {
@@ -120,7 +98,7 @@ func (b builder) build(mail Mail) string {
 	return strings.Join(lines, "\r\n")
 }
 
-func (b builder) bodyWithoutAttachments(text []string, html []string) (lines []string) {
+func (b *builder) bodyWithoutAttachments(text []string, html []string) (lines []string) {
 	if len(text) > 0 && len(html) > 0 {
 		lines = append(lines, b.contentType("multipart/alternative", func(bd string) []string {
 			lines := append([]string{startBoundary(bd)}, text...)
@@ -136,13 +114,13 @@ func (b builder) bodyWithoutAttachments(text []string, html []string) (lines []s
 	return
 }
 
-func (b builder) contentType(ct string, fn func(string) []string) []string {
+func (b *builder) contentType(ct string, fn func(string) []string) []string {
 	bd := b.newBoundary()
 	lines := []string{fmt.Sprintf(`Content-Type: %s; boundary="%s"`, ct, bd), "", ""}
 	return append(lines, fn(bd)...)
 }
 
-func (b builder) textLines(text string) []string {
+func (b *builder) textLines(text string) []string {
 	if text == "" {
 		return nil
 	}
@@ -156,7 +134,7 @@ func (b builder) textLines(text string) []string {
 	}
 }
 
-func (b builder) htmlLines(html string) []string {
+func (b *builder) htmlLines(html string) []string {
 	if html == "" {
 		return nil
 	}
@@ -203,12 +181,8 @@ func fold(s string, after int) string {
 	return strings.Join(subs, "\r\n")
 }
 
-const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func newBoundary() string {
-	buf := make([]byte, 64)
-	for i := 0; i < 64; i++ {
-		buf[i] = chars[rand.Intn(62)]
-	}
-	return string(buf)
+func (b *builder) newBoundary() string {
+	b.boundaries++
+	bd := fmt.Sprintf("%064d", b.boundaries)
+	return bd
 }
