@@ -35,7 +35,7 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 				fmt.Sprintf(`Content-Type: multipart/alternative; boundary="%s"`, boundary(0)),
@@ -61,7 +61,7 @@ func TestBuild(t *testing.T) {
 			letterOpts: append(baseLetterOpts, letter.Text("Hello.")),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 				"Content-Type: text/plain; charset=utf-8",
@@ -76,7 +76,7 @@ func TestBuild(t *testing.T) {
 			letterOpts: append(baseLetterOpts, letter.HTML("<p>Hello.</p>")),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 				"Content-Type: text/html; charset=utf-8",
@@ -99,7 +99,7 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 				`Cc: "Gene Belcher" <gene@example.com>,"Tina Belcher" <tina@example.com>`,
@@ -118,7 +118,7 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 
@@ -176,7 +176,7 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
-				fmt.Sprintf("Subject: %s", encodeUnicode("Hi.")),
+				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
 
@@ -237,10 +237,6 @@ func TestBuild(t *testing.T) {
 
 func join(lines ...string) string {
 	return strings.Join(lines, "\r\n")
-}
-
-func encodeUnicode(s string) string {
-	return fmt.Sprintf("=?utf-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(s)))
 }
 
 func boundary(i int) string {
