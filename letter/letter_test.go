@@ -2,10 +2,13 @@ package letter_test
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"errors"
+	"fmt"
 	"net/mail"
 	"testing"
 
+	"github.com/bounoable/postdog/internal/encode"
 	"github.com/bounoable/postdog/letter"
 	"github.com/stretchr/testify/assert"
 )
@@ -221,7 +224,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
 				assert.Equal(t, "application/octet-stream", at.ContentType())
-				assert.Equal(t, `application/octet-stream; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -235,7 +238,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
 				assert.Equal(t, "text/plain; charset=utf-8", at.ContentType())
-				assert.Equal(t, `text/plain; charset=utf-8; name="attach1.txt"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -249,7 +252,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
 				assert.Equal(t, "application/json", at.ContentType())
-				assert.Equal(t, `application/json; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -264,14 +267,14 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
 				assert.Equal(t, "application/octet-stream", at.ContentType())
-				assert.Equal(t, `application/octet-stream; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 
 				at = l.Attachments()[1]
 				assert.Equal(t, "attach2", at.Filename())
 				assert.Equal(t, 4, at.Size())
 				assert.Equal(t, []byte{2, 3, 4, 5}, at.Content())
 				assert.Equal(t, "application/json", at.ContentType())
-				assert.Equal(t, `application/json; name="attach2"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -285,7 +288,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
 				assert.Equal(t, "application/octet-stream", at.ContentType())
-				assert.Equal(t, `application/octet-stream; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -307,7 +310,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, "attach1", at.Filename())
 				assert.Equal(t, "Hello.\n", string(at.Content()))
 				assert.Equal(t, "text/plain; charset=utf-8", at.ContentType())
-				assert.Equal(t, `text/plain; charset=utf-8; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 		{
@@ -320,7 +323,7 @@ func TestWrite(t *testing.T) {
 				assert.Equal(t, "attach1", at.Filename())
 				assert.Equal(t, "Hello.\n", string(at.Content()))
 				assert.Equal(t, "text/html", at.ContentType())
-				assert.Equal(t, `text/html; name="attach1"`, at.Header().Get("Content-Type"))
+				assertAttachmentHeader(t, at)
 			},
 		},
 	}
@@ -334,6 +337,14 @@ func TestWrite(t *testing.T) {
 			}
 		})
 	}
+
+}
+
+func assertAttachmentHeader(t *testing.T, at letter.Attachment) {
+	assert.Equal(t, fmt.Sprintf(`%s; name="%s"`, at.ContentType(), encode.UTF8(at.Filename())), at.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), encode.UTF8(at.Filename())), at.Header().Get("Content-Disposition"))
+	assert.Equal(t, fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], encode.ToASCII(at.Filename())), at.Header().Get("Content-ID"))
+	assert.Equal(t, "base64", at.Header().Get("Content-Transfer-Encoding"))
 }
 
 type mockReader struct {

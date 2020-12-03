@@ -1,6 +1,7 @@
 package letter
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,8 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+
+	"github.com/bounoable/postdog/internal/encode"
 )
 
 // Write a letter with the given opts.
@@ -27,6 +30,14 @@ func Write(opts ...Option) (Letter, error) {
 // New is an alias for Write().
 func New(opts ...Option) (Letter, error) {
 	return Write(opts...)
+}
+
+// Must panics if err is not nil and otherwise returns let.
+func Must(let Letter, err error) Letter {
+	if err != nil {
+		panic(err)
+	}
+	return let
 }
 
 // Letter represents a mail.
@@ -191,7 +202,13 @@ func Attach(filename string, content []byte, opts ...AttachmentOption) Option {
 			at.contentType = http.DetectContentType(content)
 		}
 
-		at.header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.contentType, at.filename))
+		filename8 := encode.UTF8(at.filename)
+		filenameASCII := encode.ToASCII(at.filename)
+
+		at.header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.contentType, filename8))
+		at.header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], filenameASCII))
+		at.header.Set("Content-Disposition", fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), filename8))
+		at.header.Set("Content-Transfer-Encoding", "base64")
 
 		l.attachments = append(l.attachments, at)
 
