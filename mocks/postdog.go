@@ -8,6 +8,7 @@ import (
 	context "context"
 	postdog "github.com/bounoable/postdog"
 	gomock "github.com/golang/mock/gomock"
+	mail "net/mail"
 	reflect "reflect"
 )
 
@@ -69,4 +70,46 @@ func NewMockMail(ctrl *gomock.Controller) *MockMail {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockMail) EXPECT() *MockMailMockRecorder {
 	return m.recorder
+}
+
+// Sender mocks base method
+func (m *MockMail) Sender() mail.Address {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Sender")
+	ret0, _ := ret[0].(mail.Address)
+	return ret0
+}
+
+// Sender indicates an expected call of Sender
+func (mr *MockMailMockRecorder) Sender() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sender", reflect.TypeOf((*MockMail)(nil).Sender))
+}
+
+// Recipients mocks base method
+func (m *MockMail) Recipients() []mail.Address {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recipients")
+	ret0, _ := ret[0].([]mail.Address)
+	return ret0
+}
+
+// Recipients indicates an expected call of Recipients
+func (mr *MockMailMockRecorder) Recipients() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recipients", reflect.TypeOf((*MockMail)(nil).Recipients))
+}
+
+// RFC mocks base method
+func (m *MockMail) RFC() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RFC")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// RFC indicates an expected call of RFC
+func (mr *MockMailMockRecorder) RFC() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RFC", reflect.TypeOf((*MockMail)(nil).RFC))
 }

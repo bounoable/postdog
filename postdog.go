@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/mail"
 	"sync"
 )
 
@@ -47,8 +48,13 @@ type Transport interface {
 	Send(context.Context, Mail) error
 }
 
-// A Mail must implement an `RFC()` method that builds the mail as defined in RFC 5322.
+// A Mail provides the sender, recipients and the mail body as defined in RFC 5322.
 type Mail interface {
+	// From returns the sender of the mail.
+	From() mail.Address
+	// Recipients returns the recipients of the mail.
+	Recipients() []mail.Address
+	// RFC returns the RFC 5322 body / data of the mail.
 	RFC() string
 }
 
