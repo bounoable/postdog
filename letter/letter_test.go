@@ -358,6 +358,72 @@ func (mr mockReader) Read(b []byte) (int, error) {
 
 var mockError = errors.New("mock error")
 
+func TestLetter_Recipients(t *testing.T) {
+	tests := []struct {
+		name     string
+		opts     []letter.Option
+		expected []mail.Address
+	}{
+		{
+			name: "no recipients",
+		},
+		{
+			name: "To() recipieints",
+			opts: []letter.Option{
+				letter.To("Bob Belcher", "bob@example.com"),
+				letter.To("Linda Belcher", "linda@example.com"),
+			},
+			expected: []mail.Address{
+				{Name: "Bob Belcher", Address: "bob@example.com"},
+				{Name: "Linda Belcher", Address: "linda@example.com"},
+			},
+		},
+		{
+			name: "CC() recipieints",
+			opts: []letter.Option{
+				letter.CC("Bob Belcher", "bob@example.com"),
+				letter.CC("Linda Belcher", "linda@example.com"),
+			},
+			expected: []mail.Address{
+				{Name: "Bob Belcher", Address: "bob@example.com"},
+				{Name: "Linda Belcher", Address: "linda@example.com"},
+			},
+		},
+		{
+			name: "BCC() recipieints",
+			opts: []letter.Option{
+				letter.BCC("Bob Belcher", "bob@example.com"),
+				letter.BCC("Linda Belcher", "linda@example.com"),
+			},
+			expected: []mail.Address{
+				{Name: "Bob Belcher", Address: "bob@example.com"},
+				{Name: "Linda Belcher", Address: "linda@example.com"},
+			},
+		},
+		{
+			name: "mixed recipieints",
+			opts: []letter.Option{
+				letter.To("Bob Belcher", "bob@example.com"),
+				letter.CC("Linda Belcher", "linda@example.com"),
+				letter.BCC("Tina Belcher", "tina@example.com"),
+			},
+			expected: []mail.Address{
+				{Name: "Bob Belcher", Address: "bob@example.com"},
+				{Name: "Linda Belcher", Address: "linda@example.com"},
+				{Name: "Tina Belcher", Address: "tina@example.com"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			let, err := letter.Write(test.opts...)
+			assert.Nil(t, err)
+			assert.Equal(t, test.expected, let.Recipients())
+		})
+	}
+}
+
 func TestLetter_RFC(t *testing.T) {
 	let, err := letter.Write(
 		letter.Subject("Hi."),

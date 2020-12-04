@@ -291,6 +291,15 @@ func (l Letter) ReplyTo() []mail.Address {
 	return l.replyTo
 }
 
+// Recipients returns all (`To`, `Cc` and `Bcc`) recipients of the letter.
+func (l Letter) Recipients() []mail.Address {
+	count := len(l.to) + len(l.cc) + len(l.bcc)
+	rcpts := make([]mail.Address, 0, count)
+	rcpts = append(l.to, l.cc...)
+	rcpts = append(rcpts, l.bcc...)
+	return rcpts
+}
+
 // Text returns the text content of the letter.
 func (l Letter) Text() string {
 	return l.text
