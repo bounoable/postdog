@@ -17,7 +17,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-var mockLetter, _ = letter.Write(
+var mockLetter = letter.Write(
 	letter.From("Bob Belcher", "bob@example.com"),
 	letter.To("Linda Belcher", "linda@example.com"),
 	letter.Subject("Hi."),

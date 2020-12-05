@@ -68,7 +68,7 @@ func TestTransport_Send(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			let, err := letter.Write(test.letterOpts...)
+			let, err := letter.TryWrite(test.letterOpts...)
 			assert.Nil(t, err)
 
 			s := mock_smtp.NewMockMailSender(ctrl)

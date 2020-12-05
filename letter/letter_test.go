@@ -332,7 +332,7 @@ func TestWrite(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			let, err := letter.Write(test.opts...)
+			let, err := letter.TryWrite(test.opts...)
 			assert.True(t, errors.Is(err, test.expectedError))
 			if test.expect != nil {
 				test.expect(t, let)
@@ -417,7 +417,7 @@ func TestLetter_Recipients(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			let, err := letter.Write(test.opts...)
+			let, err := letter.TryWrite(test.opts...)
 			assert.Nil(t, err)
 			assert.Equal(t, test.expected, let.Recipients())
 		})
@@ -425,7 +425,7 @@ func TestLetter_Recipients(t *testing.T) {
 }
 
 func TestLetter_RFC(t *testing.T) {
-	let, err := letter.Write(
+	let, err := letter.TryWrite(
 		letter.Subject("Hi."),
 		letter.Text("Hello."),
 		letter.HTML("<p>Hello.</p>"),

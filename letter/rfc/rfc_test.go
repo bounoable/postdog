@@ -215,7 +215,7 @@ func TestBuild(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			let, err := letter.Write(test.letterOpts...)
+			let, err := letter.TryWrite(test.letterOpts...)
 			assert.Nil(t, err)
 
 			s := rfc.Build(rfc.Mail{

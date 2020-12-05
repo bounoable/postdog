@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	mockLetter, _ = letter.Write(
+	mockLetter = letter.Write(
 		letter.From("Bob Belcher", "bob@example.com"),
 		letter.To("Linda Belcher", "linda@example.com"),
 		letter.Subject("Hi."),
@@ -158,33 +158,33 @@ func TestPostdog(t *testing.T) {
 		Convey("Feature: Middleware", func() {
 			Convey("Given 3 middlewares that all add a recipient to the mail", func() {
 				mw1 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
-					return letter.Must(letter.Write(
+					return letter.Write(
 						letter.ToAddress(m.Recipients()...),
 						letter.To("Linda Belcher", "linda@example.com"),
-					))
+					)
 				})
 
 				mw2 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
-					return letter.Must(letter.Write(
+					return letter.Write(
 						letter.ToAddress(m.Recipients()...),
 						letter.To("Tina Belcher", "tina@example.com"),
-					))
+					)
 				})
 
 				mw3 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
-					return letter.Must(letter.Write(
+					return letter.Write(
 						letter.ToAddress(m.Recipients()...),
 						letter.To("Gene Belcher", "gene@example.com"),
-					))
+					)
 				})
 
 				tr := mock_postdog.NewMockTransport(ctrl)
 				tr.EXPECT().
-					Send(gomock.Any(), letter.Must(letter.Write(
+					Send(gomock.Any(), letter.Write(
 						letter.To("Linda Belcher", "linda@example.com"),
 						letter.To("Tina Belcher", "tina@example.com"),
 						letter.To("Gene Belcher", "gene@example.com"),
-					))).
+					)).
 					Return(nil)
 
 				dog := postdog.New(
@@ -193,7 +193,7 @@ func TestPostdog(t *testing.T) {
 				)
 
 				Convey("When I send a mail", func() {
-					err := dog.Send(context.Background(), letter.Must(letter.Write()))
+					err := dog.Send(context.Background(), letter.Write())
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)

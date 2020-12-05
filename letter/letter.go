@@ -16,8 +16,21 @@ import (
 	"github.com/bounoable/postdog/letter/rfc"
 )
 
-// Write a letter with the given opts.
-func Write(opts ...Option) (Letter, error) {
+// Write a letter with the given opts. Panics if TryWrite() returns an error.
+func Write(opts ...Option) Letter {
+	return Must(TryWrite(opts...))
+}
+
+// Must panics if err is not nil and otherwise returns let.
+func Must(let Letter, err error) Letter {
+	if err != nil {
+		panic(err)
+	}
+	return let
+}
+
+// TryWrite a letter with the given opts.
+func TryWrite(opts ...Option) (Letter, error) {
 	var let Letter
 	var err error
 	for _, opt := range opts {
@@ -28,17 +41,9 @@ func Write(opts ...Option) (Letter, error) {
 	return let, nil
 }
 
-// New is an alias for Write().
+// New is an alias for TryWrite().
 func New(opts ...Option) (Letter, error) {
-	return Write(opts...)
-}
-
-// Must panics if err is not nil and otherwise returns let.
-func Must(let Letter, err error) Letter {
-	if err != nil {
-		panic(err)
-	}
-	return let
+	return TryWrite(opts...)
 }
 
 // Letter represents a mail.
