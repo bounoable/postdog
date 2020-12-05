@@ -43,8 +43,7 @@ var (
 // Specifying scopes
 //
 // Scopes may be specified with the Scopes() option. If no scopes are specified,
-// only the `gmail.GmailGoogleComScope` will be used. If it' used with a non-nil
-// empty slice, no scopes will be used.
+// only the `gmail.GmailGoogleComScope` will be used.
 func Transport(opts ...Option) postdog.Transport {
 	if credsPath := os.Getenv("GMAIL_CREDENTIALS"); credsPath != "" {
 		opts = append([]Option{CredentialsFile(credsPath)}, opts...)
@@ -55,8 +54,7 @@ func Transport(opts ...Option) postdog.Transport {
 		opt(&t)
 	}
 
-	// check for nil and not for length, so users can remove all scopes
-	if t.scopes == nil {
+	if len(t.scopes) == 0 {
 		t.scopes = []string{gmail.MailGoogleComScope}
 	}
 
