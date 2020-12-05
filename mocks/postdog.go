@@ -49,6 +49,44 @@ func (mr *MockTransportMockRecorder) Send(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockTransport)(nil).Send), arg0, arg1)
 }
 
+// MockMiddleware is a mock of Middleware interface
+type MockMiddleware struct {
+	ctrl     *gomock.Controller
+	recorder *MockMiddlewareMockRecorder
+}
+
+// MockMiddlewareMockRecorder is the mock recorder for MockMiddleware
+type MockMiddlewareMockRecorder struct {
+	mock *MockMiddleware
+}
+
+// NewMockMiddleware creates a new mock instance
+func NewMockMiddleware(ctrl *gomock.Controller) *MockMiddleware {
+	mock := &MockMiddleware{ctrl: ctrl}
+	mock.recorder = &MockMiddlewareMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMiddleware) EXPECT() *MockMiddlewareMockRecorder {
+	return m.recorder
+}
+
+// Handle mocks base method
+func (m *MockMiddleware) Handle(arg0 context.Context, arg1 postdog.Mail, arg2 func(context.Context, postdog.Mail) (postdog.Mail, error)) (postdog.Mail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Handle", arg0, arg1, arg2)
+	ret0, _ := ret[0].(postdog.Mail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Handle indicates an expected call of Handle
+func (mr *MockMiddlewareMockRecorder) Handle(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockMiddleware)(nil).Handle), arg0, arg1, arg2)
+}
+
 // MockMail is a mock of Mail interface
 type MockMail struct {
 	ctrl     *gomock.Controller
@@ -72,18 +110,18 @@ func (m *MockMail) EXPECT() *MockMailMockRecorder {
 	return m.recorder
 }
 
-// Sender mocks base method
-func (m *MockMail) Sender() mail.Address {
+// From mocks base method
+func (m *MockMail) From() mail.Address {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Sender")
+	ret := m.ctrl.Call(m, "From")
 	ret0, _ := ret[0].(mail.Address)
 	return ret0
 }
 
-// Sender indicates an expected call of Sender
-func (mr *MockMailMockRecorder) Sender() *gomock.Call {
+// From indicates an expected call of From
+func (mr *MockMailMockRecorder) From() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sender", reflect.TypeOf((*MockMail)(nil).Sender))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "From", reflect.TypeOf((*MockMail)(nil).From))
 }
 
 // Recipients mocks base method
