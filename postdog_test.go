@@ -2,6 +2,7 @@ package postdog_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/bounoable/postdog"
@@ -120,6 +121,35 @@ func TestPostdog(t *testing.T) {
 						Convey("The configured default transport should be used", func() {
 							So(err, ShouldBeNil)
 						})
+					})
+				})
+			})
+		})
+
+		Convey("Feature: Get transport by name", func() {
+			Convey("Given a *postdog.Dog with configured transports", func() {
+				tr1 := mock_postdog.NewMockTransport(ctrl)
+				tr2 := mock_postdog.NewMockTransport(ctrl)
+				dog := postdog.New(
+					postdog.WithTransport("test1", tr1),
+					postdog.WithTransport("test2", tr2),
+				)
+
+				Convey("When I call dog.Transport() with the name of a configured transport", func() {
+					tr, err := dog.Transport("test2")
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+						So(tr, ShouldEqual, tr2)
+					})
+				})
+
+				Convey("When I call dog.Transport() with the name of an unconfigured transport", func() {
+					tr, err := dog.Transport("test3")
+
+					Convey("It should fail", func() {
+						So(tr, ShouldBeNil)
+						So(errors.Is(err, postdog.ErrUnconfiguredTransport), ShouldBeTrue)
 					})
 				})
 			})

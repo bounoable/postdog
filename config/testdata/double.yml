@@ -1,0 +1,15 @@
+transports:
+  test1:
+    use: trans1
+    config:
+      key1: 1
+      key2:
+        key2.1: val2.1
+        key2.2: val2.2
+  test2:
+    use: trans2
+    config:
+      key1:
+        key1.1: val1.1
+        key1.2: val1.2
+      key2: 2

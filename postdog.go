@@ -98,6 +98,11 @@ type sendConfig struct {
 	transport string
 }
 
+// Transport returns either the transport with the given name or an ErrUnconfiguredTransport error.
+func (dog *Dog) Transport(name string) (Transport, error) {
+	return dog.transport(name)
+}
+
 func (dog *Dog) transport(name string) (Transport, error) {
 	dog.mux.RLock()
 	defer dog.mux.RUnlock()

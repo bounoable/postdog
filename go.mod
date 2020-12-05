@@ -8,4 +8,5 @@ require (
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/oauth2 v0.0.0-20201203001011-0b49973bad19
 	google.golang.org/api v0.30.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
