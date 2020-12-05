@@ -36,7 +36,7 @@ func WithTransport(name string, tr Transport) Option {
 	}
 }
 
-// Dog provides a thread-safe
+// A Dog can send mails through one of multiple configured transports.
 type Dog struct {
 	mux              sync.RWMutex
 	transports       map[string]Transport
@@ -60,12 +60,23 @@ type Mail interface {
 
 // Use sets the default transport.
 func (dog *Dog) Use(transport string) {
+	dog.mux.Lock()
 	dog.defaultTransport = transport
+	dog.mux.Unlock()
 }
 
 // Send sends the given mail through the default transport.
-// A different transport can be specified by using the `Use()` option:
-//		dog.Send(context.TODO(), m, postdog.Use("transport-name"))
+//
+// A different transport can be specified with the Use() option:
+//   dog.Send(context.TODO(), m, postdog.Use("transport-name"))
+//
+// If the Use() option is used and no transport with the specified name
+// has been registered, Send() will return ErrUnconfiguredTransport.
+//
+// If the Use() option is not used, the default transport will be used instead.
+// The default transport is automatically the first transport that has been
+// registered and can be overriden by calling dog.Use("transport-name").
+// If there's no default transport available, Send() will return ErrNoTransport.
 func (dog *Dog) Send(ctx context.Context, m Mail, opts ...SendOption) error {
 	var cfg sendConfig
 	for _, opt := range opts {
