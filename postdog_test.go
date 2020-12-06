@@ -3,6 +3,7 @@ package postdog_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -286,6 +287,63 @@ func TestPostdog(t *testing.T) {
 					})
 				})
 			}))
+		})
+
+		Convey("Feature: Plugins", func() {
+			Convey("Given some Options that are Middleware options", func() {
+				var wg sync.WaitGroup
+				wg.Add(3)
+				mw1 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
+					wg.Done()
+					return m
+				})
+				mw2 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
+					wg.Done()
+					return m
+				})
+				mw3 := newMockMiddleware(ctrl, func(m postdog.Mail) postdog.Mail {
+					wg.Done()
+					return m
+				})
+
+				opts := []postdog.Option{
+					postdog.WithMiddleware(mw1),
+					postdog.WithMiddleware(mw2),
+					postdog.WithMiddleware(mw3),
+				}
+
+				Convey("When I add them as a Plugin with the WithPlugin() option", func() {
+					tr := newMockTransport(ctrl)
+					tr.EXPECT().Send(gomock.Any(), mockLetter).Return(nil)
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithPlugin(opts),
+					)
+
+					Convey("When I send a mail", func() {
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("All middlewares should have been called", func() {
+							called := make(chan struct{})
+							go func() {
+								defer close(called)
+								wg.Wait()
+							}()
+
+							select {
+							case <-time.After(time.Millisecond * 10):
+								t.Fatal("middlewares should have been called")
+							case <-called:
+							}
+						})
+					})
+				})
+			})
 		})
 	})
 }

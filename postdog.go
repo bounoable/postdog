@@ -42,6 +42,9 @@ type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mai
 // Option is a *Dog option.
 type Option func(*Dog)
 
+// A Plugin is a collection of Options.
+type Plugin []Option
+
 // A Mail provides the sender, recipients and the mail body as defined in RFC 5322.
 type Mail interface {
 	// From returns the sender of the mail.
@@ -112,6 +115,15 @@ func WithRateLimiter(rl Waiter) Option {
 		}
 		return next(ctx, m)
 	})
+}
+
+// WithPlugin returns an Option that adds the Options in p to a *Dog.
+func WithPlugin(p Plugin) Option {
+	return func(dog *Dog) {
+		for _, opt := range p {
+			opt(dog)
+		}
+	}
 }
 
 // Use sets the transport name that should be used for sending a Mail.
