@@ -17,6 +17,53 @@ var (
 	ErrUnconfiguredTransport = errors.New("unconfigured transport")
 )
 
+// A Dog can send mails through one of multiple configured transports.
+type Dog struct {
+	mux              sync.RWMutex
+	transports       map[string]Transport
+	defaultTransport string
+	middlewares      []Middleware
+}
+
+// A Transport is responsible for actually sending mails.
+type Transport interface {
+	Send(context.Context, Mail) error
+}
+
+// Middleware is called on every Send(), allowing manipulation of mails before they are passed to the Transport.
+type Middleware interface {
+	Handle(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
+}
+
+// A MiddlewareFunc allows functions to be used as Middleware.
+type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
+
+// Option is a *Dog option.
+type Option func(*Dog)
+
+// A Mail provides the sender, recipients and the mail body as defined in RFC 5322.
+type Mail interface {
+	// From returns the sender of the mail.
+	From() mail.Address
+	// Recipients returns the recipients of the mail.
+	Recipients() []mail.Address
+	// RFC returns the RFC 5322 body / data of the mail.
+	RFC() string
+}
+
+// A Waiter implements rate limiting.
+type Waiter interface {
+	// Wait should block until the next mail can be sent.
+	Wait(context.Context) error
+}
+
+// SendOption is an option for the Send() method of a *Dog.
+type SendOption func(*sendConfig)
+
+type sendConfig struct {
+	transport string
+}
+
 // New returns a new *Dog.
 func New(opts ...Option) *Dog {
 	dog := Dog{transports: make(map[string]Transport)}
@@ -25,9 +72,6 @@ func New(opts ...Option) *Dog {
 	}
 	return &dog
 }
-
-// Option is a postdog option.
-type Option func(*Dog)
 
 // WithTransport returns an Option that adds the transport tr with the name in name to a *Dog.
 func WithTransport(name string, tr Transport) Option {
@@ -68,46 +112,11 @@ func WithRateLimiter(rl Waiter) Option {
 	})
 }
 
-// A Waiter implements rate limiting.
-type Waiter interface {
-	// Wait should block until the next mail can be sent.
-	Wait(context.Context) error
-}
-
-// A Dog can send mails through one of multiple configured transports.
-type Dog struct {
-	mux              sync.RWMutex
-	transports       map[string]Transport
-	defaultTransport string
-	middlewares      []Middleware
-}
-
-// A Transport is responsible for actually sending mails.
-type Transport interface {
-	Send(context.Context, Mail) error
-}
-
-// Middleware is called on every Send(), allowing manipulation of mails before they are passed to the Transport.
-type Middleware interface {
-	Handle(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
-}
-
-// A MiddlewareFunc allows functions to be used as Middleware.
-type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
-
-// Handle calls mw() with the given arguments.
-func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
-	return mw(ctx, m, fn)
-}
-
-// A Mail provides the sender, recipients and the mail body as defined in RFC 5322.
-type Mail interface {
-	// From returns the sender of the mail.
-	From() mail.Address
-	// Recipients returns the recipients of the mail.
-	Recipients() []mail.Address
-	// RFC returns the RFC 5322 body / data of the mail.
-	RFC() string
+// Use sets the transport name, that should be used for sending the mail.
+func Use(transport string) SendOption {
+	return func(cfg *sendConfig) {
+		cfg.transport = transport
+	}
 }
 
 // Use sets the default transport.
@@ -167,20 +176,6 @@ func (dog *Dog) nextFunc(i int) func(context.Context, Mail) (Mail, error) {
 	}
 }
 
-// SendOption is an option for the Send() method of a *Dog.
-type SendOption func(*sendConfig)
-
-// Use sets the transport name, that should be used for sending the mail.
-func Use(transport string) SendOption {
-	return func(cfg *sendConfig) {
-		cfg.transport = transport
-	}
-}
-
-type sendConfig struct {
-	transport string
-}
-
 // Transport returns either the transport with the given name or an ErrUnconfiguredTransport error.
 func (dog *Dog) Transport(name string) (Transport, error) {
 	return dog.transport(name)
@@ -212,4 +207,9 @@ func (dog *Dog) configureTransport(name string, tr Transport) {
 	if dog.defaultTransport == "" {
 		dog.defaultTransport = name
 	}
+}
+
+// Handle calls mw() with the given arguments.
+func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
+	return mw(ctx, m, fn)
 }

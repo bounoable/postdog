@@ -151,3 +151,40 @@ func (mr *MockMailMockRecorder) RFC() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RFC", reflect.TypeOf((*MockMail)(nil).RFC))
 }
+
+// MockWaiter is a mock of Waiter interface
+type MockWaiter struct {
+	ctrl     *gomock.Controller
+	recorder *MockWaiterMockRecorder
+}
+
+// MockWaiterMockRecorder is the mock recorder for MockWaiter
+type MockWaiterMockRecorder struct {
+	mock *MockWaiter
+}
+
+// NewMockWaiter creates a new mock instance
+func NewMockWaiter(ctrl *gomock.Controller) *MockWaiter {
+	mock := &MockWaiter{ctrl: ctrl}
+	mock.recorder = &MockWaiterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockWaiter) EXPECT() *MockWaiterMockRecorder {
+	return m.recorder
+}
+
+// Wait mocks base method
+func (m *MockWaiter) Wait(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Wait", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Wait indicates an expected call of Wait
+func (mr *MockWaiterMockRecorder) Wait(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockWaiter)(nil).Wait), arg0)
+}
