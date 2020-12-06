@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,6 +15,14 @@ func TestJob_Mail(t *testing.T) {
 	m := letter.Write(letter.From("Bob Belcher", "bob@example.com"))
 	j := &Job{mail: m}
 	assert.Equal(t, m, j.Mail())
+}
+
+func TestJob_SendOptions(t *testing.T) {
+	j := &Job{sendOptions: []postdog.SendOption{
+		postdog.Use("a"),
+		postdog.Use("b"),
+	}}
+	assert.Len(t, j.SendOptions(), 2)
 }
 
 func TestJob_Context(t *testing.T) {

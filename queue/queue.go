@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog"
+	"github.com/bounoable/postdog/queue/dispatch"
 )
 
 var (
@@ -45,6 +46,7 @@ type Job struct {
 	cancel context.CancelFunc
 
 	mail         postdog.Mail
+	sendOptions  []postdog.SendOption
 	dispatchedAt time.Time
 	finishedAt   time.Time
 	done         chan struct{}
@@ -72,6 +74,7 @@ func Buffer(s int) Option {
 	}
 }
 
+// Workers returns an Option that sets the worker count of a *Queue.
 func Workers(w int) Option {
 	return func(q *Queue) {
 		q.workers = w
@@ -112,7 +115,7 @@ func (q *Queue) run() {
 		go func() {
 			defer wg.Done()
 			for job := range q.jobs {
-				err := q.mailer.Send(job.ctx, job.mail)
+				err := q.mailer.Send(job.ctx, job.mail, job.sendOptions...)
 				job.finish(err)
 			}
 		}()
@@ -142,17 +145,20 @@ func (q *Queue) Stop(ctx context.Context) error {
 }
 
 // Dispatch adds m to q and returns the queue *Job, or an error if the dispatch failed.
-func (q *Queue) Dispatch(ctx context.Context, m postdog.Mail) (*Job, error) {
+func (q *Queue) Dispatch(ctx context.Context, m postdog.Mail, opts ...dispatch.Option) (*Job, error) {
 	if !q.started() {
 		return nil, ErrNotStarted
 	}
 
+	cfg := dispatch.Configure(opts...)
+
 	ctx, cancel := context.WithCancel(ctx)
 	j := &Job{
-		ctx:    ctx,
-		cancel: cancel,
-		mail:   m,
-		done:   make(chan struct{}),
+		ctx:         ctx,
+		cancel:      cancel,
+		mail:        m,
+		sendOptions: cfg.SendOptions,
+		done:        make(chan struct{}),
 	}
 
 	select {
@@ -173,6 +179,11 @@ func (j *Job) Context() context.Context {
 // Mail returns the queued mail.
 func (j *Job) Mail() postdog.Mail {
 	return j.mail
+}
+
+// SendOptions returns the job's postdog.SendOptions.
+func (j *Job) SendOptions() []postdog.SendOption {
+	return j.sendOptions
 }
 
 // DispatchedAt returns the time at which j was dispatched.

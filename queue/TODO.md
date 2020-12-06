@@ -1,6 +1,5 @@
 # TODO
 
-- [ ] dispatch options (Timeout)
-- [ ] send options
+- [x] send options
 - [ ] rate limiting
 - [x] specify worker count

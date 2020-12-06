@@ -11,6 +11,7 @@ import (
 	"github.com/bounoable/postdog/internal/testing/should"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/queue"
+	"github.com/bounoable/postdog/queue/dispatch"
 	mock_queue "github.com/bounoable/postdog/queue/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
@@ -315,6 +316,33 @@ func TestQueue(t *testing.T) {
 				})
 			})
 		}))
+
+		Convey("Given a Mailer that counts postdog.SendOptions passed to it", WithOptionCountingMailer(ctrl, func(m *mock_queue.MockMailer, optCount <-chan int) {
+			Convey("Given a started *Queue that uses that Mailer", func() {
+				q := queue.New(m)
+				q.Start()
+
+				Convey("When I dispatch a mail with 2 postdog.SendOptions", func() {
+					opts := []postdog.SendOption{
+						postdog.Use("a"),
+						postdog.Use("b"),
+					}
+					job, err := q.Dispatch(context.Background(), mockLetter, dispatch.SendOptions(opts...))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("<-optCount should be 2", func() {
+						So(<-optCount, ShouldEqual, 2)
+					})
+
+					Convey("job.SendOptions() should return the passed options", func() {
+						So(job.SendOptions(), ShouldHaveLength, 2)
+					})
+				})
+			})
+		}))
 	})
 }
 
@@ -346,5 +374,19 @@ func WithErrorMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer)) f
 			}).
 			AnyTimes()
 		fn(m)
+	}
+}
+
+func WithOptionCountingMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer, <-chan int)) func() {
+	return func() {
+		count := make(chan int)
+		m := mock_queue.NewMockMailer(ctrl)
+		m.EXPECT().
+			Send(gomock.Any(), mockLetter, gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ postdog.Mail, opts ...postdog.SendOption) error {
+				count <- len(opts)
+				return nil
+			})
+		fn(m, count)
 	}
 }
