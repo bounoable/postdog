@@ -156,6 +156,18 @@ func TestQueue(t *testing.T) {
 							So(job2, ShouldBeNil)
 						})
 					})
+
+					Convey("When I dispatch another mail with a timeout of 20 milliseconds", func() {
+						job2, err2 := q.Dispatch(context.Background(), mockLetter, dispatch.Timeout(time.Millisecond*20))
+
+						Convey("It should fail with context.DeadlineExceeded", func() {
+							So(errors.Is(err2, context.DeadlineExceeded), ShouldBeTrue)
+						})
+
+						Convey("Job should be nil", func() {
+							So(job2, ShouldBeNil)
+						})
+					})
 				})
 			})
 

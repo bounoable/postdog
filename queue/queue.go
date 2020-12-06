@@ -152,7 +152,14 @@ func (q *Queue) Dispatch(ctx context.Context, m postdog.Mail, opts ...dispatch.O
 
 	cfg := dispatch.Configure(opts...)
 
-	ctx, cancel := context.WithCancel(ctx)
+	var cancel context.CancelFunc
+
+	if cfg.Timeout == 0 {
+		ctx, cancel = context.WithCancel(ctx)
+	} else {
+		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
+	}
+
 	j := &Job{
 		ctx:         ctx,
 		cancel:      cancel,

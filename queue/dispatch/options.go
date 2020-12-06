@@ -1,10 +1,15 @@
 package dispatch
 
-import "github.com/bounoable/postdog"
+import (
+	"time"
+
+	"github.com/bounoable/postdog"
+)
 
 // Config is the dispatch config.
 type Config struct {
 	SendOptions []postdog.SendOption
+	Timeout     time.Duration
 }
 
 // Option is a dispatch option.
@@ -23,5 +28,13 @@ func Configure(opts ...Option) Config {
 func SendOptions(opts ...postdog.SendOption) Option {
 	return func(cfg *Config) {
 		cfg.SendOptions = append(cfg.SendOptions, opts...)
+	}
+}
+
+// Timeout returns an Option that adds a timeout to the dispatch.
+// The timeout applies only to the dispatch, not to the actual sending of the mail.
+func Timeout(d time.Duration) Option {
+	return func(cfg *Config) {
+		cfg.Timeout = d
 	}
 }
