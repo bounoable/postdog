@@ -43,6 +43,37 @@ func WithMiddleware(mws ...Middleware) Option {
 	}
 }
 
+// WithMiddlewareFunc returns an Option that adds the middleware mws to a *Dog.
+func WithMiddlewareFunc(mws ...MiddlewareFunc) Option {
+	mw := make([]Middleware, len(mws))
+	for i, m := range mws {
+		mw[i] = Middleware(m)
+	}
+	return WithMiddleware(mw...)
+}
+
+// WithRateLimiter returns an Option that adds a middleware to a *Dog.
+//
+// The middleware will call rl.Wait() for every mail that's sent.
+func WithRateLimiter(rl Waiter) Option {
+	return WithMiddlewareFunc(func(
+		ctx context.Context,
+		m Mail,
+		next func(context.Context, Mail) (Mail, error),
+	) (Mail, error) {
+		if err := rl.Wait(ctx); err != nil {
+			return m, fmt.Errorf("rate limiter: %w", err)
+		}
+		return next(ctx, m)
+	})
+}
+
+// A Waiter implements rate limiting.
+type Waiter interface {
+	// Wait should block until the next mail can be sent.
+	Wait(context.Context) error
+}
+
 // A Dog can send mails through one of multiple configured transports.
 type Dog struct {
 	mux              sync.RWMutex
@@ -62,11 +93,11 @@ type Middleware interface {
 }
 
 // A MiddlewareFunc allows functions to be used as Middleware.
-type MiddlewareFunc func(context.Context, func(context.Context, Mail) (Mail, error)) (Mail, error)
+type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
 
 // Handle calls mw() with the given arguments.
-func (mw MiddlewareFunc) Handle(ctx context.Context, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
-	return mw(ctx, fn)
+func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
+	return mw(ctx, m, fn)
 }
 
 // A Mail provides the sender, recipients and the mail body as defined in RFC 5322.

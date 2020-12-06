@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
 	mock_postdog "github.com/bounoable/postdog/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/time/rate"
 )
 
 var (
@@ -200,6 +202,57 @@ func TestPostdog(t *testing.T) {
 					})
 				})
 			})
+		})
+
+		Convey("Feature: Rate limiting", func() {
+			Convey("Given a Transport", WithMockTransport(ctrl, func(tr *mock_postdog.MockTransport) {
+				tr.EXPECT().
+					Send(gomock.Any(), mockLetter).
+					DoAndReturn(func(_ context.Context, _ postdog.Mail) error {
+						return nil
+					}).
+					AnyTimes()
+
+				Convey("Given a rate of 2 mails per 50 milliseconds", func() {
+					lim := rate.NewLimiter(rate.Limit((1000/50)*2), 1)
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithRateLimiter(lim),
+					)
+
+					Convey("When I send a mail", func() {
+						start := time.Now()
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("When I immediately send another mail", func() {
+							err2 := dog.Send(context.Background(), mockLetter)
+
+							Convey("It shouldn't fail", func() {
+								So(err2, ShouldBeNil)
+							})
+
+							Convey("When I immediately send a third mail", func() {
+								err3 := dog.Send(context.Background(), mockLetter)
+
+								Convey("It shouldn't fail", func() {
+									So(err3, ShouldBeNil)
+								})
+
+								Convey("It should take ~50 milliseconds for the third mail to be sent", func() {
+									end := time.Now()
+									dur := end.Sub(start)
+
+									So(dur, ShouldAlmostEqual, 50*time.Millisecond, 5*time.Millisecond)
+								})
+							})
+						})
+					})
+				})
+			}))
 		})
 	})
 }
