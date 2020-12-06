@@ -27,6 +27,7 @@ var (
 type Queue struct {
 	mailer     Mailer
 	bufferSize int
+	workers    int
 
 	mux  sync.Mutex
 	jobs chan *Job
@@ -57,7 +58,7 @@ type Option func(*Queue)
 
 // New returns a new *Queue that sends mails through the Mailer m.
 func New(m Mailer, opts ...Option) *Queue {
-	q := &Queue{mailer: m}
+	q := &Queue{mailer: m, workers: 1}
 	for _, opt := range opts {
 		opt(q)
 	}
@@ -65,9 +66,15 @@ func New(m Mailer, opts ...Option) *Queue {
 }
 
 // Buffer returns an Option that sets the buffer size of a *Queue.
-func Buffer(size int) Option {
+func Buffer(s int) Option {
 	return func(q *Queue) {
-		q.bufferSize = size
+		q.bufferSize = s
+	}
+}
+
+func Workers(w int) Option {
+	return func(q *Queue) {
+		q.workers = w
 	}
 }
 
@@ -94,10 +101,21 @@ func (q *Queue) started() bool {
 }
 
 func (q *Queue) run() {
-	defer close(q.done)
-	for job := range q.jobs {
-		err := q.mailer.Send(job.ctx, job.mail)
-		job.finish(err)
+	var wg sync.WaitGroup
+	wg.Add(q.workers)
+	go func() {
+		wg.Wait()
+		close(q.done)
+	}()
+
+	for i := 0; i < q.workers; i++ {
+		go func() {
+			defer wg.Done()
+			for job := range q.jobs {
+				err := q.mailer.Send(job.ctx, job.mail)
+				job.finish(err)
+			}
+		}()
 	}
 }
 

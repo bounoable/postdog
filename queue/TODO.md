@@ -3,4 +3,4 @@
 - [ ] dispatch options (Timeout)
 - [ ] send options
 - [ ] rate limiting
-- [ ] specify worker count
+- [x] specify worker count

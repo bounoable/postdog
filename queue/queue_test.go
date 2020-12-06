@@ -264,6 +264,31 @@ func TestQueue(t *testing.T) {
 					})
 				})
 			})
+
+			Convey("Given a started *Queue with 2 workers that uses that Mailer", func() {
+				q := queue.New(m, queue.Workers(2))
+				q.Start()
+
+				Convey("When I dispatch a mail", func() {
+					job, err := q.Dispatch(context.Background(), mockLetter)
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("When I dispatch another mail", func() {
+						job2, err2 := q.Dispatch(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err2, ShouldBeNil)
+						})
+
+						Convey("It should be dispatched at roughly the same time as the first mail", func() {
+							So(job2.DispatchedAt().UnixNano(), ShouldAlmostEqual, job.DispatchedAt().UnixNano(), time.Millisecond)
+						})
+					})
+				})
+			})
 		}))
 
 		Convey("Given a Mailer that fails to send mails", WithErrorMailer(ctrl, func(m *mock_queue.MockMailer) {
