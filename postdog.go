@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/mail"
 	"sync"
+	"time"
 )
 
 var (
@@ -62,6 +63,7 @@ type SendOption func(*sendConfig)
 
 type sendConfig struct {
 	transport string
+	timeout   time.Duration
 }
 
 // New returns a new *Dog.
@@ -112,10 +114,17 @@ func WithRateLimiter(rl Waiter) Option {
 	})
 }
 
-// Use sets the transport name, that should be used for sending the mail.
+// Use sets the transport name that should be used for sending a Mail.
 func Use(transport string) SendOption {
 	return func(cfg *sendConfig) {
 		cfg.transport = transport
+	}
+}
+
+// Timeout returns an Option that adds a timeout a send.
+func Timeout(dur time.Duration) SendOption {
+	return func(cfg *sendConfig) {
+		cfg.timeout = dur
 	}
 }
 
@@ -143,6 +152,14 @@ func (dog *Dog) Send(ctx context.Context, m Mail, opts ...SendOption) error {
 	for _, opt := range opts {
 		opt(&cfg)
 	}
+
+	var cancel context.CancelFunc
+	if cfg.timeout == 0 {
+		ctx, cancel = context.WithCancel(ctx)
+	} else {
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+	}
+	defer cancel()
 
 	tr, err := dog.transport(cfg.transport)
 	if err != nil {

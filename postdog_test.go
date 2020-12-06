@@ -246,10 +246,43 @@ func TestPostdog(t *testing.T) {
 									end := time.Now()
 									dur := end.Sub(start)
 
-									So(dur, ShouldAlmostEqual, 50*time.Millisecond, 5*time.Millisecond)
+									So(dur, ShouldAlmostEqual, 50*time.Millisecond, 8*time.Millisecond)
 								})
 							})
 						})
+					})
+				})
+			}))
+		})
+
+		Convey("Feature: Timeout", func() {
+			Convey("Given a Transport that takes 50 milliseconds to send a mail", WithDelayedTransport(ctrl, 50*time.Millisecond, func(tr *mock_postdog.MockTransport) {
+				dog := postdog.New(postdog.WithTransport("test", tr))
+
+				Convey("When I send a mail with a timeout of 20 milliseconds", func() {
+					err := dog.Send(context.Background(), mockLetter, postdog.Timeout(20*time.Millisecond))
+
+					Convey("It should fail with context.DeadlineExceeded", func() {
+						So(errors.Is(err, context.DeadlineExceeded), ShouldBeTrue)
+					})
+				})
+
+				Convey("When I send a mail with a context with a timeout of 20 milliseconds", func() {
+					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+					Reset(cancel)
+
+					err := dog.Send(ctx, mockLetter)
+
+					Convey("It should fail with context.DeadlineExceeded", func() {
+						So(errors.Is(err, context.DeadlineExceeded), ShouldBeTrue)
+					})
+				})
+
+				Convey("When I send a mail with a timeout of 60 milliseconds", func() {
+					err := dog.Send(context.Background(), mockLetter, postdog.Timeout(60*time.Millisecond))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
 					})
 				})
 			}))
@@ -279,4 +312,21 @@ func newMockMiddleware(ctrl *gomock.Controller, fn func(postdog.Mail) postdog.Ma
 			return next(ctx, fn(m))
 		})
 	return mw
+}
+
+func WithDelayedTransport(ctrl *gomock.Controller, delay time.Duration, fn func(*mock_postdog.MockTransport)) func() {
+	return func() {
+		tr := mock_postdog.NewMockTransport(ctrl)
+		tr.EXPECT().
+			Send(gomock.Any(), mockLetter).
+			DoAndReturn(func(ctx context.Context, _ postdog.Mail) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(delay):
+					return nil
+				}
+			})
+		fn(tr)
+	}
 }
