@@ -40,7 +40,12 @@ type Middleware interface {
 type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
 
 // Option is a *Dog option.
-type Option func(*Dog)
+type Option interface {
+	Apply(*Dog)
+}
+
+// OptionFunc allows functions to be used as Options.
+type OptionFunc func(*Dog)
 
 // A Plugin is a collection of Options.
 type Plugin []Option
@@ -73,27 +78,27 @@ type sendConfig struct {
 func New(opts ...Option) *Dog {
 	dog := Dog{transports: make(map[string]Transport)}
 	for _, opt := range opts {
-		opt(&dog)
+		opt.Apply(&dog)
 	}
 	return &dog
 }
 
 // WithTransport returns an Option that adds the transport tr with the name in name to a *Dog.
-func WithTransport(name string, tr Transport) Option {
+func WithTransport(name string, tr Transport) OptionFunc {
 	return func(dog *Dog) {
 		dog.configureTransport(name, tr)
 	}
 }
 
 // WithMiddleware returns an Option that adds the middleware mws to a *Dog.
-func WithMiddleware(mws ...Middleware) Option {
+func WithMiddleware(mws ...Middleware) OptionFunc {
 	return func(dog *Dog) {
 		dog.middlewares = append(dog.middlewares, mws...)
 	}
 }
 
 // WithMiddlewareFunc returns an Option that adds the middleware mws to a *Dog.
-func WithMiddlewareFunc(mws ...MiddlewareFunc) Option {
+func WithMiddlewareFunc(mws ...MiddlewareFunc) OptionFunc {
 	mw := make([]Middleware, len(mws))
 	for i, m := range mws {
 		mw[i] = Middleware(m)
@@ -104,7 +109,7 @@ func WithMiddlewareFunc(mws ...MiddlewareFunc) Option {
 // WithRateLimiter returns an Option that adds a middleware to a *Dog.
 //
 // The middleware will call rl.Wait() for every mail that's sent.
-func WithRateLimiter(rl Waiter) Option {
+func WithRateLimiter(rl Waiter) OptionFunc {
 	return WithMiddlewareFunc(func(
 		ctx context.Context,
 		m Mail,
@@ -118,10 +123,10 @@ func WithRateLimiter(rl Waiter) Option {
 }
 
 // WithPlugin returns an Option that adds the Options in p to a *Dog.
-func WithPlugin(p Plugin) Option {
+func WithPlugin(p Plugin) OptionFunc {
 	return func(dog *Dog) {
 		for _, opt := range p {
-			opt(dog)
+			opt.Apply(dog)
 		}
 	}
 }
@@ -241,4 +246,9 @@ func (dog *Dog) configureTransport(name string, tr Transport) {
 // Handle calls mw() with the given arguments.
 func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
 	return mw(ctx, m, fn)
+}
+
+// Apply calls opt(d).
+func (opt OptionFunc) Apply(d *Dog) {
+	opt(d)
 }

@@ -87,6 +87,41 @@ func (mr *MockMiddlewareMockRecorder) Handle(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockMiddleware)(nil).Handle), arg0, arg1, arg2)
 }
 
+// MockOption is a mock of Option interface
+type MockOption struct {
+	ctrl     *gomock.Controller
+	recorder *MockOptionMockRecorder
+}
+
+// MockOptionMockRecorder is the mock recorder for MockOption
+type MockOptionMockRecorder struct {
+	mock *MockOption
+}
+
+// NewMockOption creates a new mock instance
+func NewMockOption(ctrl *gomock.Controller) *MockOption {
+	mock := &MockOption{ctrl: ctrl}
+	mock.recorder = &MockOptionMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockOption) EXPECT() *MockOptionMockRecorder {
+	return m.recorder
+}
+
+// Apply mocks base method
+func (m *MockOption) Apply(arg0 *postdog.Dog) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Apply", arg0)
+}
+
+// Apply indicates an expected call of Apply
+func (mr *MockOptionMockRecorder) Apply(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockOption)(nil).Apply), arg0)
+}
+
 // MockMail is a mock of Mail interface
 type MockMail struct {
 	ctrl     *gomock.Controller
