@@ -312,13 +312,13 @@ func TestPostdog(t *testing.T) {
 					postdog.WithMiddleware(mw3),
 				}
 
-				Convey("When I add them as a Plugin with the WithPlugin() option", func() {
+				Convey("When I add them as a Plugin", func() {
 					tr := newMockTransport(ctrl)
 					tr.EXPECT().Send(gomock.Any(), mockLetter).Return(nil)
 
 					dog := postdog.New(
 						postdog.WithTransport("test", tr),
-						postdog.WithPlugin(opts),
+						postdog.Plugin(opts),
 					)
 
 					Convey("When I send a mail", func() {

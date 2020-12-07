@@ -122,15 +122,6 @@ func WithRateLimiter(rl Waiter) OptionFunc {
 	})
 }
 
-// WithPlugin returns an Option that adds the Options in p to a *Dog.
-func WithPlugin(p Plugin) OptionFunc {
-	return func(dog *Dog) {
-		for _, opt := range p {
-			opt.Apply(dog)
-		}
-	}
-}
-
 // Use sets the transport name that should be used for sending a Mail.
 func Use(transport string) SendOption {
 	return func(cfg *sendConfig) {
@@ -251,4 +242,11 @@ func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Con
 // Apply calls opt(d).
 func (opt OptionFunc) Apply(d *Dog) {
 	opt(d)
+}
+
+// Apply calls opt(d) for every Option opt in p.
+func (p Plugin) Apply(d *Dog) {
+	for _, opt := range p {
+		opt.Apply(d)
+	}
 }
