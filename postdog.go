@@ -90,6 +90,9 @@ type Listener interface {
 	Handle(context.Context, Hook, Mail)
 }
 
+// ListenerFunc allows functions to be used as Listeners.
+type ListenerFunc func(context.Context, Hook, Mail)
+
 type ctxKey string
 
 // New returns a new *Dog.
@@ -294,6 +297,11 @@ func (p Plugin) Apply(d *Dog) {
 	for _, opt := range p {
 		opt.Apply(d)
 	}
+}
+
+// Handle calls lis(ctx, h, m).
+func (lis ListenerFunc) Handle(ctx context.Context, h Hook, m Mail) {
+	lis(ctx, h, m)
 }
 
 const ctxSendError = ctxKey("sendError")
