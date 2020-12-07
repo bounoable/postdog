@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+const (
+	// BeforeSend is the Hook that's called before a mail is sent.
+	BeforeSend = Hook(iota + 1)
+	// AfterSend is the Hook that's called after a mail has been sent.
+	AfterSend
+)
+
 var (
 	// ErrNoTransport means no transport is configured.
 	ErrNoTransport = errors.New("no transport")
@@ -24,6 +31,7 @@ type Dog struct {
 	transports       map[string]Transport
 	defaultTransport string
 	middlewares      []Middleware
+	hooks            map[Hook][]Listener
 }
 
 // A Transport is responsible for actually sending mails.
@@ -74,30 +82,43 @@ type sendConfig struct {
 	timeout   time.Duration
 }
 
+// A Hook is a hook point.
+type Hook uint8
+
+// Listener is a callback for a Hook.
+type Listener interface {
+	Handle(context.Context, Hook, Mail)
+}
+
+type ctxKey string
+
 // New returns a new *Dog.
 func New(opts ...Option) *Dog {
-	dog := Dog{transports: make(map[string]Transport)}
+	dog := Dog{
+		transports: make(map[string]Transport),
+		hooks:      make(map[Hook][]Listener),
+	}
 	for _, opt := range opts {
 		opt.Apply(&dog)
 	}
 	return &dog
 }
 
-// WithTransport returns an Option that adds the transport tr with the name in name to a *Dog.
+// WithTransport returns an OptionFunc that adds the transport tr with the name in name to a *Dog.
 func WithTransport(name string, tr Transport) OptionFunc {
 	return func(dog *Dog) {
 		dog.configureTransport(name, tr)
 	}
 }
 
-// WithMiddleware returns an Option that adds the middleware mws to a *Dog.
+// WithMiddleware returns an OptionFunc that adds the middleware mws to a *Dog.
 func WithMiddleware(mws ...Middleware) OptionFunc {
 	return func(dog *Dog) {
 		dog.middlewares = append(dog.middlewares, mws...)
 	}
 }
 
-// WithMiddlewareFunc returns an Option that adds the middleware mws to a *Dog.
+// WithMiddlewareFunc returns an OptionFunc that adds the middleware mws to a *Dog.
 func WithMiddlewareFunc(mws ...MiddlewareFunc) OptionFunc {
 	mw := make([]Middleware, len(mws))
 	for i, m := range mws {
@@ -106,7 +127,7 @@ func WithMiddlewareFunc(mws ...MiddlewareFunc) OptionFunc {
 	return WithMiddleware(mw...)
 }
 
-// WithRateLimiter returns an Option that adds a middleware to a *Dog.
+// WithRateLimiter returns an OptionFunc that adds a middleware to a *Dog.
 //
 // The middleware will call rl.Wait() for every mail that's sent.
 func WithRateLimiter(rl Waiter) OptionFunc {
@@ -120,6 +141,13 @@ func WithRateLimiter(rl Waiter) OptionFunc {
 		}
 		return next(ctx, m)
 	})
+}
+
+// WithHook returns an OptionFunc that adds Listener l for Hook h to a *Dog.
+func WithHook(h Hook, l Listener) OptionFunc {
+	return func(dog *Dog) {
+		dog.hooks[h] = append(dog.hooks[h], l)
+	}
 }
 
 // Use sets the transport name that should be used for sending a Mail.
@@ -178,7 +206,12 @@ func (dog *Dog) Send(ctx context.Context, m Mail, opts ...SendOption) error {
 		return fmt.Errorf("middleware: %w", err)
 	}
 
-	if err = tr.Send(ctx, m); err != nil {
+	dog.callHooks(ctx, BeforeSend, m)
+	defer func() { dog.callHooks(ctx, AfterSend, m) }()
+
+	err = tr.Send(ctx, m)
+	if err != nil {
+		ctx = withSendError(ctx, err)
 		return fmt.Errorf("transport: %w", err)
 	}
 
@@ -199,6 +232,18 @@ func (dog *Dog) nextFunc(i int) func(context.Context, Mail) (Mail, error) {
 		}
 		return dog.middlewares[i+1].Handle(ctx, let, dog.nextFunc(i+1))
 	}
+}
+
+func (dog *Dog) callHooks(ctx context.Context, h Hook, m Mail) {
+	for _, lis := range dog.listeners(h) {
+		go lis.Handle(ctx, h, m)
+	}
+}
+
+func (dog *Dog) listeners(h Hook) []Listener {
+	dog.mux.RLock()
+	defer dog.mux.RUnlock()
+	return dog.hooks[h]
 }
 
 // Transport returns either the transport with the given name or an ErrUnconfiguredTransport error.
@@ -249,4 +294,16 @@ func (p Plugin) Apply(d *Dog) {
 	for _, opt := range p {
 		opt.Apply(d)
 	}
+}
+
+const ctxSendError = ctxKey("sendError")
+
+// SendError returns the error of the last (*Dog).Send() call that has been made using ctx.
+func SendError(ctx context.Context) error {
+	err, _ := ctx.Value(ctxSendError).(error)
+	return err
+}
+
+func withSendError(ctx context.Context, err error) context.Context {
+	return context.WithValue(ctx, ctxSendError, err)
 }

@@ -22,6 +22,8 @@ var (
 		letter.Subject("Hi."),
 		letter.Content("Hello.", "<p>Hello.</p>"),
 	)
+
+	mockError = errors.New("mock error")
 )
 
 func TestPostdog(t *testing.T) {
@@ -289,6 +291,150 @@ func TestPostdog(t *testing.T) {
 			}))
 		})
 
+		Convey("Feature: Hooks > BeforeSend", func() {
+			Convey("Given a Transport that takes 50 milliseconds to send a Mail", WithDelayedTransport(ctrl, 50*time.Millisecond, func(tr *mock_postdog.MockTransport) {
+				Convey("Given a single Hook", func() {
+					handledAt := make(chan time.Time, 1)
+					lis := mock_postdog.NewMockListener(ctrl)
+					lis.EXPECT().
+						Handle(gomock.Any(), postdog.BeforeSend, mockLetter).
+						Do(func(context.Context, postdog.Hook, postdog.Mail) {
+							handledAt <- time.Now()
+						})
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithHook(postdog.BeforeSend, lis),
+					)
+
+					Convey("When I send a Mail", func() {
+						start := time.Now()
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("The Hook Listener should have been called ~immediately", func() {
+							So((<-handledAt).UnixNano(), ShouldAlmostEqual, start.UnixNano(), 500*time.Microsecond)
+						})
+					})
+				})
+
+				Convey("Given multiple Hooks that take ~50 milliseconds to execute", func() {
+					calls := make(chan time.Time, 3)
+					lis1 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
+					lis2 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
+					lis3 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithHook(postdog.BeforeSend, lis1),
+						postdog.WithHook(postdog.BeforeSend, lis2),
+						postdog.WithHook(postdog.BeforeSend, lis3),
+					)
+
+					Convey("When I send a Mail", func() {
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("Listeners should have been called", func() {
+							So(calls, ShouldHaveLength, 3)
+						})
+
+						Convey("Listeners should have been called concurrently", func() {
+							t1, t2, t3 := <-calls, <-calls, <-calls
+							So(t1.UnixNano(), ShouldAlmostEqual, t2.UnixNano(), 5*time.Millisecond)
+							So(t2.UnixNano(), ShouldAlmostEqual, t3.UnixNano(), 5*time.Millisecond)
+						})
+					})
+				})
+			}))
+		})
+
+		Convey("Feature: Hooks > AfterSend", func() {
+			Convey("Given a Transport that takes 50 milliseconds to send a Mail", WithDelayedTransport(ctrl, 50*time.Millisecond, func(tr *mock_postdog.MockTransport) {
+				Convey("Given multiple Hooks that take ~50 milliseconds to execute", func() {
+					calls := make(chan time.Time, 3)
+					lis1 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.AfterSend, calls)
+					lis2 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.AfterSend, calls)
+					lis3 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.AfterSend, calls)
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithHook(postdog.AfterSend, lis1),
+						postdog.WithHook(postdog.AfterSend, lis2),
+						postdog.WithHook(postdog.AfterSend, lis3),
+					)
+
+					Convey("When I send a Mail", func() {
+						start := time.Now()
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("Listeners should have been called after ~50 milliseconds", func() {
+							<-time.After(55 * time.Millisecond)
+							So(calls, ShouldHaveLength, 3)
+						})
+
+						Convey("Listeners should have been called concurrently", func() {
+							t1, t2, t3 := <-calls, <-calls, <-calls
+							So(t1.UnixNano(), ShouldAlmostEqual, t2.UnixNano(), 5*time.Millisecond)
+							So(t2.UnixNano(), ShouldAlmostEqual, t3.UnixNano(), 5*time.Millisecond)
+						})
+
+						Convey("Listeners should have been called after send", func() {
+							t1, t2, t3 := <-calls, <-calls, <-calls
+
+							dur1 := t1.Sub(start)
+							dur2 := t2.Sub(start)
+							dur3 := t3.Sub(start)
+
+							So(dur1, ShouldAlmostEqual, 50*time.Millisecond, 5*time.Millisecond)
+							So(dur2, ShouldAlmostEqual, 50*time.Millisecond, 5*time.Millisecond)
+							So(dur3, ShouldAlmostEqual, 50*time.Millisecond, 5*time.Millisecond)
+						})
+					})
+				})
+			}))
+
+			Convey("Given a Transport that fails to send Mails", WithErrorTransport(ctrl, func(tr *mock_postdog.MockTransport) {
+				Convey("Given a Listener that needs the send error", func() {
+					gotError := make(chan error, 1)
+					lis := mock_postdog.NewMockListener(ctrl)
+					lis.EXPECT().
+						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
+						Do(func(ctx context.Context, _ postdog.Hook, _ postdog.Mail) {
+							gotError <- postdog.SendError(ctx)
+						})
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithHook(postdog.AfterSend, lis),
+					)
+
+					Convey("When I send a Mail", func() {
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It should fail", func() {
+							So(errors.Is(err, mockError), ShouldBeTrue)
+						})
+
+						Convey("The Listener should have received the error", func() {
+							gotErr := <-gotError
+							So(errors.Is(gotErr, mockError), ShouldBeTrue)
+						})
+					})
+				})
+			}))
+		})
+
 		Convey("Feature: Plugins", func() {
 			Convey("Given some Options that are Middleware options", func() {
 				var wg sync.WaitGroup
@@ -387,4 +533,26 @@ func WithDelayedTransport(ctrl *gomock.Controller, delay time.Duration, fn func(
 			})
 		fn(tr)
 	}
+}
+
+func WithErrorTransport(ctrl *gomock.Controller, fn func(*mock_postdog.MockTransport)) func() {
+	return func() {
+		tr := mock_postdog.NewMockTransport(ctrl)
+		tr.EXPECT().
+			Send(gomock.Any(), mockLetter).
+			DoAndReturn(func(context.Context, postdog.Mail) error {
+				return mockError
+			}).
+			AnyTimes()
+		fn(tr)
+	}
+}
+
+func newDelayedListener(ctrl *gomock.Controller, delay time.Duration, h postdog.Hook, calls chan<- time.Time) *mock_postdog.MockListener {
+	lis := mock_postdog.NewMockListener(ctrl)
+	lis.EXPECT().Handle(gomock.Any(), h, mockLetter).Do(func(context.Context, postdog.Hook, postdog.Mail) {
+		calls <- time.Now()
+		<-time.After(delay)
+	})
+	return lis
 }

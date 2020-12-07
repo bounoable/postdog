@@ -223,3 +223,38 @@ func (mr *MockWaiterMockRecorder) Wait(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockWaiter)(nil).Wait), arg0)
 }
+
+// MockListener is a mock of Listener interface
+type MockListener struct {
+	ctrl     *gomock.Controller
+	recorder *MockListenerMockRecorder
+}
+
+// MockListenerMockRecorder is the mock recorder for MockListener
+type MockListenerMockRecorder struct {
+	mock *MockListener
+}
+
+// NewMockListener creates a new mock instance
+func NewMockListener(ctrl *gomock.Controller) *MockListener {
+	mock := &MockListener{ctrl: ctrl}
+	mock.recorder = &MockListenerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockListener) EXPECT() *MockListenerMockRecorder {
+	return m.recorder
+}
+
+// Handle mocks base method
+func (m *MockListener) Handle(arg0 context.Context, arg1 postdog.Hook, arg2 postdog.Mail) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Handle", arg0, arg1, arg2)
+}
+
+// Handle indicates an expected call of Handle
+func (mr *MockListenerMockRecorder) Handle(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockListener)(nil).Handle), arg0, arg1, arg2)
+}
