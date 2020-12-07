@@ -59,15 +59,6 @@ type Letter struct {
 	attachments []Attachment
 }
 
-// Attachment is a mail attachment.
-type Attachment interface {
-	Filename() string
-	Size() int
-	Content() []byte
-	ContentType() string
-	Header() textproto.MIMEHeader
-}
-
 // Option modifies a letter.
 type Option func(*Letter) error
 
@@ -188,7 +179,7 @@ func Content(text, html string) Option {
 // Attach adds a file attachment to the letter.
 func Attach(filename string, content []byte, opts ...AttachmentOption) Option {
 	return func(l *Letter) error {
-		at := attachment{
+		at := Attachment{
 			filename: filename,
 			content:  content,
 			header:   make(textproto.MIMEHeader),
@@ -257,11 +248,11 @@ func AttachFile(filename, path string, opts ...AttachmentOption) Option {
 }
 
 // AttachmentOption configures an attachment.
-type AttachmentOption func(*attachment)
+type AttachmentOption func(*Attachment)
 
 // ContentType sets the `Content-Type` of the attachment.
 func ContentType(ct string) AttachmentOption {
-	return func(at *attachment) {
+	return func(at *Attachment) {
 		at.contentType = ct
 	}
 }
@@ -365,29 +356,35 @@ func containsAddress(addrs []mail.Address, addr mail.Address) bool {
 	return false
 }
 
-type attachment struct {
+// Attachment is a file attachment.
+type Attachment struct {
 	filename    string
 	content     []byte
 	contentType string
 	header      textproto.MIMEHeader
 }
 
-func (at attachment) Filename() string {
+// Filename returns the filename of the Attachment.
+func (at Attachment) Filename() string {
 	return at.filename
 }
 
-func (at attachment) Size() int {
+// Size returns the filesize of the Attachment.
+func (at Attachment) Size() int {
 	return len(at.content)
 }
 
-func (at attachment) Content() []byte {
+// Content returns the file contents of the Attachment.
+func (at Attachment) Content() []byte {
 	return at.content
 }
 
-func (at attachment) ContentType() string {
+// ContentType returns the `Content-Type` of the Attachment.
+func (at Attachment) ContentType() string {
 	return at.contentType
 }
 
-func (at attachment) Header() textproto.MIMEHeader {
+// Header returns the MIME headers of the Attachment.
+func (at Attachment) Header() textproto.MIMEHeader {
 	return at.header
 }
