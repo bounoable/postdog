@@ -11,7 +11,9 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"reflect"
 
+	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/internal/encode"
 	"github.com/bounoable/postdog/letter/rfc"
 )
@@ -50,10 +52,12 @@ func New(opts ...Option) (Letter, error) {
 type Letter struct {
 	subject     string
 	from        mail.Address
+	recipients  []mail.Address
 	to          []mail.Address
 	cc          []mail.Address
 	bcc         []mail.Address
 	replyTo     []mail.Address
+	rfc         string
 	text        string
 	html        string
 	attachments []Attachment
@@ -79,6 +83,25 @@ func From(name, addr string) Option {
 func FromAddress(addr mail.Address) Option {
 	return func(l *Letter) error {
 		l.from = addr
+		return nil
+	}
+}
+
+// Recipient returns an Option that adds a recipient to a mail.
+// It does NOT add the recipient as to the `To` header of a mail.
+func Recipient(name, addr string) Option {
+	return RecipientAddress(mail.Address{Name: name, Address: addr})
+}
+
+// RecipientAddress returns an Option that adds a recipient to a mail.
+// It does NOT add the recipient as to the `To` header of a mail.
+func RecipientAddress(addrs ...mail.Address) Option {
+	return func(l *Letter) error {
+		for _, addr := range addrs {
+			if !containsAddress(l.recipients, addr) {
+				l.recipients = append(l.recipients, addr)
+			}
+		}
 		return nil
 	}
 }
@@ -176,6 +199,14 @@ func Content(text, html string) Option {
 	}
 }
 
+// RFC returns an Option that
+func RFC(body string) Option {
+	return func(l *Letter) error {
+		l.rfc = body
+		return nil
+	}
+}
+
 // Attach adds a file attachment to the letter.
 func Attach(filename string, content []byte, opts ...AttachmentOption) Option {
 	return func(l *Letter) error {
@@ -257,6 +288,58 @@ func ContentType(ct string) AttachmentOption {
 	}
 }
 
+// Expand converts the postdog.Mail pm to a Letter.
+//
+// Add additional information
+//
+// If pm implements any of the optional methods To(), CC(), BCC(), ReplyTo(),
+// Subject(), Text(), HTML() or Attachments(), those methods will be called to
+// retrieve the information which will be added to the returned Letter.
+//
+// If pm has an Attachments() method, the return type of that method must be
+// a slice of a type that implements the following methods: Filename() string,
+// Content() []byte, ContentType() string, Header() textproto.MIMEHeader.
+func Expand(pm postdog.Mail) Letter {
+	opts := []Option{
+		FromAddress(pm.From()),
+		RecipientAddress(pm.Recipients()...),
+		RFC(pm.RFC()),
+	}
+
+	if toMail, ok := pm.(interface{ To() []mail.Address }); ok {
+		opts = append(opts, ToAddress(toMail.To()...))
+	}
+
+	if ccMail, ok := pm.(interface{ CC() []mail.Address }); ok {
+		opts = append(opts, CCAddress(ccMail.CC()...))
+	}
+
+	if bccMail, ok := pm.(interface{ BCC() []mail.Address }); ok {
+		opts = append(opts, BCCAddress(bccMail.BCC()...))
+	}
+
+	if rtMail, ok := pm.(interface{ ReplyTo() []mail.Address }); ok {
+		opts = append(opts, ReplyToAddress(rtMail.ReplyTo()...))
+	}
+
+	if sMail, ok := pm.(interface{ Subject() string }); ok {
+		opts = append(opts, Subject(sMail.Subject()))
+	}
+
+	if textMail, ok := pm.(interface{ Text() string }); ok {
+		opts = append(opts, Text(textMail.Text()))
+	}
+
+	if htmlMail, ok := pm.(interface{ HTML() string }); ok {
+		opts = append(opts, HTML(htmlMail.HTML()))
+	}
+
+	l := Write(opts...)
+	l.attachments = getAttachments(pm)
+
+	return l
+}
+
 // Subject returns the subject of the letter.
 func (l Letter) Subject() string {
 	return l.subject
@@ -287,11 +370,16 @@ func (l Letter) ReplyTo() []mail.Address {
 	return l.replyTo
 }
 
-// Recipients returns all (`To`, `Cc` and `Bcc`) recipients of the letter.
+// Recipients returns all recipients of the letter.
 func (l Letter) Recipients() []mail.Address {
-	count := len(l.to) + len(l.cc) + len(l.bcc)
+	count := len(l.recipients) + len(l.to) + len(l.cc) + len(l.bcc)
+	if count == 0 {
+		return nil
+	}
 	rcpts := make([]mail.Address, 0, count)
-	rcpts = append(l.to, l.cc...)
+	rcpts = append(rcpts, l.recipients...)
+	rcpts = append(rcpts, l.to...)
+	rcpts = append(rcpts, l.cc...)
 	rcpts = append(rcpts, l.bcc...)
 	return rcpts
 }
@@ -318,6 +406,9 @@ func (l Letter) Attachments() []Attachment {
 
 // RFC returns the letter as a RFC 5322 string.
 func (l Letter) RFC() string {
+	if l.rfc != "" {
+		return l.rfc
+	}
 	return rfc.Build(rfc.Mail{
 		Subject:     l.Subject(),
 		From:        l.From(),
@@ -387,4 +478,66 @@ func (at Attachment) ContentType() string {
 // Header returns the MIME headers of the Attachment.
 func (at Attachment) Header() textproto.MIMEHeader {
 	return at.header
+}
+
+// getAttachments returns m.Attachments() as an []Attachment slice if the
+// return type of m.Attachments() is a slice of a type that implements the
+// methods Filename() string, Content() []byte, ContentType() string and
+// Header() textproto.MIMEHeader.
+func getAttachments(m postdog.Mail) []Attachment {
+	type attachment interface {
+		Filename() string
+		Content() []byte
+		ContentType() string
+		Header() textproto.MIMEHeader
+	}
+
+	typ := reflect.TypeOf(m)
+	val := reflect.ValueOf(m)
+
+	method, ok := typ.MethodByName("Attachments")
+	if !ok {
+		return nil
+	}
+
+	methodType := method.Type
+	if methodType.NumOut() != 1 {
+		return nil
+	}
+
+	outType := methodType.Out(0)
+	if outType.Kind() != reflect.Slice {
+		return nil
+	}
+
+	outSliceType := outType.Elem()
+
+	attachType := reflect.TypeOf(new(attachment)).Elem()
+	if !outSliceType.Implements(attachType) {
+		return nil
+	}
+
+	ret := method.Func.Call([]reflect.Value{val})
+	if len(ret) == 0 {
+		return nil
+	}
+
+	len := ret[0].Len()
+	if len == 0 {
+		return nil
+	}
+
+	result := make([]Attachment, len)
+
+	for i := 0; i < len; i++ {
+		at := ret[0].Index(i).Interface().(attachment)
+		result[i] = Attachment{
+			filename:    at.Filename(),
+			content:     at.Content(),
+			contentType: at.ContentType(),
+			header:      at.Header(),
+		}
+	}
+
+	return result
 }

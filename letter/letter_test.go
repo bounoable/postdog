@@ -41,6 +41,23 @@ func TestWrite(t *testing.T) {
 			},
 		},
 		{
+			name: "Recipient()",
+			opts: []letter.Option{
+				letter.Recipient("Bob Belcher", "bob@example.com"),
+				letter.Recipient("Linda Belcher", "linda@example.com"),
+				letter.To("Tina Belcher", "tina@example.com"),
+				letter.CC("Gene Belcher", "gene@example.com"),
+			},
+			expect: func(t *testing.T, l letter.Letter) {
+				assert.Equal(t, []mail.Address{
+					{Name: "Bob Belcher", Address: "bob@example.com"},
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+					{Name: "Tina Belcher", Address: "tina@example.com"},
+					{Name: "Gene Belcher", Address: "gene@example.com"},
+				}, l.Recipients())
+			},
+		},
+		{
 			name: "To(): single recipient",
 			opts: []letter.Option{
 				letter.To("Bob Belcher", "bob@example.com"),
@@ -213,6 +230,15 @@ func TestWrite(t *testing.T) {
 				text, html := l.Content()
 				assert.Equal(t, "Hello.", text)
 				assert.Equal(t, "<p>Hello.</p>", html)
+			},
+		},
+		{
+			name: "RFC()",
+			opts: []letter.Option{
+				letter.RFC("rfc body"),
+			},
+			expect: func(t *testing.T, l letter.Letter) {
+				assert.Equal(t, "rfc body", l.RFC())
 			},
 		},
 		{
@@ -497,6 +523,19 @@ func TestLetter_RFC(t *testing.T) {
 
 	assert.Equal(t, expected, let.RFC())
 	assert.Equal(t, expected, let.String())
+}
+
+func TestLetter_RFC_override(t *testing.T) {
+	let := letter.Write(
+		letter.From("Bob Belcher", "bob@example.com"),
+		letter.To("Linda Belcher", "linda@example.com"),
+		letter.Subject("Hi."),
+		letter.Text("Hello."),
+		letter.HTML("<p>Hello.</p>"),
+		letter.RFC("rfc body"),
+	)
+
+	assert.Equal(t, "rfc body", let.RFC())
 }
 
 func join(lines ...string) string {
