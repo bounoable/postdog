@@ -178,3 +178,27 @@ func TestNew(t *testing.T) {
 		})
 	}
 }
+
+func TestQuery_Recipients(t *testing.T) {
+	q := query.New(
+		query.To(
+			mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
+			mail.Address{Name: "Linda Belcher", Address: "linda@example.com"},
+		),
+		query.CC(
+			mail.Address{Name: "Tina Belcher", Address: "tina@example.com"},
+			mail.Address{Name: "Gene Belcher", Address: "gene@example.com"},
+		),
+		query.BCC(
+			mail.Address{Name: "Louise Belcher", Address: "louise@example.com"},
+		),
+	)
+
+	assert.Equal(t, []mail.Address{
+		{Name: "Bob Belcher", Address: "bob@example.com"},
+		{Name: "Linda Belcher", Address: "linda@example.com"},
+		{Name: "Tina Belcher", Address: "tina@example.com"},
+		{Name: "Gene Belcher", Address: "gene@example.com"},
+		{Name: "Louise Belcher", Address: "louise@example.com"},
+	}, q.Recipients())
+}

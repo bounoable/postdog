@@ -176,3 +176,12 @@ func Paginate(page, perPage int) Option {
 		q.Pagination.PerPage = perPage
 	}
 }
+
+// Recipients returns the `To`, `Cc` and `Bcc` filters.
+func (q Query) Recipients() []mail.Address {
+	addrs := make([]mail.Address, 0, len(q.To)+len(q.CC)+len(q.BCC))
+	addrs = append(addrs, q.To...)
+	addrs = append(addrs, q.CC...)
+	addrs = append(addrs, q.BCC...)
+	return addrs
+}
