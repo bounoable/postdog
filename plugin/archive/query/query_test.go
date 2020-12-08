@@ -67,6 +67,19 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "Recipients()",
+			opts: []query.Option{
+				query.Recipient(mail.Address{Name: "Bob Belcher", Address: "bob@example.com"}),
+				query.Recipient(mail.Address{Name: "Linda Belcher", Address: "linda@example.com"}),
+			},
+			want: query.Query{
+				Recipients: []mail.Address{
+					{Name: "Bob Belcher", Address: "bob@example.com"},
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+				},
+			},
+		},
+		{
 			name: "Subject()",
 			opts: []query.Option{
 				query.Subject("Subject 1", "Subject 2"),
@@ -177,28 +190,4 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, tt.want, query.New(tt.opts...))
 		})
 	}
-}
-
-func TestQuery_Recipients(t *testing.T) {
-	q := query.New(
-		query.To(
-			mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
-			mail.Address{Name: "Linda Belcher", Address: "linda@example.com"},
-		),
-		query.CC(
-			mail.Address{Name: "Tina Belcher", Address: "tina@example.com"},
-			mail.Address{Name: "Gene Belcher", Address: "gene@example.com"},
-		),
-		query.BCC(
-			mail.Address{Name: "Louise Belcher", Address: "louise@example.com"},
-		),
-	)
-
-	assert.Equal(t, []mail.Address{
-		{Name: "Bob Belcher", Address: "bob@example.com"},
-		{Name: "Linda Belcher", Address: "linda@example.com"},
-		{Name: "Tina Belcher", Address: "tina@example.com"},
-		{Name: "Gene Belcher", Address: "gene@example.com"},
-		{Name: "Louise Belcher", Address: "louise@example.com"},
-	}, q.Recipients())
 }

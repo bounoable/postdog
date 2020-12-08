@@ -27,6 +27,7 @@ type Query struct {
 	To            []mail.Address
 	CC            []mail.Address
 	BCC           []mail.Address
+	Recipients    []mail.Address
 	Subjects      []string
 	Attachment    AttachmentFilter
 	Sorting       Sorting
@@ -121,6 +122,13 @@ func BCC(addr ...mail.Address) Option {
 	}
 }
 
+// Recipient returns an Option that adds a `Recipient` filter to a Query.
+func Recipient(rcpts ...mail.Address) Option {
+	return func(q *Query) {
+		q.Recipients = append(q.Recipients, rcpts...)
+	}
+}
+
 // Subject returns an Option that adds a `Subject` filter to a Query.
 func Subject(subjects ...string) Option {
 	return func(q *Query) {
@@ -175,13 +183,4 @@ func Paginate(page, perPage int) Option {
 		q.Pagination.Page = page
 		q.Pagination.PerPage = perPage
 	}
-}
-
-// Recipients returns the `To`, `Cc` and `Bcc` filters.
-func (q Query) Recipients() []mail.Address {
-	addrs := make([]mail.Address, 0, len(q.To)+len(q.CC)+len(q.BCC))
-	addrs = append(addrs, q.To...)
-	addrs = append(addrs, q.CC...)
-	addrs = append(addrs, q.BCC...)
-	return addrs
 }
