@@ -31,6 +31,7 @@ type Query struct {
 	Subjects      []string
 	Texts         []string
 	HTML          []string
+	RFC           []string
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
@@ -145,10 +146,17 @@ func Text(texts ...string) Option {
 	}
 }
 
-// HTML returns an Option that adds a `HTML` filter to a Query.
+// HTML returns an Option that adds an `HTML` filter to a Query.
 func HTML(html ...string) Option {
 	return func(q *Query) {
 		q.HTML = append(q.HTML, html...)
+	}
+}
+
+// RFC returns an Option that adds an `RFC` filter to a Query.
+func RFC(rfc ...string) Option {
+	return func(q *Query) {
+		q.RFC = append(q.RFC, rfc...)
 	}
 }
 

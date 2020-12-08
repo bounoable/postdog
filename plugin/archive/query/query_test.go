@@ -110,6 +110,16 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "RFC()",
+			opts: []query.Option{
+				query.RFC("rfc body 1", "rfc body 2"),
+				query.RFC("rfc body 3", "rfc body 4"),
+			},
+			want: query.Query{
+				RFC: []string{"rfc body 1", "rfc body 2", "rfc body 3", "rfc body 4"},
+			},
+		},
+		{
 			name: "AttachmentFilename()",
 			opts: []query.Option{
 				query.AttachmentFilename("attach1", "attach2"),
