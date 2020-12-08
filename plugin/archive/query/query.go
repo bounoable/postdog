@@ -29,6 +29,8 @@ type Query struct {
 	BCC           []mail.Address
 	Recipients    []mail.Address
 	Subjects      []string
+	Texts         []string
+	HTML          []string
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
@@ -133,6 +135,20 @@ func Recipient(rcpts ...mail.Address) Option {
 func Subject(subjects ...string) Option {
 	return func(q *Query) {
 		q.Subjects = append(q.Subjects, subjects...)
+	}
+}
+
+// Text returns an Option that adds a `Text` filter to a Query.
+func Text(texts ...string) Option {
+	return func(q *Query) {
+		q.Texts = append(q.Texts, texts...)
+	}
+}
+
+// HTML returns an Option that adds a `HTML` filter to a Query.
+func HTML(html ...string) Option {
+	return func(q *Query) {
+		q.HTML = append(q.HTML, html...)
 	}
 }
 

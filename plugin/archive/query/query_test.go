@@ -90,6 +90,26 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "Text()",
+			opts: []query.Option{
+				query.Text("text body 1", "text body 2"),
+				query.Text("text body 3", "text body 4"),
+			},
+			want: query.Query{
+				Texts: []string{"text body 1", "text body 2", "text body 3", "text body 4"},
+			},
+		},
+		{
+			name: "HTML()",
+			opts: []query.Option{
+				query.HTML("html body 1", "html body 2"),
+				query.HTML("html body 3", "html body 4"),
+			},
+			want: query.Query{
+				HTML: []string{"html body 1", "html body 2", "html body 3", "html body 4"},
+			},
+		},
+		{
 			name: "AttachmentFilename()",
 			opts: []query.Option{
 				query.AttachmentFilename("attach1", "attach2"),
