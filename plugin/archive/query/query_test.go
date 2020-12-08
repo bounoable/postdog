@@ -175,6 +175,18 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "AttachmentContent()",
+			opts: []query.Option{
+				query.AttachmentContent([]byte{1, 2, 3}),
+				query.AttachmentContent([]byte{4, 5, 6}, []byte{7, 8, 9}),
+			},
+			want: query.Query{
+				Attachment: query.AttachmentFilter{
+					Contents: [][]byte{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}},
+				},
+			},
+		},
+		{
 			name: "Sort(): default",
 			want: query.Query{
 				Sorting:       query.SortAny,

@@ -42,6 +42,7 @@ type Query struct {
 type AttachmentFilter struct {
 	Filenames    []string
 	ContentTypes []string
+	Contents     [][]byte
 	Size         AttachmentSizeFilter
 }
 
@@ -190,6 +191,14 @@ func AttachmentSizeRange(min, max int) Option {
 func AttachmentContentType(cts ...string) Option {
 	return func(q *Query) {
 		q.Attachment.ContentTypes = append(q.Attachment.ContentTypes, cts...)
+	}
+}
+
+// AttachmentContent returns an Option that adds an attachment filter to a Query.
+// It filters attachments by their actual file contents.
+func AttachmentContent(content ...[]byte) Option {
+	return func(q *Query) {
+		q.Attachment.Contents = append(q.Attachment.Contents, content...)
 	}
 }
 
