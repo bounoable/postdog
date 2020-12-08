@@ -402,6 +402,34 @@ func TestPostdog(t *testing.T) {
 						})
 					})
 				})
+
+				Convey("Given a Listener that needs the send time of a Mail", func() {
+					gotTime := make(chan time.Time, 1)
+					lis := mock_postdog.NewMockListener(ctrl)
+					lis.EXPECT().
+						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
+						Do(func(ctx context.Context, _ postdog.Hook, _ postdog.Mail) {
+							gotTime <- postdog.SendTime(ctx)
+						})
+
+					dog := postdog.New(
+						postdog.WithTransport("test", tr),
+						postdog.WithHook(postdog.AfterSend, lis),
+					)
+
+					Convey("When I send a Mail", func() {
+						start := time.Now()
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("The Listener should have received the send time", func() {
+							So((<-gotTime).UnixNano(), ShouldAlmostEqual, start.Add(50*time.Millisecond).UnixNano(), 5*time.Millisecond)
+						})
+					})
+				})
 			}))
 
 			Convey("Given a Transport that fails to send Mails", WithErrorTransport(ctrl, func(tr *mock_postdog.MockTransport) {

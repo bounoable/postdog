@@ -213,6 +213,7 @@ func (dog *Dog) Send(ctx context.Context, m Mail, opts ...SendOption) error {
 	defer func() { dog.callHooks(ctx, AfterSend, m) }()
 
 	err = tr.Send(ctx, m)
+	ctx = withSendTime(ctx, time.Now())
 	if err != nil {
 		ctx = withSendError(ctx, err)
 		return fmt.Errorf("transport: %w", err)
@@ -314,4 +315,16 @@ func SendError(ctx context.Context) error {
 
 func withSendError(ctx context.Context, err error) context.Context {
 	return context.WithValue(ctx, ctxSendError, err)
+}
+
+const ctxSendTime = ctxKey("sendTime")
+
+// SendTime returns the time of the last (*Dog).Send() call that has been made using ctx.
+func SendTime(ctx context.Context) time.Time {
+	t, _ := ctx.Value(ctxSendTime).(time.Time)
+	return t
+}
+
+func withSendTime(ctx context.Context, t time.Time) context.Context {
+	return context.WithValue(ctx, ctxSendTime, t)
 }
