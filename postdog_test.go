@@ -426,7 +426,7 @@ func TestPostdog(t *testing.T) {
 						})
 
 						Convey("The Listener should have received the send time", func() {
-							So((<-gotTime).UnixNano(), ShouldAlmostEqual, start.Add(50*time.Millisecond).UnixNano(), 5*time.Millisecond)
+							So((<-gotTime).UnixNano(), ShouldAlmostEqual, start.Add(50*time.Millisecond).UnixNano(), 10*time.Millisecond)
 						})
 					})
 				})
