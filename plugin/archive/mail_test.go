@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"errors"
 	"net/mail"
 	"testing"
 	"time"
@@ -42,6 +43,20 @@ func TestExpandMail_withSendTime(t *testing.T) {
 	timeMail := Mail{sentAt: time.Now()}
 	m := ExpandMail(timeMail)
 	assert.Equal(t, timeMail.sentAt, m.SentAt())
+}
+
+func TestMail_WithSendError(t *testing.T) {
+	m := ExpandMail(letter.Write())
+	err := errors.New("send error")
+	m = m.WithSendError(err.Error())
+	assert.Equal(t, "send error", m.SendError())
+}
+
+func TestMail_WithSendTime(t *testing.T) {
+	m := ExpandMail(letter.Write())
+	sa := time.Now()
+	m = m.WithSendTime(sa)
+	assert.Equal(t, sa, m.SentAt())
 }
 
 type basicMail struct {
