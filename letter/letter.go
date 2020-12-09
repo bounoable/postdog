@@ -40,6 +40,7 @@ func TryWrite(opts ...Option) (Letter, error) {
 			return let, err
 		}
 	}
+	let.normalizeRecipients()
 	return let, nil
 }
 
@@ -424,6 +425,29 @@ func (l Letter) RFC() string {
 
 func (l Letter) String() string {
 	return l.RFC()
+}
+
+func (l *Letter) normalizeRecipients() {
+	l.removeRecipients(l.to)
+	l.removeRecipients(l.cc)
+	l.removeRecipients(l.bcc)
+}
+
+func (l *Letter) removeRecipients(addrs []mail.Address) {
+	remaining := l.recipients[:0]
+L:
+	for _, rcpt := range l.recipients {
+		for _, addr := range addrs {
+			if rcpt == addr {
+				continue L
+			}
+		}
+		remaining = append(remaining, rcpt)
+	}
+	if len(remaining) == 0 {
+		remaining = nil
+	}
+	l.recipients = remaining
 }
 
 func rfcAttachments(ats []Attachment) []rfc.Attachment {

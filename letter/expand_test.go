@@ -49,10 +49,6 @@ func TestExpand(t *testing.T) {
 				To("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				recipients: []mail.Address{
-					{Name: "Bob Belcher", Address: "bob@example.com"},
-					{Name: "Linda Belcher", Address: "linda@example.com"},
-				},
 				rfc: Write(
 					To("Bob Belcher", "bob@example.com"),
 					To("Linda Belcher", "linda@example.com"),
@@ -70,10 +66,6 @@ func TestExpand(t *testing.T) {
 				CC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				recipients: []mail.Address{
-					{Name: "Bob Belcher", Address: "bob@example.com"},
-					{Name: "Linda Belcher", Address: "linda@example.com"},
-				},
 				rfc: Write(
 					CC("Bob Belcher", "bob@example.com"),
 					CC("Linda Belcher", "linda@example.com"),
@@ -91,10 +83,6 @@ func TestExpand(t *testing.T) {
 				BCC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				recipients: []mail.Address{
-					{Name: "Bob Belcher", Address: "bob@example.com"},
-					{Name: "Linda Belcher", Address: "linda@example.com"},
-				},
 				rfc: Write(
 					BCC("Bob Belcher", "bob@example.com"),
 					BCC("Linda Belcher", "linda@example.com"),
@@ -118,6 +106,44 @@ func TestExpand(t *testing.T) {
 				).RFC(),
 				replyTo: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+				},
+			},
+		},
+		{
+			name: "mail with Recipients() method",
+			give: Write(
+				Recipient("Bob Belcher", "bob@example.com"),
+				Recipient("Linda Belcher", "linda@example.com"),
+			),
+			want: Letter{
+				rfc: Write(
+					Recipient("Bob Belcher", "bob@example.com"),
+					Recipient("Linda Belcher", "linda@example.com"),
+				).RFC(),
+				recipients: []mail.Address{
+					{Name: "Bob Belcher", Address: "bob@example.com"},
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+				},
+			},
+		},
+		{
+			name: "mail with Recipients() and To() method with duplicates",
+			give: Write(
+				Recipient("Bob Belcher", "bob@example.com"),
+				Recipient("Linda Belcher", "linda@example.com"),
+				To("Linda Belcher", "linda@example.com"),
+			),
+			want: Letter{
+				rfc: Write(
+					Recipient("Bob Belcher", "bob@example.com"),
+					Recipient("Linda Belcher", "linda@example.com"),
+					To("Linda Belcher", "linda@example.com"),
+				).RFC(),
+				recipients: []mail.Address{
+					{Name: "Bob Belcher", Address: "bob@example.com"},
+				},
+				to: []mail.Address{
 					{Name: "Linda Belcher", Address: "linda@example.com"},
 				},
 			},
