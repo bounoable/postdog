@@ -49,10 +49,6 @@ func TestExpand(t *testing.T) {
 				To("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					To("Bob Belcher", "bob@example.com"),
-					To("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				to: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 					{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -66,10 +62,6 @@ func TestExpand(t *testing.T) {
 				CC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					CC("Bob Belcher", "bob@example.com"),
-					CC("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				cc: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 					{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -83,10 +75,6 @@ func TestExpand(t *testing.T) {
 				BCC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					BCC("Bob Belcher", "bob@example.com"),
-					BCC("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				bcc: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 					{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -100,10 +88,6 @@ func TestExpand(t *testing.T) {
 				ReplyTo("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					ReplyTo("Bob Belcher", "bob@example.com"),
-					ReplyTo("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				replyTo: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 					{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -117,10 +101,6 @@ func TestExpand(t *testing.T) {
 				Recipient("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					Recipient("Bob Belcher", "bob@example.com"),
-					Recipient("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				recipients: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 					{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -135,11 +115,6 @@ func TestExpand(t *testing.T) {
 				To("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				rfc: Write(
-					Recipient("Bob Belcher", "bob@example.com"),
-					Recipient("Linda Belcher", "linda@example.com"),
-					To("Linda Belcher", "linda@example.com"),
-				).RFC(),
 				recipients: []mail.Address{
 					{Name: "Bob Belcher", Address: "bob@example.com"},
 				},
@@ -154,7 +129,6 @@ func TestExpand(t *testing.T) {
 				Subject("Hello."),
 			),
 			want: Letter{
-				rfc:     Write(Subject("Hello.")).RFC(),
 				subject: "Hello.",
 			},
 		},
@@ -164,9 +138,6 @@ func TestExpand(t *testing.T) {
 				Text("Hello."),
 			),
 			want: Letter{
-				rfc: Write(
-					Text("Hello."),
-				).RFC(),
 				text: "Hello.",
 			},
 		},
@@ -176,10 +147,27 @@ func TestExpand(t *testing.T) {
 				HTML("<p>Hello.</p>"),
 			),
 			want: Letter{
-				rfc: Write(
-					HTML("<p>Hello.</p>"),
-				).RFC(),
 				html: "<p>Hello.</p>",
+			},
+		},
+		{
+			name: "mail with RFC() method",
+			give: Write(
+				RFC("rfc body"),
+			),
+			want: Letter{
+				rfc: "rfc body",
+			},
+		},
+		{
+			name: "mail with default rfc",
+			give: Write(
+				Text("text body"),
+				RFC(Write(Text("text body")).RFC()),
+			),
+			want: Letter{
+				rfc:  "",
+				text: "text body",
 			},
 		},
 		{
@@ -188,20 +176,10 @@ func TestExpand(t *testing.T) {
 				AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
 				AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
 			),
-			want: Letter{
-				rfc: Write(
-					AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
-					AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
-				).RFC(),
-				attachments: []Attachment{
-					{filename: "attach-1", content: []byte{1, 2, 3}, contentType: "application/octet-stream", header: Write(
-						AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
-					).Attachments()[0].Header()},
-					{filename: "attach-2", content: []byte{2, 3, 4, 5}, contentType: "application/octet-stream", header: Write(
-						AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
-					).Attachments()[0].Header()},
-				},
-			},
+			want: Write(
+				AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
+				AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
+			),
 		},
 	}
 

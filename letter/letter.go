@@ -41,6 +41,8 @@ func TryWrite(opts ...Option) (Letter, error) {
 		}
 	}
 	let.normalizeRecipients()
+	let.normalizeRFC()
+
 	return let, nil
 }
 
@@ -335,8 +337,13 @@ func Expand(pm postdog.Mail) Letter {
 		opts = append(opts, HTML(htmlMail.HTML()))
 	}
 
+	if attachments := getAttachments(pm); len(attachments) > 0 {
+		for _, at := range attachments {
+			opts = append(opts, Attach(at.Filename(), at.Content(), ContentType(at.ContentType())))
+		}
+	}
+
 	l := Write(opts...)
-	l.attachments = getAttachments(pm)
 
 	return l
 }
@@ -448,6 +455,17 @@ L:
 		remaining = nil
 	}
 	l.recipients = remaining
+}
+
+func (l *Letter) normalizeRFC() {
+	if l.rfc == "" {
+		return
+	}
+	copy := *l
+	copy.rfc = ""
+	if copy.RFC() == l.rfc {
+		l.rfc = ""
+	}
 }
 
 func rfcAttachments(ats []Attachment) []rfc.Attachment {
