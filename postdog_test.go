@@ -1,13 +1,14 @@
 package postdog_test
 
 import (
-	"context"
+	stdctx "context"
 	"errors"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/bounoable/postdog"
+	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/letter"
 	mock_postdog "github.com/bounoable/postdog/mocks"
 	"github.com/golang/mock/gomock"
@@ -36,7 +37,7 @@ func TestPostdog(t *testing.T) {
 				dog := postdog.New()
 
 				Convey("When I send a mail without specifying the transport", func() {
-					err := dog.Send(context.Background(), mockLetter)
+					err := dog.Send(stdctx.Background(), mockLetter)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldBeError, postdog.ErrNoTransport)
@@ -44,7 +45,7 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("When I send a mail and specify the transport", func() {
-					err := dog.Send(context.Background(), mockLetter, postdog.Use("test"))
+					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test"))
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldBeError, postdog.ErrUnconfiguredTransport)
@@ -62,7 +63,7 @@ func TestPostdog(t *testing.T) {
 						Send(gomock.Any(), mockLetter).
 						Return(nil)
 
-					err := dog.Send(context.Background(), mockLetter)
+					err := dog.Send(stdctx.Background(), mockLetter)
 
 					Convey("Then the configured transport should be used", func() {
 						So(err, ShouldBeNil)
@@ -74,7 +75,7 @@ func TestPostdog(t *testing.T) {
 						Send(gomock.Any(), mockLetter).
 						Return(nil)
 
-					err := dog.Send(context.Background(), mockLetter, postdog.Use("test"))
+					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test"))
 
 					Convey("Then the configured transport should be used", func() {
 						So(err, ShouldBeNil)
@@ -82,7 +83,7 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("When I send a mail and specify another transport", func() {
-					err := dog.Send(context.Background(), mockLetter, postdog.Use("test2"))
+					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test2"))
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldBeError, postdog.ErrUnconfiguredTransport)
@@ -106,7 +107,7 @@ func TestPostdog(t *testing.T) {
 						Send(gomock.Any(), mockLetter).
 						Return(nil)
 
-					err := dog.Send(context.Background(), mockLetter)
+					err := dog.Send(stdctx.Background(), mockLetter)
 
 					Convey("The first configured transport should be used", func() {
 						So(err, ShouldBeNil)
@@ -121,7 +122,7 @@ func TestPostdog(t *testing.T) {
 							Send(gomock.Any(), mockLetter).
 							Return(nil)
 
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("The configured default transport should be used", func() {
 							So(err, ShouldBeNil)
@@ -198,7 +199,7 @@ func TestPostdog(t *testing.T) {
 				)
 
 				Convey("When I send a mail", func() {
-					err := dog.Send(context.Background(), letter.Write())
+					err := dog.Send(stdctx.Background(), letter.Write())
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)
@@ -211,7 +212,7 @@ func TestPostdog(t *testing.T) {
 			Convey("Given a Transport", WithMockTransport(ctrl, func(tr *mock_postdog.MockTransport) {
 				tr.EXPECT().
 					Send(gomock.Any(), mockLetter).
-					DoAndReturn(func(_ context.Context, _ postdog.Mail) error {
+					DoAndReturn(func(_ stdctx.Context, _ postdog.Mail) error {
 						return nil
 					}).
 					AnyTimes()
@@ -225,21 +226,21 @@ func TestPostdog(t *testing.T) {
 
 					Convey("When I send a mail", func() {
 						start := time.Now()
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
 						})
 
 						Convey("When I immediately send another mail", func() {
-							err2 := dog.Send(context.Background(), mockLetter)
+							err2 := dog.Send(stdctx.Background(), mockLetter)
 
 							Convey("It shouldn't fail", func() {
 								So(err2, ShouldBeNil)
 							})
 
 							Convey("When I immediately send a third mail", func() {
-								err3 := dog.Send(context.Background(), mockLetter)
+								err3 := dog.Send(stdctx.Background(), mockLetter)
 
 								Convey("It shouldn't fail", func() {
 									So(err3, ShouldBeNil)
@@ -263,26 +264,26 @@ func TestPostdog(t *testing.T) {
 				dog := postdog.New(postdog.WithTransport("test", tr))
 
 				Convey("When I send a mail with a timeout of 20 milliseconds", func() {
-					err := dog.Send(context.Background(), mockLetter, postdog.Timeout(20*time.Millisecond))
+					err := dog.Send(stdctx.Background(), mockLetter, postdog.Timeout(20*time.Millisecond))
 
-					Convey("It should fail with context.DeadlineExceeded", func() {
-						So(errors.Is(err, context.DeadlineExceeded), ShouldBeTrue)
+					Convey("It should fail with stdctx.DeadlineExceeded", func() {
+						So(errors.Is(err, stdctx.DeadlineExceeded), ShouldBeTrue)
 					})
 				})
 
 				Convey("When I send a mail with a context with a timeout of 20 milliseconds", func() {
-					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+					ctx, cancel := stdctx.WithTimeout(stdctx.Background(), 20*time.Millisecond)
 					Reset(cancel)
 
 					err := dog.Send(ctx, mockLetter)
 
-					Convey("It should fail with context.DeadlineExceeded", func() {
-						So(errors.Is(err, context.DeadlineExceeded), ShouldBeTrue)
+					Convey("It should fail with stdctx.DeadlineExceeded", func() {
+						So(errors.Is(err, stdctx.DeadlineExceeded), ShouldBeTrue)
 					})
 				})
 
 				Convey("When I send a mail with a timeout of 60 milliseconds", func() {
-					err := dog.Send(context.Background(), mockLetter, postdog.Timeout(60*time.Millisecond))
+					err := dog.Send(stdctx.Background(), mockLetter, postdog.Timeout(60*time.Millisecond))
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)
@@ -298,7 +299,7 @@ func TestPostdog(t *testing.T) {
 					lis := mock_postdog.NewMockListener(ctrl)
 					lis.EXPECT().
 						Handle(gomock.Any(), postdog.BeforeSend, mockLetter).
-						Do(func(context.Context, postdog.Hook, postdog.Mail) {
+						Do(func(stdctx.Context, postdog.Hook, postdog.Mail) {
 							handledAt <- time.Now()
 						})
 
@@ -309,7 +310,7 @@ func TestPostdog(t *testing.T) {
 
 					Convey("When I send a Mail", func() {
 						start := time.Now()
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
@@ -335,7 +336,7 @@ func TestPostdog(t *testing.T) {
 					)
 
 					Convey("When I send a Mail", func() {
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
@@ -372,7 +373,7 @@ func TestPostdog(t *testing.T) {
 
 					Convey("When I send a Mail", func() {
 						start := time.Now()
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
@@ -408,8 +409,8 @@ func TestPostdog(t *testing.T) {
 					lis := mock_postdog.NewMockListener(ctrl)
 					lis.EXPECT().
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
-						Do(func(ctx context.Context, _ postdog.Hook, _ postdog.Mail) {
-							gotTime <- postdog.SendTime(ctx)
+						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
+							gotTime <- context.SendTime(ctx)
 						})
 
 					dog := postdog.New(
@@ -419,7 +420,7 @@ func TestPostdog(t *testing.T) {
 
 					Convey("When I send a Mail", func() {
 						start := time.Now()
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
@@ -438,8 +439,8 @@ func TestPostdog(t *testing.T) {
 					lis := mock_postdog.NewMockListener(ctrl)
 					lis.EXPECT().
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
-						Do(func(ctx context.Context, _ postdog.Hook, _ postdog.Mail) {
-							gotError <- postdog.SendError(ctx)
+						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
+							gotError <- context.SendError(ctx)
 						})
 
 					dog := postdog.New(
@@ -448,7 +449,7 @@ func TestPostdog(t *testing.T) {
 					)
 
 					Convey("When I send a Mail", func() {
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It should fail", func() {
 							So(errors.Is(err, mockError), ShouldBeTrue)
@@ -496,7 +497,7 @@ func TestPostdog(t *testing.T) {
 					)
 
 					Convey("When I send a mail", func() {
-						err := dog.Send(context.Background(), mockLetter)
+						err := dog.Send(stdctx.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
 							So(err, ShouldBeNil)
@@ -537,9 +538,9 @@ func newMockMiddleware(ctrl *gomock.Controller, fn func(postdog.Mail) postdog.Ma
 	mw.EXPECT().
 		Handle(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(
-			ctx context.Context,
+			ctx stdctx.Context,
 			m postdog.Mail,
-			next func(context.Context, postdog.Mail) (postdog.Mail, error),
+			next func(stdctx.Context, postdog.Mail) (postdog.Mail, error),
 		) (postdog.Mail, error) {
 			return next(ctx, fn(m))
 		})
@@ -551,7 +552,7 @@ func WithDelayedTransport(ctrl *gomock.Controller, delay time.Duration, fn func(
 		tr := mock_postdog.NewMockTransport(ctrl)
 		tr.EXPECT().
 			Send(gomock.Any(), mockLetter).
-			DoAndReturn(func(ctx context.Context, _ postdog.Mail) error {
+			DoAndReturn(func(ctx stdctx.Context, _ postdog.Mail) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
@@ -568,7 +569,7 @@ func WithErrorTransport(ctrl *gomock.Controller, fn func(*mock_postdog.MockTrans
 		tr := mock_postdog.NewMockTransport(ctrl)
 		tr.EXPECT().
 			Send(gomock.Any(), mockLetter).
-			DoAndReturn(func(context.Context, postdog.Mail) error {
+			DoAndReturn(func(stdctx.Context, postdog.Mail) error {
 				return mockError
 			}).
 			AnyTimes()
@@ -578,7 +579,7 @@ func WithErrorTransport(ctrl *gomock.Controller, fn func(*mock_postdog.MockTrans
 
 func newDelayedListener(ctrl *gomock.Controller, delay time.Duration, h postdog.Hook, calls chan<- time.Time) *mock_postdog.MockListener {
 	lis := mock_postdog.NewMockListener(ctrl)
-	lis.EXPECT().Handle(gomock.Any(), h, mockLetter).Do(func(context.Context, postdog.Hook, postdog.Mail) {
+	lis.EXPECT().Handle(gomock.Any(), h, mockLetter).Do(func(stdctx.Context, postdog.Hook, postdog.Mail) {
 		calls <- time.Now()
 		<-time.After(delay)
 	})
