@@ -139,8 +139,8 @@ func TestQueue(t *testing.T) {
 							end := time.Now()
 							dur := end.Sub(start)
 
-							So(dur, ShouldAlmostEqual, time.Millisecond*50, time.Millisecond*5)
-							So(job2.DispatchedAt().UnixNano(), ShouldAlmostEqual, end.UnixNano(), time.Millisecond*5)
+							So(dur, ShouldAlmostEqual, time.Millisecond*50, 10*time.Millisecond)
+							So(job2.DispatchedAt().UnixNano(), ShouldAlmostEqual, end.UnixNano(), 10*time.Millisecond)
 						})
 					})
 
