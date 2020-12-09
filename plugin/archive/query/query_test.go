@@ -3,6 +3,7 @@ package query_test
 import (
 	"net/mail"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/plugin/archive/query"
 	"github.com/stretchr/testify/assert"
@@ -194,6 +195,27 @@ func TestNew(t *testing.T) {
 			},
 			want: query.Query{
 				SendErrors: []string{"send error 1", "send error 2", "send error 3", "send error 4"},
+			},
+		},
+		{
+			name: "SendTime()",
+			opts: []query.Option{
+				query.SendTime(
+					time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+				),
+				query.SendTime(
+					time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+				),
+			},
+			want: query.Query{
+				SendTimes: []time.Time{
+					time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+				},
 			},
 		},
 		{

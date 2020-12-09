@@ -2,6 +2,7 @@ package query
 
 import (
 	"net/mail"
+	"time"
 )
 
 const (
@@ -30,6 +31,7 @@ type Query struct {
 	HTML          []string
 	RFC           []string
 	SendErrors    []string
+	SendTimes     []time.Time
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
@@ -141,6 +143,13 @@ func RFC(rfc ...string) Option {
 func SendError(errs ...string) Option {
 	return func(q *Query) {
 		q.SendErrors = append(q.SendErrors, errs...)
+	}
+}
+
+// SendTime returns an Option that adds a `send time` filter to a Query.
+func SendTime(t ...time.Time) Option {
+	return func(q *Query) {
+		q.SendTimes = append(q.SendTimes, t...)
 	}
 }
 
