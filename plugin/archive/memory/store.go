@@ -4,38 +4,45 @@ import (
 	"bytes"
 	"context"
 	"net/mail"
+	"sort"
 	"strings"
+	"time"
 
-	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/cursor"
 	"github.com/bounoable/postdog/plugin/archive/query"
 )
 
+// Store is an in-memory mail store.
 type Store struct {
-	mails []postdog.Mail
+	mails []archive.Mail
 }
 
+// NewStore returns a new in-memory store.
 func NewStore() *Store {
 	return &Store{}
 }
 
-func (s *Store) Insert(ctx context.Context, m postdog.Mail) error {
+// Insert inserts m into s.
+func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 	s.mails = append(s.mails, m)
 	return nil
 }
 
-func (s *Store) Query(_ context.Context, q query.Query) (query.Cursor, error) {
-	var mails []postdog.Mail
+// Query returns a query.Cursor that returns the mails in the Store that match the query.Query q.
+func (s *Store) Query(_ context.Context, q query.Query) (archive.Cursor, error) {
+	var mails []archive.Mail
 	for _, m := range s.mails {
 		if filter(m, q) {
 			mails = append(mails, m)
 		}
 	}
+	mails = sortMails(mails, q)
 	return cursor.New(mails...), nil
 }
 
-func filter(pm postdog.Mail, q query.Query) bool {
+func filter(pm archive.Mail, q query.Query) bool {
 	l := letter.Expand(pm)
 
 	if len(q.From) > 0 {
@@ -208,4 +215,31 @@ func containsAnyAttachmentContent(ats []letter.Attachment, contents [][]byte) bo
 		}
 	}
 	return false
+}
+
+func sortMails(mails []archive.Mail, q query.Query) []archive.Mail {
+	if q.Sorting == query.SortAny {
+		return mails
+	}
+
+	sort.Slice(mails, func(a, b int) bool {
+		mailA := archive.ExpandMail(mails[a])
+		mailB := archive.ExpandMail(mails[b])
+
+		switch q.Sorting {
+		case query.SortSendTime:
+			return compareTime(mailA.SentAt(), mailB.SentAt(), q.SortDirection == query.SortDesc)
+		default:
+			return true
+		}
+	})
+
+	return mails
+}
+
+func compareTime(a, b time.Time, desc bool) bool {
+	if desc {
+		return a.After(b)
+	}
+	return a.Before(b)
 }

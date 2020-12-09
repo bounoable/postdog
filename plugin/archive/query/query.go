@@ -1,17 +1,14 @@
 package query
 
 import (
-	"context"
 	"net/mail"
-
-	"github.com/bounoable/postdog"
 )
 
 const (
 	// SortAny is the default Sorting and sorts with an undefined / unpredictable behavior.
 	SortAny = Sorting(iota)
-	// SortSentAt sorts by the send time of the mails.
-	SortSentAt
+	// SortSendTime sorts mails by their send time.
+	SortSendTime
 )
 
 const (
@@ -66,28 +63,6 @@ type Pagination struct {
 
 // Option is a Query option.
 type Option func(*Query)
-
-// Cursor is a cursor postdog.Mails.
-type Cursor interface {
-	// Next advances the cursor to the next mail.
-	// Implementations should return true if the next call to Current() would
-	// return a non-nil postdog.Mail, or false if the Cursor reached the end or
-	// if Next() failed because of an error. In the latter case, Err() should
-	// return that error.
-	Next(context.Context) bool
-
-	// Current returns the current postdog.Mail.
-	Current() postdog.Mail
-
-	// All returns the remaining postdog.Mails from the Cursor and calls cur.Close(ctx) afterwards.
-	All(context.Context) ([]postdog.Mail, error)
-
-	// Err returns the current error that occurred during a previous Next() call.
-	Err() error
-
-	// Close closes the Cursor. Users must call Close() after using the Cursor if they don't call All().
-	Close(context.Context) error
-}
 
 // New builds a Query using the provided opts.
 func New(opts ...Option) Query {

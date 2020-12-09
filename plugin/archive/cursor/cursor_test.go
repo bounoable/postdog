@@ -6,19 +6,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/cursor"
-	"github.com/bounoable/postdog/plugin/archive/query"
 	"github.com/stretchr/testify/assert"
 )
 
-var _ query.Cursor = (*cursor.Cursor)(nil)
+var _ archive.Cursor = (*cursor.Cursor)(nil)
 
-var mockMails = []postdog.Mail{
-	letter.Write(letter.From("Bob Belcher", "bob@example.com")),
-	letter.Write(letter.From("Linda Belcher", "linda@example.com")),
-	letter.Write(letter.From("Tina Belcher", "tina@example.com")),
+var mockMails = []archive.Mail{
+	archive.ExpandMail(letter.Write(letter.From("Bob Belcher", "bob@example.com"))),
+	archive.ExpandMail(letter.Write(letter.From("Linda Belcher", "linda@example.com"))),
+	archive.ExpandMail(letter.Write(letter.From("Tina Belcher", "tina@example.com"))),
 }
 
 func TestCursor_All_new(t *testing.T) {

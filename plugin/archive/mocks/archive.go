@@ -6,7 +6,7 @@ package mock_archive
 
 import (
 	context "context"
-	postdog "github.com/bounoable/postdog"
+	archive "github.com/bounoable/postdog/plugin/archive"
 	query "github.com/bounoable/postdog/plugin/archive/query"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
@@ -36,7 +36,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // Insert mocks base method
-func (m *MockStore) Insert(arg0 context.Context, arg1 postdog.Mail) error {
+func (m *MockStore) Insert(arg0 context.Context, arg1 archive.Mail) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -50,10 +50,10 @@ func (mr *MockStoreMockRecorder) Insert(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // Query mocks base method
-func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (query.Cursor, error) {
+func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (archive.Cursor, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Query", arg0, arg1)
-	ret0, _ := ret[0].(query.Cursor)
+	ret0, _ := ret[0].(archive.Cursor)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -62,6 +62,100 @@ func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (query.Cursor,
 func (mr *MockStoreMockRecorder) Query(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockStore)(nil).Query), arg0, arg1)
+}
+
+// MockCursor is a mock of Cursor interface
+type MockCursor struct {
+	ctrl     *gomock.Controller
+	recorder *MockCursorMockRecorder
+}
+
+// MockCursorMockRecorder is the mock recorder for MockCursor
+type MockCursorMockRecorder struct {
+	mock *MockCursor
+}
+
+// NewMockCursor creates a new mock instance
+func NewMockCursor(ctrl *gomock.Controller) *MockCursor {
+	mock := &MockCursor{ctrl: ctrl}
+	mock.recorder = &MockCursorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockCursor) EXPECT() *MockCursorMockRecorder {
+	return m.recorder
+}
+
+// Next mocks base method
+func (m *MockCursor) Next(arg0 context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Next", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Next indicates an expected call of Next
+func (mr *MockCursorMockRecorder) Next(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockCursor)(nil).Next), arg0)
+}
+
+// Current mocks base method
+func (m *MockCursor) Current() archive.Mail {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Current")
+	ret0, _ := ret[0].(archive.Mail)
+	return ret0
+}
+
+// Current indicates an expected call of Current
+func (mr *MockCursorMockRecorder) Current() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Current", reflect.TypeOf((*MockCursor)(nil).Current))
+}
+
+// All mocks base method
+func (m *MockCursor) All(arg0 context.Context) ([]archive.Mail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "All", arg0)
+	ret0, _ := ret[0].([]archive.Mail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// All indicates an expected call of All
+func (mr *MockCursorMockRecorder) All(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "All", reflect.TypeOf((*MockCursor)(nil).All), arg0)
+}
+
+// Err mocks base method
+func (m *MockCursor) Err() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Err")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Err indicates an expected call of Err
+func (mr *MockCursorMockRecorder) Err() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockCursor)(nil).Err))
+}
+
+// Close mocks base method
+func (m *MockCursor) Close(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockCursorMockRecorder) Close(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockCursor)(nil).Close), arg0)
 }
 
 // MockPrinter is a mock of Printer interface

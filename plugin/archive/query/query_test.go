@@ -196,20 +196,20 @@ func TestNew(t *testing.T) {
 		{
 			name: "Sort(): SendDate (asc)",
 			opts: []query.Option{
-				query.Sort(query.SortSentAt, query.SortAsc),
+				query.Sort(query.SortSendTime, query.SortAsc),
 			},
 			want: query.Query{
-				Sorting:       query.SortSentAt,
+				Sorting:       query.SortSendTime,
 				SortDirection: query.SortAsc,
 			},
 		},
 		{
 			name: "Sort(): SendDate (desc)",
 			opts: []query.Option{
-				query.Sort(query.SortSentAt, query.SortDesc),
+				query.Sort(query.SortSendTime, query.SortDesc),
 			},
 			want: query.Query{
-				Sorting:       query.SortSentAt,
+				Sorting:       query.SortSendTime,
 				SortDirection: query.SortDesc,
 			},
 		},

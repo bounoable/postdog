@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bounoable/postdog"
+	"github.com/bounoable/postdog/plugin/archive"
 )
 
 var (
@@ -14,28 +14,28 @@ var (
 	ErrClosed = errors.New("cursor closed")
 )
 
-// Cursor is a postdog.Mail cursor.
+// Cursor is a archive.Mail cursor.
 type Cursor struct {
 	mux    sync.RWMutex
-	mails  []postdog.Mail
+	mails  []archive.Mail
 	index  int
 	closed bool
 }
 
 // New returns a new *Cursor, initialized with the provided mails.
-func New(mails ...postdog.Mail) *Cursor {
+func New(mails ...archive.Mail) *Cursor {
 	return &Cursor{mails: mails, index: -1}
 }
 
-// All returns the remaining postdog.Mails from the Cursor and calls cur.Close(ctx) afterwards.
+// All returns the remaining archive.Mails from the Cursor and calls cur.Close(ctx) afterwards.
 //
 // It fails with ErrClosed if cur.Close() has been called before.
-func (cur *Cursor) All(ctx context.Context) ([]postdog.Mail, error) {
+func (cur *Cursor) All(ctx context.Context) ([]archive.Mail, error) {
 	if cur.isClosed() {
 		return nil, ErrClosed
 	}
 
-	var mails []postdog.Mail
+	var mails []archive.Mail
 	for cur.Next(ctx) {
 		mails = append(mails, cur.Current())
 	}
@@ -70,19 +70,19 @@ func (cur *Cursor) Err() error {
 	return nil
 }
 
-// Current returns the current postdog.Mail.
-func (cur *Cursor) Current() postdog.Mail {
+// Current returns the current archive.Mail.
+func (cur *Cursor) Current() archive.Mail {
 	cur.mux.RLock()
 	defer cur.mux.RUnlock()
 	if cur.index < 0 {
-		return nil
+		return archive.Mail{}
 	}
 	return cur.mails[cur.index]
 }
 
 // Push adds mails to the end of the Cursor. It fails with ErrClosed
 // if cur.Close() has been called before.
-func (cur *Cursor) Push(mails ...postdog.Mail) error {
+func (cur *Cursor) Push(mails ...archive.Mail) error {
 	if cur.isClosed() {
 		return ErrClosed
 	}

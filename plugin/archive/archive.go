@@ -1,10 +1,11 @@
 package archive
 
 import (
-	"context"
+	stdctx "context"
 	"fmt"
 
 	"github.com/bounoable/postdog"
+	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/plugin/archive/query"
 )
 
@@ -12,8 +13,32 @@ import (
 
 // Store is the underlying store for the Mails.
 type Store interface {
-	Insert(context.Context, postdog.Mail) error
-	Query(context.Context, query.Query) (query.Cursor, error)
+	// Insert inserts a Mail into the Store.
+	Insert(stdctx.Context, Mail) error
+
+	// Query queries the Store using the given query.Query.
+	Query(stdctx.Context, query.Query) (Cursor, error)
+}
+
+// Cursor is a cursor archived Mails.
+type Cursor interface {
+	// Next advances the cursor to the next Mail.
+	// Implementations should return true if the next call to Current() would
+	// return a valid Mail, or false if the Cursor reached the end or if Next()
+	// failed because of an error. In the latter case, Err() should return that error.
+	Next(stdctx.Context) bool
+
+	// Current returns the current Mail.
+	Current() Mail
+
+	// All returns the remaining Mails from the Cursor and calls cur.Close(ctx) afterwards.
+	All(stdctx.Context) ([]Mail, error)
+
+	// Err returns the current error that occurred during a previous Next() call.
+	Err() error
+
+	// Close closes the Cursor. Users must call Close() after using the Cursor if they don't call All().
+	Close(stdctx.Context) error
 }
 
 // Printer is the logger interface.
@@ -37,12 +62,12 @@ func New(s Store, opts ...Option) postdog.Plugin {
 
 	return postdog.Plugin{
 		postdog.WithHook(postdog.AfterSend, postdog.ListenerFunc(func(
-			ctx context.Context,
+			ctx stdctx.Context,
 			_ postdog.Hook,
 			pm postdog.Mail,
 		) {
-			sendError := postdog.SendError(ctx)
-			sentAt := postdog.SendTime(ctx)
+			sendError := context.SendError(ctx)
+			sentAt := context.SendTime(ctx)
 
 			var errMsg string
 			if sendError != nil {
