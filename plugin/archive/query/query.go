@@ -31,11 +31,18 @@ type Query struct {
 	HTML          []string
 	RFC           []string
 	SendErrors    []string
-	SendTimes     []time.Time
+	SendTime      SendTimeFilter
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
 	Pagination    Pagination
+}
+
+// SendTimeFilter is the query filter for the send date.
+type SendTimeFilter struct {
+	Exact  []time.Time
+	Before []time.Time
+	After  []time.Time
 }
 
 // AttachmentFilter is the query filter for attachments.
@@ -146,10 +153,36 @@ func SendError(errs ...string) Option {
 	}
 }
 
-// SendTime returns an Option that adds a `send time` filter to a Query.
-func SendTime(t ...time.Time) Option {
+// SentAt returns an Option that filters mails by their send time.
+// The send time of a mail must be one of t.
+func SentAt(t ...time.Time) Option {
 	return func(q *Query) {
-		q.SendTimes = append(q.SendTimes, t...)
+		q.SendTime.Exact = append(q.SendTime.Exact, t...)
+	}
+}
+
+// SentBefore returns an Option that filters mails by their send time.
+// The send time of a mail must be before any of t.
+func SentBefore(t ...time.Time) Option {
+	return func(q *Query) {
+		q.SendTime.Before = append(q.SendTime.Before, t...)
+	}
+}
+
+// SentAfter returns an Option that filters mails by their send time.
+// The send time of a mail must be after any of t.
+func SentAfter(t ...time.Time) Option {
+	return func(q *Query) {
+		q.SendTime.After = append(q.SendTime.After, t...)
+	}
+}
+
+// SentBetween returns an Option that filters mails by their send time.
+// The send time of a mail must be between (l, r).
+func SentBetween(l, r time.Time) Option {
+	return func(q *Query) {
+		SentAfter(l.Add(-time.Nanosecond))(q)
+		SentBefore(r.Add(time.Nanosecond))(q)
 	}
 }
 

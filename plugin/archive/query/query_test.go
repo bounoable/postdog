@@ -198,23 +198,71 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name: "SendTime()",
+			name: "SentAt()",
 			opts: []query.Option{
-				query.SendTime(
+				query.SentAt(
 					time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
 				),
-				query.SendTime(
+				query.SentAt(
 					time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
 				),
 			},
 			want: query.Query{
-				SendTimes: []time.Time{
+				SendTime: query.SendTimeFilter{
+					Exact: []time.Time{
+						time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			},
+		},
+		{
+			name: "SentBefore()",
+			opts: []query.Option{
+				query.SentBefore(
 					time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+				),
+				query.SentBefore(
 					time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+				),
+			},
+			want: query.Query{
+				SendTime: query.SendTimeFilter{
+					Before: []time.Time{
+						time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			},
+		},
+		{
+			name: "SentAfter()",
+			opts: []query.Option{
+				query.SentAfter(
+					time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+				),
+				query.SentAfter(
+					time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+				),
+			},
+			want: query.Query{
+				SendTime: query.SendTimeFilter{
+					After: []time.Time{
+						time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 2, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 3, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, time.January, 4, 0, 0, 0, 0, time.UTC),
+					},
 				},
 			},
 		},
