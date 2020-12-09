@@ -29,6 +29,7 @@ type Query struct {
 	Texts         []string
 	HTML          []string
 	RFC           []string
+	SendErrors    []string
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
@@ -133,6 +134,13 @@ func HTML(html ...string) Option {
 func RFC(rfc ...string) Option {
 	return func(q *Query) {
 		q.RFC = append(q.RFC, rfc...)
+	}
+}
+
+// SendError returns an Option that adds a `send error` filter to a Query.
+func SendError(errs ...string) Option {
+	return func(q *Query) {
+		q.SendErrors = append(q.SendErrors, errs...)
 	}
 }
 

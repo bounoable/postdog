@@ -187,6 +187,16 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "SendError()",
+			opts: []query.Option{
+				query.SendError("send error 1", "send error 2"),
+				query.SendError("send error 3", "send error 4"),
+			},
+			want: query.Query{
+				SendErrors: []string{"send error 1", "send error 2", "send error 3", "send error 4"},
+			},
+		},
+		{
 			name: "Sort(): default",
 			want: query.Query{
 				Sorting:       query.SortAny,
