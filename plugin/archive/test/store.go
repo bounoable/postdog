@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	stdctx "context"
 	"errors"
 	"fmt"
@@ -27,11 +28,9 @@ var (
 	))
 
 	errMockSend = errors.New("mock send error")
-
-	mockMails = makeMails(3)
 )
 
-// Store runs the basic store functionality against the archive.Store returned by newStore.
+// Store tests the archive.Store returned by newStore.
 func Store(t *testing.T, newStore func() archive.Store) {
 	Convey("Store", t, func() {
 		Convey("Insert()", func() {
@@ -47,9 +46,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 		})
 
 		Convey("Query()", func() {
-			s := newStore()
-
-			Convey("Given a Store with 3 mails", withFilledStore(s, func() {
+			Convey("Given a Store with 3 mails", withFilledStore(newStore, 3, func(s archive.Store, mockMails []archive.Mail) {
 				Convey("When I query the sender `Sender 3 <sender3@example.com>`", func() {
 					cur, err := s.Query(stdctx.Background(), query.New(
 						query.From(mail.Address{
@@ -69,10 +66,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[2].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[2].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[2].RFC())
+						So(mail, ShouldResemble, mockMails[2])
 					})
 				})
 
@@ -95,10 +89,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -121,10 +112,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -147,10 +135,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[2].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[2].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[2].RFC())
+						So(mail, ShouldResemble, mockMails[2])
 					})
 				})
 
@@ -173,10 +158,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[0].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[0].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[0].RFC())
+						So(mail, ShouldResemble, mockMails[0])
 					})
 				})
 
@@ -196,10 +178,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -219,10 +198,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -242,10 +218,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -265,10 +238,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mail, ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -288,10 +258,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[2].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[2].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[2].RFC())
+						So(mail, ShouldResemble, mockMails[2])
 					})
 				})
 
@@ -311,12 +278,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 
 					Convey("Cursor should return the mails", func() {
 						mails := drain(cur)
-						for i := 0; i < len(mockMails)-1; i++ {
-							mail := mails[i]
-							So(mail.From(), ShouldResemble, mockMails[i].From())
-							So(mail.Recipients(), ShouldResemble, mockMails[i].Recipients())
-							So(mail.RFC(), ShouldEqual, mockMails[i].RFC())
-						}
+						So(mails, ShouldResemble, mockMails[:len(mockMails)-1])
 					})
 				})
 
@@ -335,12 +297,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 
 					Convey("Cursor should return the mails", func() {
 						mails := drain(cur)
-						for i := 0; i < len(mockMails)-1; i++ {
-							mail := mails[i]
-							So(mail.From(), ShouldResemble, mockMails[i].From())
-							So(mail.Recipients(), ShouldResemble, mockMails[i].Recipients())
-							So(mail.RFC(), ShouldEqual, mockMails[i].RFC())
-						}
+						So(mails, ShouldResemble, mockMails[:len(mockMails)-1])
 					})
 				})
 
@@ -360,10 +317,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-
-						So(mail.From(), ShouldResemble, mockMails[2].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[2].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[2].RFC())
+						So(mail, ShouldResemble, mockMails[2])
 					})
 				})
 
@@ -385,16 +339,8 @@ func Store(t *testing.T, newStore func() archive.Store) {
 
 					Convey("Cursor should return the correct mails", func() {
 						mails := drain(cur)
-
-						mail := mails[0]
-						So(mail.From(), ShouldResemble, mockMails[0].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[0].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[0].RFC())
-
-						mail = mails[1]
-						So(mail.From(), ShouldResemble, mockMails[1].From())
-						So(mail.Recipients(), ShouldResemble, mockMails[1].Recipients())
-						So(mail.RFC(), ShouldEqual, mockMails[1].RFC())
+						So(mails[0], ShouldResemble, mockMails[0])
+						So(mails[1], ShouldResemble, mockMails[1])
 					})
 				})
 
@@ -419,38 +365,52 @@ func Store(t *testing.T, newStore func() archive.Store) {
 						})
 
 						mails := drain(cur)
-						for i := 0; i < len(want); i++ {
-							mail := mails[i]
-							So(mail.From(), ShouldResemble, want[i].From())
-							So(mail.Recipients(), ShouldResemble, want[i].Recipients())
-							So(mail.RFC(), ShouldEqual, want[i].RFC())
-						}
+						So(mails, ShouldResemble, want)
+					})
+				})
+			}))
+
+			Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, func(s archive.Store) {
+				Convey("When I query for the full error message", func() {
+					cur, err := s.Query(context.Background(), query.New(
+						query.SendError(errMockSend.Error()+" 2"),
+					))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("Cursor should have 1 element", func() {
+						So(drain(cur), ShouldHaveLength, 1)
+					})
+
+					Convey("Cursor should return the correct mail", func() {
+						mail := drain(cur)[0]
+						So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
+					})
+				})
+
+				Convey("When I query for an error message substring", func() {
+					cur, err := s.Query(context.Background(), query.New(
+						query.SendError("2"),
+					))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("Cursor should have 1 element", func() {
+						So(drain(cur), ShouldHaveLength, 1)
+					})
+
+					Convey("Cursor should return the correct mail", func() {
+						mail := drain(cur)[0]
+						So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
 					})
 				})
 			}))
 		})
 	})
-}
-
-// ExtendedStore runs the full store functionality against the archive.Store returned by newStore.
-func ExtendedStore(t *testing.T, newStore func() archive.Store) {
-	Store(t, newStore)
-	extendedStore(t, newStore)
-}
-
-func extendedStore(t *testing.T, newStore func() archive.Store) {
-	// Convey("ExtendedStore", t, func() {
-	// 	Convey("Query()", func() {
-	// 		Convey("Given a context with a send error", func() {
-	// 			sendError := errors.New("send error")
-	// 			ctx := context.WithSendError(stdctx.Background(), sendError)
-
-	// 			Convey("When I insert a mail with that context", func() {
-
-	// 			})
-	// 		})
-	// 	})
-	// })
 }
 
 func makeMails(count int) []archive.Mail {
@@ -486,14 +446,30 @@ func makeMails(count int) []archive.Mail {
 	return mails
 }
 
-func withFilledStore(s archive.Store, fn func()) func() {
+func withFilledStore(newStore func() archive.Store, count int, fn func(archive.Store, []archive.Mail)) func() {
 	return func() {
-		for _, m := range mockMails {
+		s := newStore()
+		mails := makeMails(count)
+		for _, m := range mails {
 			if err := s.Insert(stdctx.Background(), m); err != nil {
 				panic(err)
 			}
 		}
-		fn()
+		fn(s, mails)
+	}
+}
+
+func withFilledErrMailStore(newStore func() archive.Store, count int, fn func(archive.Store)) func() {
+	return func() {
+		s := newStore()
+		mails := makeMails(count)
+		for i := range mails {
+			mails[i] = mails[i].WithSendError(fmt.Sprintf("%s %d", errMockSend.Error(), i+1))
+			if err := s.Insert(stdctx.Background(), mails[i]); err != nil {
+				panic(err)
+			}
+		}
+		fn(s)
 	}
 }
 

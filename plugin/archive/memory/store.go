@@ -43,12 +43,12 @@ func (s *Store) Query(_ context.Context, q query.Query) (archive.Cursor, error) 
 }
 
 func filter(pm archive.Mail, q query.Query) bool {
-	l := letter.Expand(pm)
+	m := archive.ExpandMail(pm)
 
 	if len(q.From) > 0 {
 		var found bool
 		for _, addr := range q.From {
-			if addr == l.From() {
+			if addr == m.From() {
 				found = true
 				break
 			}
@@ -59,54 +59,60 @@ func filter(pm archive.Mail, q query.Query) bool {
 	}
 
 	if len(q.Recipients) > 0 {
-		if !containsAnyAddress(l.Recipients(), q.Recipients) {
+		if !containsAnyAddress(m.Recipients(), q.Recipients) {
 			return false
 		}
 	}
 
 	if len(q.To) > 0 {
-		if !containsAnyAddress(l.To(), q.To) {
+		if !containsAnyAddress(m.To(), q.To) {
 			return false
 		}
 	}
 
 	if len(q.CC) > 0 {
-		if !containsAnyAddress(l.CC(), q.CC) {
+		if !containsAnyAddress(m.CC(), q.CC) {
 			return false
 		}
 	}
 
 	if len(q.BCC) > 0 {
-		if !containsAnyAddress(l.BCC(), q.BCC) {
+		if !containsAnyAddress(m.BCC(), q.BCC) {
 			return false
 		}
 	}
 
 	if len(q.RFC) > 0 {
-		if !containsAnySubstring(l.RFC(), q.RFC) {
+		if !containsAnySubstring(m.RFC(), q.RFC) {
 			return false
 		}
 	}
 
 	if len(q.Texts) > 0 {
-		if !containsAnySubstring(l.Text(), q.Texts) {
+		if !containsAnySubstring(m.Text(), q.Texts) {
 			return false
 		}
 	}
 
 	if len(q.HTML) > 0 {
-		if !containsAnySubstring(l.HTML(), q.HTML) {
+		if !containsAnySubstring(m.HTML(), q.HTML) {
 			return false
 		}
 	}
 
 	if len(q.Subjects) > 0 {
-		if !containsAnySubstring(l.Subject(), q.Subjects) {
+		if !containsAnySubstring(m.Subject(), q.Subjects) {
 			return false
 		}
 	}
 
-	attachments := l.Attachments()
+	if len(q.SendErrors) > 0 {
+		if !containsAnySubstring(m.SendError(), q.SendErrors) {
+			return false
+		}
+	}
+
+	attachments := m.Attachments()
 	if len(q.Attachment.Filenames) > 0 {
 		if !containsAnyAttachmentFilename(attachments, q.Attachment.Filenames) {
 			return false
