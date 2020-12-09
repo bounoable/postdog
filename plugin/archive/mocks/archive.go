@@ -6,7 +6,8 @@ package mock_archive
 
 import (
 	context "context"
-	archive "github.com/bounoable/postdog/plugin/archive"
+	postdog "github.com/bounoable/postdog"
+	query "github.com/bounoable/postdog/plugin/archive/query"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -35,7 +36,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // Insert mocks base method
-func (m *MockStore) Insert(arg0 context.Context, arg1 *archive.Mail) error {
+func (m *MockStore) Insert(arg0 context.Context, arg1 postdog.Mail) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -46,6 +47,21 @@ func (m *MockStore) Insert(arg0 context.Context, arg1 *archive.Mail) error {
 func (mr *MockStoreMockRecorder) Insert(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockStore)(nil).Insert), arg0, arg1)
+}
+
+// Query mocks base method
+func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (query.Cursor, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Query", arg0, arg1)
+	ret0, _ := ret[0].(query.Cursor)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Query indicates an expected call of Query
+func (mr *MockStoreMockRecorder) Query(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockStore)(nil).Query), arg0, arg1)
 }
 
 // MockPrinter is a mock of Printer interface

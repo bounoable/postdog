@@ -14,7 +14,6 @@ import (
 	mock_archive "github.com/bounoable/postdog/plugin/archive/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -34,74 +33,97 @@ func TestNew(t *testing.T) {
 		Convey("Given a Store", func() {
 			s := mock_archive.NewMockStore(ctrl)
 
-			Convey("Given an archive Plugin that uses that Store", func() {
+			Convey("Given an archive Plugin that uses the Store", func() {
 				a := archive.New(s)
+				tr := newMockTransport(ctrl)
 
-				Convey("Given a Postdog that uses the archive", func() {
+				Convey("Given a Transport that doesn't fail to send", WithTransportSend(tr, func() {
+					Convey("Given a Postdog that uses the archive and Transport", func() {
+						dog := postdog.New(
+							postdog.WithTransport("test", tr),
+							a,
+						)
+
+						Convey("When I send a Mail", WithStoreInsert(s, func(storedMail <-chan postdog.Mail) {
+							err := dog.Send(context.Background(), mockLetter)
+
+							Convey("It shouldn't fail", func() {
+								<-storedMail
+								So(err, ShouldBeNil)
+							})
+
+							Convey("The stored mail should be expandable to the sent mail", func() {
+								m := archive.ExpandMail(<-storedMail)
+								So(m.Letter, ShouldResemble, mockLetter)
+							})
+						}))
+					})
+				}))
+
+				Convey("Given a Transport that fails to send after 50 milliseconds", WithDelayedTransportError(tr, 50*time.Millisecond, func() {
+					Convey("Given a Postdog that uses the archive and Transport", func() {
+						dog := postdog.New(
+							postdog.WithTransport("test", tr),
+							a,
+						)
+
+						Convey("When I send a Mail", WithStoreInsert(s, func(storedMail <-chan postdog.Mail) {
+							start := time.Now()
+							err := dog.Send(context.Background(), mockLetter)
+
+							Convey("It should fail", func() {
+								So(errors.Is(err, mockTransportError), ShouldBeTrue)
+							})
+
+							Convey("The stored mail should be expandable to the sent mail", func() {
+								m := archive.ExpandMail(<-storedMail)
+								So(m.Letter, ShouldResemble, mockLetter)
+							})
+
+							Convey("The stored mail should contain the send error", func() {
+								pm := <-storedMail
+								m := archive.ExpandMail(pm)
+								So(m.SendError(), ShouldContainSubstring, mockTransportError.Error())
+							})
+
+							Convey("The stored mail should contain the send time", func() {
+								pm := <-storedMail
+								m := archive.ExpandMail(pm)
+								So(m.SentAt().UnixNano(), ShouldAlmostEqual, start.Add(50*time.Millisecond).UnixNano(), 10*time.Millisecond)
+							})
+						}))
+					})
+				}))
+			})
+
+			Convey("Given that the Store fails to insert mails", WithFailingStoreInsert(s, func() {
+				Convey("Given an archive Plugin with a logger that uses the Store", func() {
+					logger := make(loggerChan)
+					a := archive.New(s, archive.WithLogger(logger))
+
 					tr := newMockTransport(ctrl)
-					dog := postdog.New(
-						postdog.WithTransport("test", tr),
-						a,
-					)
+					Convey("Given a Transport that doesn't fail to send", WithTransportSend(tr, func() {
+						Convey("Given a Postdog that uses the archive and Transport", func() {
+							dog := postdog.New(
+								postdog.WithTransport("test", tr),
+								a,
+							)
 
-					Convey("When I send a Mail and the Transport doesn't fail", WithStoreInsert(t, s, WithTransportSend(tr, func() {
-						err := dog.Send(context.Background(), mockLetter)
-						<-time.After(5 * time.Millisecond) // wait because hooks get called concurrently
+							Convey("When I Send a Mail", func() {
+								err := dog.Send(context.Background(), mockLetter)
 
-						Convey("It shouldn't fail", func() {
-							So(err, ShouldBeNil)
+								Convey("It shouldn't fail", func() {
+									So(err, ShouldBeNil)
+								})
+
+								Convey("The insert error should be logged", func() {
+									So(<-logger, ShouldEqual, fmt.Sprintf("Failed to insert mail into store: %s\n", mockInsertError.Error()))
+								})
+							})
 						})
-					})))
-
-					Convey("When I send a Mail and the Transport fails", WithStoreErrorInsert(t, s, WithTransportError(tr, func() {
-						err := dog.Send(context.Background(), mockLetter)
-						<-time.After(5 * time.Millisecond)
-
-						Convey("It should fail", func() {
-							So(errors.Is(err, mockTransportError), ShouldBeTrue)
-						})
-					})))
+					}))
 				})
-			})
-
-			Convey("Given an archive Plugin with a Logger that uses that Store", func() {
-				l := mock_archive.NewMockPrinter(ctrl)
-				a := archive.New(s, archive.WithLogger(l))
-
-				Convey("Given a Postdog that uses the archive", func() {
-					tr := mock_postdog.NewMockTransport(ctrl)
-					dog := postdog.New(
-						postdog.WithTransport("test", tr),
-						a,
-					)
-
-					Convey("When I send a Mail then the Store insert fails", WithFailingStoreInsert(s, WithTransportSend(tr, func() {
-						l.EXPECT().Print(gomock.Any()).DoAndReturn(func(v ...interface{}) {
-							assert.Equal(t, fmt.Errorf("store: %w", mockInsertError), v[0])
-						})
-
-						err := dog.Send(context.Background(), mockLetter)
-						<-time.After(5 * time.Millisecond)
-
-						Convey("It should't fail fail", func() {
-							So(err, ShouldBeNil)
-						})
-					})))
-
-					Convey("When I send a Mail and the Transport fails, then the Store insert fails", WithFailingStoreErrorInsert(s, WithTransportError(tr, func() {
-						l.EXPECT().Print(gomock.Any()).DoAndReturn(func(v ...interface{}) {
-							assert.Equal(t, fmt.Errorf("store: %w", mockInsertError), v[0])
-						})
-
-						err := dog.Send(context.Background(), mockLetter)
-						<-time.After(5 * time.Millisecond)
-
-						Convey("It should fail", func() {
-							So(errors.Is(err, mockTransportError), ShouldBeTrue)
-						})
-					})))
-				})
-			})
+			}))
 		})
 	})
 }
@@ -111,38 +133,24 @@ func newMockTransport(ctrl *gomock.Controller) *mock_postdog.MockTransport {
 	return tr
 }
 
-func WithStoreInsert(t *testing.T, s *mock_archive.MockStore, fn func()) func() {
+func WithStoreInsert(s *mock_archive.MockStore, fn func(<-chan postdog.Mail)) func() {
 	return func() {
-		s.EXPECT().Insert(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, m *archive.Mail) error {
-			assert.Equal(t, archive.NewMail(mockLetter), m)
-			return nil
-		})
-		fn()
-	}
-}
-
-func WithStoreErrorInsert(t *testing.T, s *mock_archive.MockStore, fn func()) func() {
-	return func() {
-		s.EXPECT().Insert(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, m *archive.Mail) error {
-			assert.Equal(t, archive.NewMailWithError(mockLetter, mockTransportError), m)
-			return nil
-		})
-		fn()
+		ch := make(chan postdog.Mail, 1)
+		s.EXPECT().
+			Insert(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, pm postdog.Mail) error {
+				ch <- pm
+				return nil
+			})
+		fn(ch)
 	}
 }
 
 func WithFailingStoreInsert(s *mock_archive.MockStore, fn func()) func() {
 	return func() {
-		m := archive.NewMail(mockLetter)
-		s.EXPECT().Insert(gomock.Any(), m).Return(mockInsertError)
-		fn()
-	}
-}
-
-func WithFailingStoreErrorInsert(s *mock_archive.MockStore, fn func()) func() {
-	return func() {
-		m := archive.NewMailWithError(mockLetter, mockTransportError)
-		s.EXPECT().Insert(gomock.Any(), m).Return(mockInsertError)
+		s.EXPECT().
+			Insert(gomock.Any(), gomock.Any()).
+			Return(mockInsertError)
 		fn()
 	}
 }
@@ -159,4 +167,22 @@ func WithTransportError(tr *mock_postdog.MockTransport, fn func()) func() {
 		tr.EXPECT().Send(gomock.Any(), mockLetter).Return(mockTransportError)
 		fn()
 	}
+}
+
+func WithDelayedTransportError(tr *mock_postdog.MockTransport, delay time.Duration, fn func()) func() {
+	return func() {
+		tr.EXPECT().
+			Send(gomock.Any(), mockLetter).
+			DoAndReturn(func(context.Context, postdog.Mail) error {
+				<-time.After(delay)
+				return mockTransportError
+			})
+		fn()
+	}
+}
+
+type loggerChan chan string
+
+func (lc loggerChan) Print(v ...interface{}) {
+	lc <- fmt.Sprint(v...)
 }
