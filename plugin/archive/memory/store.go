@@ -235,6 +235,12 @@ func sortMails(mails []archive.Mail, q query.Query) []archive.Mail {
 		switch q.Sorting {
 		case query.SortSendTime:
 			return compareTime(mailA.SentAt(), mailB.SentAt(), q.SortDirection == query.SortDesc)
+		case query.SortSubject:
+			r := mailA.Subject() < mailB.Subject()
+			if q.SortDirection == query.SortDesc {
+				return !r
+			}
+			return r
 		default:
 			return true
 		}

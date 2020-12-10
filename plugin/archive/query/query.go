@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"net/mail"
 	"time"
 )
@@ -10,6 +11,8 @@ const (
 	SortAny = Sorting(iota)
 	// SortSendTime sorts mails by their send time.
 	SortSendTime
+	// SortSubject sorts mails by their subject.
+	SortSubject
 )
 
 const (
@@ -240,5 +243,14 @@ func Paginate(page, perPage int) Option {
 	return func(q *Query) {
 		q.Pagination.Page = page
 		q.Pagination.PerPage = perPage
+	}
+}
+
+func (s Sorting) String() string {
+	switch s {
+	case SortSendTime:
+		return fmt.Sprintf("%d (send time)", s)
+	default:
+		return fmt.Sprintf("%d (unknown)", s)
 	}
 }

@@ -344,30 +344,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					})
 				})
 
-				Convey("When I sort a Query by descending send time", func() {
-					cur, err := s.Query(stdctx.Background(), query.New(
-						query.Sort(query.SortSendTime, query.SortDesc),
-					))
-
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
-
-					Convey("Cursor should have 3 elements", func() {
-						So(drain(cur), ShouldHaveLength, 3)
-					})
-
-					Convey("Cursor should return the mails in correct order", func() {
-						want := mockMails
-						sort.Slice(want, func(a, b int) bool {
-							return want[a].SentAt().
-								After(want[b].SentAt())
-						})
-
-						mails := drain(cur)
-						So(mails, ShouldResemble, want)
-					})
-				})
+				testSorting(s, mockMails)
 			}))
 
 			Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, func(s archive.Store) {
@@ -411,6 +388,82 @@ func Store(t *testing.T, newStore func() archive.Store) {
 			}))
 		})
 	})
+}
+
+func testSorting(s archive.Store, mockMails []archive.Mail) {
+	sortings := []query.Sorting{
+		query.SortSendTime,
+		query.SortSubject,
+	}
+
+	compareFns := map[query.Sorting]map[query.SortDirection]func([]archive.Mail, int, int) bool{
+		query.SortSendTime: {
+			query.SortAsc: func(mails []archive.Mail, a, b int) bool {
+				return mails[a].SentAt().Before(mails[b].SentAt())
+			},
+			query.SortDesc: func(mails []archive.Mail, a, b int) bool {
+				return mails[a].SentAt().After(mails[b].SentAt())
+			},
+		},
+		query.SortSubject: {
+			query.SortAsc: func(mails []archive.Mail, a, b int) bool {
+				return mails[a].Subject() < mails[b].Subject()
+			},
+			query.SortDesc: func(mails []archive.Mail, a, b int) bool {
+				return mails[a].Subject() > mails[b].Subject()
+			},
+		},
+	}
+
+	for _, sorting := range sortings {
+		Convey(fmt.Sprintf("When I sort a Query by %s (ascending)", sorting), func() {
+			cur, err := s.Query(stdctx.Background(), query.New(
+				query.Sort(sorting, query.SortAsc),
+			))
+
+			Convey("It shouldn't fail", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Cursor should have 3 elements", func() {
+				So(drain(cur), ShouldHaveLength, 3)
+			})
+
+			Convey("Cursor should return the mails in correct order", func() {
+				want := mockMails
+				sort.Slice(want, func(a, b int) bool {
+					return compareFns[sorting][query.SortAsc](want, a, b)
+				})
+
+				mails := drain(cur)
+				So(mails, ShouldResemble, want)
+			})
+		})
+
+		Convey(fmt.Sprintf("When I sort a Query by %s (descending)", sorting), func() {
+			cur, err := s.Query(stdctx.Background(), query.New(
+				query.Sort(sorting, query.SortDesc),
+			))
+
+			Convey("It shouldn't fail", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Cursor should have 3 elements", func() {
+				So(drain(cur), ShouldHaveLength, 3)
+			})
+
+			Convey("Cursor should return the mails in correct order", func() {
+				want := mockMails
+				sort.Slice(want, func(a, b int) bool {
+					return compareFns[sorting][query.SortDesc](want, a, b)
+				})
+
+				mails := drain(cur)
+				So(mails, ShouldResemble, want)
+			})
+		})
+	}
 }
 
 func makeMails(count int) []archive.Mail {
