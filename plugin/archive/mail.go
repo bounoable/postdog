@@ -19,9 +19,11 @@ type Mail struct {
 // SendError() method, the error will be added to the Mail. If pm has a
 // SentAt() method, the time will be added as the send time.
 func ExpandMail(pm postdog.Mail) Mail {
-	m := Mail{
-		Letter: letter.Expand(pm),
+	if m, ok := pm.(Mail); ok {
+		return m
 	}
+
+	m := Mail{Letter: letter.Expand(pm)}
 
 	if errMail, ok := pm.(interface{ SendError() string }); ok {
 		m.sendError = errMail.SendError()

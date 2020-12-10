@@ -303,6 +303,10 @@ func ContentType(ct string) AttachmentOption {
 // a slice of a type that implements the following methods: Filename() string,
 // Content() []byte, ContentType() string, Header() textproto.MIMEHeader.
 func Expand(pm postdog.Mail) Letter {
+	if l, ok := pm.(Letter); ok {
+		return l
+	}
+
 	opts := []Option{
 		FromAddress(pm.From()),
 		RecipientAddress(pm.Recipients()...),
