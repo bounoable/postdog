@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMail(t *testing.T) {
 	var m Mail
 	assert.IsType(t, letter.Letter{}, m.Letter)
+	assert.Equal(t, uuid.UUID{}, m.ID())
 	assert.Equal(t, "", m.SendError())
 	assert.Equal(t, time.Time{}, m.SentAt())
 }
@@ -31,6 +33,12 @@ func TestExpandMail_basic(t *testing.T) {
 	assert.Equal(t, bm.from, m.From())
 	assert.Equal(t, bm.recipients, m.Recipients())
 	assert.Equal(t, bm.rfc, m.RFC())
+}
+
+func TestExpandMail_withID(t *testing.T) {
+	idMail := Mail{id: uuid.New()}
+	m := ExpandMail(idMail)
+	assert.Equal(t, idMail.id, m.ID())
 }
 
 func TestExpandMail_withSendError(t *testing.T) {

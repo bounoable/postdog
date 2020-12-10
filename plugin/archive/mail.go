@@ -5,12 +5,14 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/google/uuid"
 )
 
 // Mail is the archived form of a sent mail, containing the send time and send error of the mail.
 type Mail struct {
 	letter.Letter
 
+	id        uuid.UUID
 	sentAt    time.Time
 	sendError string
 }
@@ -25,6 +27,10 @@ func ExpandMail(pm postdog.Mail) Mail {
 
 	m := Mail{Letter: letter.Expand(pm)}
 
+	if idMail, ok := pm.(interface{ ID() uuid.UUID }); ok {
+		m.id = idMail.ID()
+	}
+
 	if errMail, ok := pm.(interface{ SendError() string }); ok {
 		m.sendError = errMail.SendError()
 	}
@@ -34,6 +40,11 @@ func ExpandMail(pm postdog.Mail) Mail {
 	}
 
 	return m
+}
+
+// ID returns the mail's ID.
+func (m Mail) ID() uuid.UUID {
+	return m.id
 }
 
 // SentAt returns the time at which the mail was sent.
@@ -52,8 +63,14 @@ func (m Mail) WithSendError(err string) Mail {
 	return m
 }
 
-// WithSendTime return a copy of m with it's send time set to t.
+// WithSendTime returns a copy of m with it's send time set to t.
 func (m Mail) WithSendTime(t time.Time) Mail {
 	m.sentAt = t
+	return m
+}
+
+// WithID returns a copy of m with it's ID set to id.
+func (m Mail) WithID(id uuid.UUID) Mail {
+	m.id = id
 	return m
 }

@@ -1,5 +1,7 @@
 package archive
 
+//go:generate mockgen -source=archive.go -destination=./mocks/archive.go
+
 import (
 	stdctx "context"
 	"fmt"
@@ -7,9 +9,8 @@ import (
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/plugin/archive/query"
+	"github.com/google/uuid"
 )
-
-//go:generate mockgen -source=archive.go -destination=./mocks/archive.go
 
 // Store is the underlying store for the Mails.
 type Store interface {
@@ -75,6 +76,7 @@ func New(s Store, opts ...Option) postdog.Plugin {
 			}
 
 			m := ExpandMail(pm).
+				WithID(uuid.New()).
 				WithSendError(errMsg).
 				WithSendTime(sentAt)
 

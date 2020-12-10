@@ -13,6 +13,7 @@ import (
 	"github.com/bounoable/postdog/plugin/archive"
 	mock_archive "github.com/bounoable/postdog/plugin/archive/mocks"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -55,6 +56,12 @@ func TestNew(t *testing.T) {
 							Convey("The stored mail should be expandable to the sent mail", func() {
 								m := archive.ExpandMail(<-storedMail)
 								So(m.Letter, ShouldResemble, mockLetter)
+							})
+
+							Convey("The stored mail should have a non-zero uuid", func() {
+								m := archive.ExpandMail(<-storedMail)
+								So(m.ID(), ShouldHaveSameTypeAs, uuid.Nil)
+								So(m.ID(), ShouldNotEqual, uuid.Nil)
 							})
 						}))
 					})
