@@ -9,6 +9,7 @@ import (
 	archive "github.com/bounoable/postdog/plugin/archive"
 	query "github.com/bounoable/postdog/plugin/archive/query"
 	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/google/uuid"
 	reflect "reflect"
 )
 
@@ -49,6 +50,21 @@ func (mr *MockStoreMockRecorder) Insert(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockStore)(nil).Insert), arg0, arg1)
 }
 
+// Find mocks base method
+func (m *MockStore) Find(arg0 context.Context, arg1 uuid.UUID) (archive.Mail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Find", arg0, arg1)
+	ret0, _ := ret[0].(archive.Mail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Find indicates an expected call of Find
+func (mr *MockStoreMockRecorder) Find(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockStore)(nil).Find), arg0, arg1)
+}
+
 // Query mocks base method
 func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (archive.Cursor, error) {
 	m.ctrl.T.Helper()
@@ -62,6 +78,20 @@ func (m *MockStore) Query(arg0 context.Context, arg1 query.Query) (archive.Curso
 func (mr *MockStoreMockRecorder) Query(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockStore)(nil).Query), arg0, arg1)
+}
+
+// Remove mocks base method
+func (m *MockStore) Remove(arg0 context.Context, arg1 archive.Mail) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Remove", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Remove indicates an expected call of Remove
+func (mr *MockStoreMockRecorder) Remove(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockStore)(nil).Remove), arg0, arg1)
 }
 
 // MockCursor is a mock of Cursor interface

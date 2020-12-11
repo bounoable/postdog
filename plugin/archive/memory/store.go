@@ -3,6 +3,7 @@ package memory
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/mail"
 	"sort"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/cursor"
 	"github.com/bounoable/postdog/plugin/archive/query"
+	"github.com/google/uuid"
 )
 
 // Store is an in-memory mail store.
@@ -30,6 +32,16 @@ func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 	return nil
 }
 
+// Find returns the archive.Mail with the given id.
+func (s *Store) Find(ctx context.Context, id uuid.UUID) (archive.Mail, error) {
+	for _, m := range s.mails {
+		if m.ID() == id {
+			return m, nil
+		}
+	}
+	return archive.Mail{}, fmt.Errorf("find mail %s: %w", id, archive.ErrNotFound)
+}
+
 // Query returns a query.Cursor that returns the mails in the Store that match the query.Query q.
 func (s *Store) Query(_ context.Context, q query.Query) (archive.Cursor, error) {
 	var mails []archive.Mail
@@ -40,6 +52,17 @@ func (s *Store) Query(_ context.Context, q query.Query) (archive.Cursor, error) 
 	}
 	mails = sortMails(mails, q)
 	return cursor.New(mails...), nil
+}
+
+// Remove removes the given archive.Mail m from the Store s.
+func (s *Store) Remove(_ context.Context, m archive.Mail) error {
+	for i, c := range s.mails {
+		if c.ID() == m.ID() {
+			s.mails = append(s.mails[:i], s.mails[i+1:]...)
+			return nil
+		}
+	}
+	return nil
 }
 
 func filter(pm archive.Mail, q query.Query) bool {

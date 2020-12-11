@@ -13,6 +13,7 @@ import (
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/query"
+	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -41,6 +42,46 @@ func Store(t *testing.T, newStore func() archive.Store) {
 
 				Convey("It shouldn't fail", func() {
 					So(err, ShouldBeNil)
+				})
+			})
+		})
+
+		Convey("Find()", func() {
+			Convey("Given a Store", func() {
+				s := newStore()
+
+				Convey("When I try to find a mail that doesn't exist", func() {
+					m, err := s.Find(stdctx.Background(), uuid.New())
+
+					Convey("It should fail with archive.ErrNotFound", func() {
+						So(errors.Is(err, archive.ErrNotFound), ShouldBeTrue)
+					})
+
+					Convey("The mail should be zero-value", func() {
+						So(m, ShouldResemble, archive.Mail{})
+					})
+				})
+
+				Convey("When I insert a mail with an ID", func() {
+					id := uuid.New()
+					m := mockMail.WithID(id)
+					err := s.Insert(stdctx.Background(), m)
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("When I call Find() with the mail's ID", func() {
+						found, err := s.Find(stdctx.Background(), id)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("It should find the correct mail", func() {
+							So(found, ShouldResemble, m)
+						})
+					})
 				})
 			})
 		})
@@ -386,6 +427,41 @@ func Store(t *testing.T, newStore func() archive.Store) {
 					})
 				})
 			}))
+		})
+
+		Convey("Remove()", func() {
+			Convey("Given a Store", func() {
+				s := newStore()
+
+				Convey("When I insert a Mail", func() {
+					m := mockMail.WithID(uuid.New())
+					err := s.Insert(stdctx.Background(), m)
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("When I remove the Mail", func() {
+						err := s.Remove(stdctx.Background(), m)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("When I try to find that Mail", func() {
+							m, err := s.Find(stdctx.Background(), m.ID())
+
+							Convey("It should fail with archive.ErrNotFound", func() {
+								So(errors.Is(err, archive.ErrNotFound), ShouldBeTrue)
+							})
+
+							Convey("The returned Mail should be zero-value", func() {
+								So(m, ShouldResemble, archive.Mail{})
+							})
+						})
+					})
+				})
+			})
 		})
 	})
 }
