@@ -91,20 +91,13 @@ func TestMail_Map(t *testing.T) {
 				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("text/plain")),
 			)).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			want: func(m Mail) map[string]interface{} {
-				return map[string]interface{}{
-					"from":        m.From(),
-					"recipients":  m.Recipients(),
-					"to":          m.To(),
-					"cc":          m.CC(),
-					"bcc":         m.BCC(),
-					"replyTo":     m.ReplyTo(),
-					"subject":     m.Subject(),
-					"text":        m.Text(),
-					"html":        m.HTML(),
-					"attachments": mapAttachments(m.Attachments()),
-					"sendError":   mockSendError.Error(),
-					"sendTime":    mockSendTime.Format(time.RFC3339),
-				}
+				return merge(
+					m.Letter.Map(),
+					map[string]interface{}{
+						"sendError": mockSendError.Error(),
+						"sentAt":    mockSendTime.Format(time.RFC3339),
+					},
+				)
 			},
 		},
 		{
@@ -124,20 +117,13 @@ func TestMail_Map(t *testing.T) {
 				letter.WithoutAttachmentContent(),
 			},
 			want: func(m Mail) map[string]interface{} {
-				return map[string]interface{}{
-					"from":        m.From(),
-					"recipients":  m.Recipients(),
-					"to":          m.To(),
-					"cc":          m.CC(),
-					"bcc":         m.BCC(),
-					"replyTo":     m.ReplyTo(),
-					"subject":     m.Subject(),
-					"text":        m.Text(),
-					"html":        m.HTML(),
-					"attachments": mapAttachments(m.Attachments(), letter.WithoutAttachmentContent()),
-					"sendError":   mockSendError.Error(),
-					"sendTime":    mockSendTime.Format(time.RFC3339),
-				}
+				return merge(
+					m.Letter.Map(letter.WithoutAttachmentContent()),
+					map[string]interface{}{
+						"sendError": mockSendError.Error(),
+						"sentAt":    mockSendTime.Format(time.RFC3339),
+					},
+				)
 			},
 		},
 	}
@@ -147,6 +133,38 @@ func TestMail_Map(t *testing.T) {
 			assert.Equal(t, tt.want(tt.give), tt.give.Map(tt.mapOpts...))
 		})
 	}
+}
+
+func TestMail_Parse(t *testing.T) {
+	now := time.Now().Round(time.Second)
+	give := map[string]interface{}{
+		"from": map[string]interface{}{
+			"name":    "Bob Belcher",
+			"address": "bob@example.com",
+		},
+		"recipients": []map[string]interface{}{
+			{
+				"name":    "Linda Belcher",
+				"address": "linda@example.com",
+			},
+			{
+				"name":    "Tina Belcher",
+				"address": "tina@example.com",
+			},
+		},
+		"sendError": "send error",
+		"sentAt":    now.Format(time.RFC3339),
+	}
+
+	var m Mail
+	m.Parse(give)
+	assert.Equal(t, mail.Address{Name: "Bob Belcher", Address: "bob@example.com"}, m.From())
+	assert.Equal(t, []mail.Address{
+		{Name: "Linda Belcher", Address: "linda@example.com"},
+		{Name: "Tina Belcher", Address: "tina@example.com"},
+	}, m.Recipients())
+	assert.Equal(t, "send error", m.SendError())
+	assert.True(t, now.Equal(m.SentAt()))
 }
 
 type basicMail struct {
@@ -173,4 +191,14 @@ func mapAttachments(ats []letter.Attachment, opts ...letter.MapOption) []map[str
 		mapped[i] = at.Map(opts...)
 	}
 	return mapped
+}
+
+func merge(maps ...map[string]interface{}) map[string]interface{} {
+	res := make(map[string]interface{})
+	for _, m := range maps {
+		for k, v := range m {
+			res[k] = v
+		}
+	}
+	return res
 }

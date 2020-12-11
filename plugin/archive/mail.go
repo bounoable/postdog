@@ -79,6 +79,19 @@ func (m Mail) WithID(id uuid.UUID) Mail {
 func (m Mail) Map(opts ...letter.MapOption) map[string]interface{} {
 	res := m.Letter.Map(opts...)
 	res["sendError"] = m.sendError
-	res["sendTime"] = m.sentAt.Format(time.RFC3339)
+	res["sentAt"] = m.sentAt.Format(time.RFC3339)
 	return res
+}
+
+// Parse parses mm into m.
+func (m *Mail) Parse(mm map[string]interface{}) {
+	m.Letter.Parse(mm)
+	if sendError, ok := mm["sendError"].(string); ok {
+		m.sendError = sendError
+	}
+	if sentAt, ok := mm["sentAt"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, sentAt); err == nil {
+			m.sentAt = t
+		}
+	}
 }
