@@ -18,6 +18,43 @@ import (
 	"github.com/bounoable/postdog/letter/rfc"
 )
 
+// Letter represents a mail.
+type Letter struct {
+	subject     string
+	from        mail.Address
+	recipients  []mail.Address
+	to          []mail.Address
+	cc          []mail.Address
+	bcc         []mail.Address
+	replyTo     []mail.Address
+	rfc         string
+	text        string
+	html        string
+	attachments []Attachment
+}
+
+// Attachment is a file attachment.
+type Attachment struct {
+	filename    string
+	content     []byte
+	contentType string
+	size        int // overrides the actual size if != 0
+	header      textproto.MIMEHeader
+}
+
+// Option modifies a letter.
+type Option func(*Letter) error
+
+// AttachmentOption configures an attachment.
+type AttachmentOption func(*Attachment)
+
+// MapOption configures a Map() call.
+type MapOption func(*mapConfig)
+
+type mapConfig struct {
+	withoutAttachmentContent bool
+}
+
 // Write a letter with the given opts. Panics if TryWrite() returns an error.
 func Write(opts ...Option) Letter {
 	return Must(TryWrite(opts...))
@@ -50,24 +87,6 @@ func TryWrite(opts ...Option) (Letter, error) {
 func New(opts ...Option) (Letter, error) {
 	return TryWrite(opts...)
 }
-
-// Letter represents a mail.
-type Letter struct {
-	subject     string
-	from        mail.Address
-	recipients  []mail.Address
-	to          []mail.Address
-	cc          []mail.Address
-	bcc         []mail.Address
-	replyTo     []mail.Address
-	rfc         string
-	text        string
-	html        string
-	attachments []Attachment
-}
-
-// Option modifies a letter.
-type Option func(*Letter) error
 
 // Subject sets the `Subject` header.
 func Subject(s string) Option {
@@ -281,13 +300,17 @@ func AttachFile(filename, path string, opts ...AttachmentOption) Option {
 	}
 }
 
-// AttachmentOption configures an attachment.
-type AttachmentOption func(*Attachment)
-
 // ContentType sets the `Content-Type` of the attachment.
 func ContentType(ct string) AttachmentOption {
 	return func(at *Attachment) {
 		at.contentType = ct
+	}
+}
+
+// WithoutAttachmentContent returns a MapOption that clears the content of one or multiple Attachments.
+func WithoutAttachmentContent() MapOption {
+	return func(cfg *mapConfig) {
+		cfg.withoutAttachmentContent = true
 	}
 }
 
@@ -438,6 +461,28 @@ func (l Letter) String() string {
 	return l.RFC()
 }
 
+// Map maps l to a map[string]interface{}. Use WithoutContent() option to
+// nil-out the attachment contents in the map.
+func (l Letter) Map(opts ...MapOption) map[string]interface{} {
+	attachments := make([]map[string]interface{}, len(l.attachments))
+	for i, at := range l.attachments {
+		attachments[i] = at.Map(opts...)
+	}
+
+	return map[string]interface{}{
+		"from":        l.From(),
+		"recipients":  l.Recipients(),
+		"to":          l.To(),
+		"cc":          l.CC(),
+		"bcc":         l.BCC(),
+		"replyTo":     l.ReplyTo(),
+		"subject":     l.Subject(),
+		"text":        l.Text(),
+		"html":        l.HTML(),
+		"attachments": attachments,
+	}
+}
+
 func (l *Letter) normalizeRecipients() {
 	l.removeRecipients(l.to)
 	l.removeRecipients(l.cc)
@@ -472,35 +517,6 @@ func (l *Letter) normalizeRFC() {
 	}
 }
 
-func rfcAttachments(ats []Attachment) []rfc.Attachment {
-	res := make([]rfc.Attachment, len(ats))
-	for i, at := range ats {
-		res[i] = rfc.Attachment{
-			Filename: at.Filename(),
-			Content:  at.Content(),
-			Header:   at.Header(),
-		}
-	}
-	return res
-}
-
-func containsAddress(addrs []mail.Address, addr mail.Address) bool {
-	for _, a := range addrs {
-		if a == addr {
-			return true
-		}
-	}
-	return false
-}
-
-// Attachment is a file attachment.
-type Attachment struct {
-	filename    string
-	content     []byte
-	contentType string
-	header      textproto.MIMEHeader
-}
-
 // Filename returns the filename of the Attachment.
 func (at Attachment) Filename() string {
 	return at.filename
@@ -508,6 +524,9 @@ func (at Attachment) Filename() string {
 
 // Size returns the filesize of the Attachment.
 func (at Attachment) Size() int {
+	if at.size != 0 {
+		return at.size
+	}
 	return len(at.content)
 }
 
@@ -524,6 +543,48 @@ func (at Attachment) ContentType() string {
 // Header returns the MIME headers of the Attachment.
 func (at Attachment) Header() textproto.MIMEHeader {
 	return at.header
+}
+
+// Map maps at to a map[string]interface{}. Use WithoutContent() option to
+// nil-out the attachment content in the map.
+func (at Attachment) Map(opts ...MapOption) map[string]interface{} {
+	var cfg mapConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	m := map[string]interface{}{
+		"filename":    at.filename,
+		"content":     []byte{},
+		"size":        at.Size(),
+		"contentType": at.contentType,
+	}
+
+	if !cfg.withoutAttachmentContent {
+		m["content"] = at.content
+	}
+
+	return m
+}
+
+// Parse parses the map m and applies the values to at.
+func (at *Attachment) Parse(m map[string]interface{}) {
+	if name, ok := m["filename"].(string); ok {
+		at.filename = name
+	}
+
+	if content, ok := m["content"].([]byte); ok {
+		at.content = content
+	}
+
+	if contentType, ok := m["contentType"].(string); ok {
+		at.contentType = contentType
+	}
+
+	size, ok := m["size"].(int)
+	if ok {
+		at.size = size
+	}
 }
 
 // getAttachments returns m.Attachments() as an []Attachment slice if the
@@ -586,4 +647,25 @@ func getAttachments(m postdog.Mail) []Attachment {
 	}
 
 	return result
+}
+
+func rfcAttachments(ats []Attachment) []rfc.Attachment {
+	res := make([]rfc.Attachment, len(ats))
+	for i, at := range ats {
+		res[i] = rfc.Attachment{
+			Filename: at.Filename(),
+			Content:  at.Content(),
+			Header:   at.Header(),
+		}
+	}
+	return res
+}
+
+func containsAddress(addrs []mail.Address, addr mail.Address) bool {
+	for _, a := range addrs {
+		if a == addr {
+			return true
+		}
+	}
+	return false
 }
