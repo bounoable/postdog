@@ -462,7 +462,7 @@ func (l Letter) String() string {
 }
 
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
-// nil-out the attachment contents in the map.
+// clear the attachment contents in the map.
 func (l Letter) Map(opts ...MapOption) map[string]interface{} {
 	attachments := make([]map[string]interface{}, len(l.attachments))
 	for i, at := range l.attachments {
@@ -546,7 +546,7 @@ func (at Attachment) Header() textproto.MIMEHeader {
 }
 
 // Map maps at to a map[string]interface{}. Use WithoutContent() option to
-// nil-out the attachment content in the map.
+// clear the attachment content in the map.
 func (at Attachment) Map(opts ...MapOption) map[string]interface{} {
 	var cfg mapConfig
 	for _, opt := range opts {

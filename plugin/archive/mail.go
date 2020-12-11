@@ -74,3 +74,11 @@ func (m Mail) WithID(id uuid.UUID) Mail {
 	m.id = id
 	return m
 }
+
+// Map maps m to a map[string]interface{}.
+func (m Mail) Map(opts ...letter.MapOption) map[string]interface{} {
+	res := m.Letter.Map(opts...)
+	res["sendError"] = m.sendError
+	res["sendTime"] = m.sentAt.Format(time.RFC3339)
+	return res
+}
