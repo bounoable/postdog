@@ -77,8 +77,7 @@ func TryWrite(opts ...Option) (Letter, error) {
 			return let, err
 		}
 	}
-	let.normalizeRecipients()
-	let.normalizeRFC()
+	let.normalize()
 
 	return let, nil
 }
@@ -300,10 +299,17 @@ func AttachFile(filename, path string, opts ...AttachmentOption) Option {
 	}
 }
 
-// ContentType sets the `Content-Type` of the attachment.
-func ContentType(ct string) AttachmentOption {
+// AttachmentType sets the `Content-Type` of the attachment.
+func AttachmentType(ct string) AttachmentOption {
 	return func(at *Attachment) {
 		at.contentType = ct
+	}
+}
+
+// AttachmentSize returns an AttachmentOption that explicitly sets / overrides it's size.
+func AttachmentSize(s int) AttachmentOption {
+	return func(at *Attachment) {
+		at.size = s
 	}
 }
 
@@ -366,7 +372,7 @@ func Expand(pm postdog.Mail) Letter {
 
 	if attachments := getAttachments(pm); len(attachments) > 0 {
 		for _, at := range attachments {
-			opts = append(opts, Attach(at.Filename(), at.Content(), ContentType(at.ContentType())))
+			opts = append(opts, Attach(at.Filename(), at.Content(), AttachmentType(at.ContentType())))
 		}
 	}
 
@@ -534,8 +540,13 @@ func (l *Letter) Parse(m map[string]interface{}) {
 		l.attachments = ats
 	}
 
+	l.normalize()
+}
+
+func (l *Letter) normalize() {
 	l.normalizeRFC()
 	l.normalizeRecipients()
+	l.normalizeAttachments()
 }
 
 func (l *Letter) normalizeRecipients() {
@@ -569,6 +580,12 @@ func (l *Letter) normalizeRFC() {
 	copy.rfc = ""
 	if copy.RFC() == l.rfc {
 		l.rfc = ""
+	}
+}
+
+func (l *Letter) normalizeAttachments() {
+	for i := range l.attachments {
+		l.attachments[i].normalize()
 	}
 }
 
@@ -643,6 +660,14 @@ func (at *Attachment) Parse(m map[string]interface{}) {
 
 	if header, ok := m["header"].(map[string][]string); ok {
 		at.header = textproto.MIMEHeader(header)
+	}
+
+	at.normalize()
+}
+
+func (at *Attachment) normalize() {
+	if at.size != 0 && at.size == len(at.content) {
+		at.size = 0
 	}
 }
 

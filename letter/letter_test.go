@@ -272,7 +272,7 @@ func TestWrite(t *testing.T) {
 		{
 			name: "Attach(): explicit content-type",
 			opts: []letter.Option{
-				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("application/json")),
+				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("application/json")),
 			},
 			expect: func(t *testing.T, l letter.Letter) {
 				at := l.Attachments()[0]
@@ -284,10 +284,23 @@ func TestWrite(t *testing.T) {
 			},
 		},
 		{
+			name: "Attach(): explicit content length",
+			opts: []letter.Option{
+				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentSize(5)),
+			},
+			expect: func(t *testing.T, l letter.Letter) {
+				at := l.Attachments()[0]
+				assert.Equal(t, "attach1", at.Filename())
+				assert.Equal(t, 5, at.Size())
+				assert.Equal(t, []byte{1, 2, 3}, at.Content())
+				assertAttachmentHeader(t, at)
+			},
+		},
+		{
 			name: "Attach(): multiple attachments",
 			opts: []letter.Option{
 				letter.Attach("attach1", []byte{1, 2, 3}),
-				letter.Attach("attach2", []byte{2, 3, 4, 5}, letter.ContentType("application/json")),
+				letter.Attach("attach2", []byte{2, 3, 4, 5}, letter.AttachmentType("application/json")),
 			},
 			expect: func(t *testing.T, l letter.Letter) {
 				at := l.Attachments()[0]
@@ -344,7 +357,7 @@ func TestWrite(t *testing.T) {
 		{
 			name: "AttachFile(): explicit content-type",
 			opts: []letter.Option{
-				letter.AttachFile("attach1", "./testdata/attachment.txt", letter.ContentType("text/html")),
+				letter.AttachFile("attach1", "./testdata/attachment.txt", letter.AttachmentType("text/html")),
 			},
 			expect: func(t *testing.T, l letter.Letter) {
 				at := l.Attachments()[0]
@@ -394,7 +407,7 @@ func TestLetter_Recipients(t *testing.T) {
 			name: "no recipients",
 		},
 		{
-			name: "To() recipieints",
+			name: "To() recipients",
 			opts: []letter.Option{
 				letter.To("Bob Belcher", "bob@example.com"),
 				letter.To("Linda Belcher", "linda@example.com"),
@@ -405,7 +418,7 @@ func TestLetter_Recipients(t *testing.T) {
 			},
 		},
 		{
-			name: "CC() recipieints",
+			name: "CC() recipients",
 			opts: []letter.Option{
 				letter.CC("Bob Belcher", "bob@example.com"),
 				letter.CC("Linda Belcher", "linda@example.com"),
@@ -416,7 +429,7 @@ func TestLetter_Recipients(t *testing.T) {
 			},
 		},
 		{
-			name: "BCC() recipieints",
+			name: "BCC() recipients",
 			opts: []letter.Option{
 				letter.BCC("Bob Belcher", "bob@example.com"),
 				letter.BCC("Linda Belcher", "linda@example.com"),
@@ -427,7 +440,7 @@ func TestLetter_Recipients(t *testing.T) {
 			},
 		},
 		{
-			name: "mixed recipieints",
+			name: "mixed recipients",
 			opts: []letter.Option{
 				letter.To("Bob Belcher", "bob@example.com"),
 				letter.CC("Linda Belcher", "linda@example.com"),
@@ -463,8 +476,8 @@ func TestLetter_RFC(t *testing.T) {
 		letter.BCC("Jimmy Pesto Jr.", "jimmyjr@example.com"),
 		letter.ReplyTo("Bosco", "bosco@example.com"),
 		letter.ReplyTo("Teddy", "teddy@example.com"),
-		letter.Attach("attach1", []byte("Attachment 1"), letter.ContentType("text/plain")),
-		letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.ContentType("text/html")),
+		letter.Attach("attach1", []byte("Attachment 1"), letter.AttachmentType("text/plain")),
+		letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.AttachmentType("text/html")),
 	)
 	assert.Nil(t, err)
 

@@ -113,8 +113,8 @@ func TestBuild(t *testing.T) {
 				baseLetterOpts,
 				letter.Text("Hello."),
 				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte("Attachment 1"), letter.ContentType("text/plain")),
-				letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.ContentType("text/html")),
+				letter.Attach("attach1", []byte("Attachment 1"), letter.AttachmentType("text/plain")),
+				letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.AttachmentType("text/html")),
 			),
 			expected: join(
 				"MIME-Version: 1.0",
@@ -171,8 +171,8 @@ func TestBuild(t *testing.T) {
 			letterOpts: append(
 				baseLetterOpts,
 				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte("Attachment 1"), letter.ContentType("text/plain")),
-				letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.ContentType("text/html")),
+				letter.Attach("attach1", []byte("Attachment 1"), letter.AttachmentType("text/plain")),
+				letter.Attach("attach2", []byte("<p>Attachment 2</p>"), letter.AttachmentType("text/html")),
 			),
 			expected: join(
 				"MIME-Version: 1.0",

@@ -155,7 +155,7 @@ func TestLetter_Map(t *testing.T) {
 				Subject("Hi."),
 				Text("Hello."),
 				HTML("<p>Hello.</p>"),
-				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
+				Attach("at1", []byte{1, 2, 3}, AttachmentType("text/plain")),
 				RFC("rfc body"),
 			},
 			want: func(l Letter) map[string]interface{} {
@@ -229,7 +229,7 @@ func TestLetter_Map(t *testing.T) {
 				Subject("Hi."),
 				Text("Hello."),
 				HTML("<p>Hello.</p>"),
-				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
+				Attach("at1", []byte{1, 2, 3}, AttachmentType("text/plain")),
 				RFC("rfc body"),
 			},
 			opts: []MapOption{
@@ -401,7 +401,7 @@ func TestLetter_Parse(t *testing.T) {
 						filename:    "at1",
 						content:     []byte{1, 2, 3},
 						contentType: "text/plain",
-						size:        3,
+						size:        0, // because non-0 means override actual size
 						header: textproto.MIMEHeader{
 							"key1": {"val"},
 							"key2": {"val1", "val2"},
