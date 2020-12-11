@@ -323,6 +323,11 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("Given multiple Hooks that take ~50 milliseconds to execute", func() {
+					// if runtime.GOMAXPROCS(0) < 2 {
+					// 	// t.Skip("Skipping test because machine only runs on 1 CPU.")
+					// 	return
+					// }
+
 					calls := make(chan time.Time, 3)
 					lis1 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
 					lis2 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
@@ -343,7 +348,18 @@ func TestPostdog(t *testing.T) {
 						})
 
 						Convey("Listeners should have been called", func() {
-							So(calls, ShouldHaveLength, 3)
+							called := make(chan struct{})
+							go func() {
+								defer close(called)
+								<-calls
+								<-calls
+								<-calls
+							}()
+							select {
+							case <-called:
+							case <-time.After(20 * time.Millisecond):
+								t.Fatal("listeners should have been called")
+							}
 						})
 
 						Convey("Listeners should have been called concurrently", func() {
@@ -411,7 +427,8 @@ func TestPostdog(t *testing.T) {
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
 						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
 							gotTime <- context.SendTime(ctx)
-						})
+						}).
+						AnyTimes()
 
 					dog := postdog.New(
 						postdog.WithTransport("test", tr),
@@ -441,7 +458,8 @@ func TestPostdog(t *testing.T) {
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
 						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
 							gotError <- context.SendError(ctx)
-						})
+						}).
+						AnyTimes()
 
 					dog := postdog.New(
 						postdog.WithTransport("test", tr),
@@ -582,6 +600,6 @@ func newDelayedListener(ctrl *gomock.Controller, delay time.Duration, h postdog.
 	lis.EXPECT().Handle(gomock.Any(), h, mockLetter).Do(func(stdctx.Context, postdog.Hook, postdog.Mail) {
 		calls <- time.Now()
 		<-time.After(delay)
-	})
+	}).AnyTimes()
 	return lis
 }
