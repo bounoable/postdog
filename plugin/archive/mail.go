@@ -78,6 +78,7 @@ func (m Mail) WithID(id uuid.UUID) Mail {
 // Map maps m to a map[string]interface{}.
 func (m Mail) Map(opts ...letter.MapOption) map[string]interface{} {
 	res := m.Letter.Map(opts...)
+	res["id"] = m.id.String()
 	res["sendError"] = m.sendError
 	res["sentAt"] = m.sentAt.Format(time.RFC3339)
 	return res
@@ -86,6 +87,11 @@ func (m Mail) Map(opts ...letter.MapOption) map[string]interface{} {
 // Parse parses mm into m.
 func (m *Mail) Parse(mm map[string]interface{}) {
 	m.Letter.Parse(mm)
+	if id, ok := mm["id"].(string); ok {
+		if uid, err := uuid.Parse(id); err == nil {
+			m.id = uid
+		}
+	}
 	if sendError, ok := mm["sendError"].(string); ok {
 		m.sendError = sendError
 	}

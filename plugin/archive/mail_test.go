@@ -68,6 +68,7 @@ func TestMail_WithSendTime(t *testing.T) {
 }
 
 func TestMail_Map(t *testing.T) {
+	mockID := uuid.New()
 	mockSendError := errors.New("send error")
 	mockSendTime := time.Now()
 
@@ -89,11 +90,12 @@ func TestMail_Map(t *testing.T) {
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
 				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("text/plain")),
-			)).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			want: func(m Mail) map[string]interface{} {
 				return merge(
 					m.Letter.Map(),
 					map[string]interface{}{
+						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
 						"sentAt":    mockSendTime.Format(time.RFC3339),
 					},
@@ -112,7 +114,7 @@ func TestMail_Map(t *testing.T) {
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
 				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("text/plain")),
-			)).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			mapOpts: []letter.MapOption{
 				letter.WithoutAttachmentContent(),
 			},
@@ -120,6 +122,7 @@ func TestMail_Map(t *testing.T) {
 				return merge(
 					m.Letter.Map(letter.WithoutAttachmentContent()),
 					map[string]interface{}{
+						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
 						"sentAt":    mockSendTime.Format(time.RFC3339),
 					},
@@ -136,6 +139,7 @@ func TestMail_Map(t *testing.T) {
 }
 
 func TestMail_Parse(t *testing.T) {
+	mockID := uuid.New()
 	now := time.Now().Round(time.Second)
 	give := map[string]interface{}{
 		"from": map[string]interface{}{
@@ -152,6 +156,7 @@ func TestMail_Parse(t *testing.T) {
 				"address": "tina@example.com",
 			},
 		},
+		"id":        mockID.String(),
 		"sendError": "send error",
 		"sentAt":    now.Format(time.RFC3339),
 	}
@@ -163,6 +168,7 @@ func TestMail_Parse(t *testing.T) {
 		{Name: "Linda Belcher", Address: "linda@example.com"},
 		{Name: "Tina Belcher", Address: "tina@example.com"},
 	}, m.Recipients())
+	assert.Equal(t, mockID, m.ID())
 	assert.Equal(t, "send error", m.SendError())
 	assert.True(t, now.Equal(m.SentAt()))
 }
