@@ -1,0 +1,492 @@
+package mongo
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/mail"
+	"net/textproto"
+	"time"
+
+	"github.com/bounoable/mongoutil/index"
+	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/plugin/archive"
+	"github.com/bounoable/postdog/plugin/archive/query"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type Store struct {
+	client         *mongo.Client
+	databaseName   string
+	collectionName string
+	col            *mongo.Collection
+}
+
+type Option func(*Store)
+
+type dbmail struct {
+	ID          uuid.UUID    `bson:"id"`
+	From        address      `bson:"from"`
+	Recipients  []address    `bson:"recipients"`
+	To          []address    `bson:"to"`
+	CC          []address    `bson:"cc"`
+	BCC         []address    `bson:"bcc"`
+	ReplyTo     []address    `bson:"replyTo"`
+	Attachments []attachment `bson:"attachments"`
+	Subject     string       `bson:"subject"`
+	Text        string       `bson:"text"`
+	HTML        string       `bson:"html"`
+	RFC         string       `bson:"rfc"`
+	SendError   string       `bson:"sendError"`
+	SentAt      time.Time    `bson:"sentAt"`
+}
+
+type address struct {
+	Name    string `bson:"name"`
+	Address string `bson:"address"`
+}
+
+type attachment struct {
+	Filename    string               `bson:"filename"`
+	Content     []byte               `bson:"content"`
+	ContentType string               `bson:"contentType"`
+	Size        int                  `bson:"size"`
+	Header      textproto.MIMEHeader `bson:"header"`
+}
+
+type cursor struct {
+	cur     *mongo.Cursor
+	current archive.Mail
+	err     error
+}
+
+func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
+	s := Store{client: client, databaseName: "postdog", collectionName: "mails"}
+	for _, opt := range opts {
+		opt(&s)
+	}
+	s.col = s.client.Database(s.databaseName).Collection(s.collectionName)
+	// if err := s.ensureIndexes(); err != nil {
+	// 	return nil, fmt.Errorf("ensure indexes: %w", err)
+	// }
+	return &s, nil
+}
+
+func Database(name string) Option {
+	return func(s *Store) {
+		s.databaseName = name
+	}
+}
+
+func Collection(name string) Option {
+	return func(s *Store) {
+		s.collectionName = name
+	}
+}
+
+func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
+	attachments := make([]attachment, len(m.Attachments()))
+	for i, at := range m.Attachments() {
+		attachments[i] = attachment{
+			Filename:    at.Filename(),
+			Content:     at.Content(),
+			Size:        at.Size(),
+			ContentType: at.ContentType(),
+			Header:      at.Header(),
+		}
+	}
+
+	dbm := dbmail{
+		ID:          m.ID(),
+		From:        rmapAddress(m.From()),
+		Recipients:  rmapAddresses(m.Recipients()...),
+		To:          rmapAddresses(m.To()...),
+		CC:          rmapAddresses(m.CC()...),
+		BCC:         rmapAddresses(m.BCC()...),
+		ReplyTo:     rmapAddresses(m.ReplyTo()...),
+		Attachments: attachments,
+		Subject:     m.Subject(),
+		Text:        m.Text(),
+		HTML:        m.HTML(),
+		RFC:         m.RFC(),
+		SendError:   m.SendError(),
+		SentAt:      m.SentAt(),
+	}
+
+	if _, err := s.col.ReplaceOne(ctx, bson.M{"id": m.ID()}, dbm, options.Replace().SetUpsert(true)); err != nil {
+		return fmt.Errorf("mongo: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Store) Find(ctx context.Context, id uuid.UUID) (archive.Mail, error) {
+	res := s.col.FindOne(ctx, bson.M{"id": id})
+	return decode(res)
+}
+
+func (s *Store) Query(ctx context.Context, q query.Query) (archive.Cursor, error) {
+	filter := newFilter(q)
+	opts := options.Find()
+	sort := newSort(q)
+	if sort != nil {
+		opts = opts.SetSort(sort)
+	}
+	cur, err := s.col.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("mongo: %w", err)
+	}
+	return &cursor{cur: cur}, nil
+}
+
+func (s *Store) Remove(ctx context.Context, m archive.Mail) error {
+	if _, err := s.col.DeleteOne(ctx, bson.M{"id": m.ID()}); err != nil {
+		return fmt.Errorf("mongo: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) ensureIndexes() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_, err := index.CreateFromConfig(ctx, s.col.Database(), index.Config{
+		s.collectionName: []mongo.IndexModel{
+			{Keys: bson.D{{Key: "id", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "sentAt", Value: 1}}},
+			{Keys: bson.D{{Key: "subject", Value: 1}}},
+			{Keys: bson.D{{Key: "from.name", Value: 1}}},
+			{Keys: bson.D{{Key: "from.address", Value: 1}}},
+			{Keys: bson.D{{Key: "recipients.name", Value: 1}}},
+			{Keys: bson.D{{Key: "recipients.address", Value: 1}}},
+			{Keys: bson.D{{Key: "to.name", Value: 1}}},
+			{Keys: bson.D{{Key: "to.address", Value: 1}}},
+			{Keys: bson.D{{Key: "cc.name", Value: 1}}},
+			{Keys: bson.D{{Key: "cc.address", Value: 1}}},
+			{Keys: bson.D{{Key: "bcc.name", Value: 1}}},
+			{Keys: bson.D{{Key: "bcc.address", Value: 1}}},
+			{Keys: bson.D{{Key: "attachments.filename", Value: 1}}},
+			{Keys: bson.D{{Key: "attachments.contentType", Value: 1}}},
+			{Keys: bson.D{{Key: "attachments.size", Value: 1}}},
+		},
+	})
+	return err
+}
+
+func (addr address) netMail() mail.Address {
+	return mail.Address{Name: addr.Name, Address: addr.Address}
+}
+
+func decode(res *mongo.SingleResult) (archive.Mail, error) {
+	var m dbmail
+	if err := res.Decode(&m); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return archive.Mail{}, archive.ErrNotFound
+		}
+		return archive.Mail{}, fmt.Errorf("decode: %w", err)
+	}
+
+	var attachments []letter.Option
+	for _, at := range m.Attachments {
+		attachments = append(attachments, letter.Attach(
+			at.Filename,
+			at.Content,
+			letter.AttachmentType(at.ContentType),
+			letter.AttachmentSize(at.Size),
+		))
+	}
+
+	opts := append([]letter.Option{
+		letter.FromAddress(mapAddress(m.From)),
+		letter.RecipientAddress(mapAddresses(m.Recipients...)...),
+		letter.ToAddress(mapAddresses(m.To...)...),
+		letter.CCAddress(mapAddresses(m.CC...)...),
+		letter.BCCAddress(mapAddresses(m.BCC...)...),
+		letter.Subject(m.Subject),
+		letter.Text(m.Text),
+		letter.HTML(m.HTML),
+		letter.RFC(m.RFC),
+	}, attachments...)
+
+	return archive.
+		ExpandMail(letter.Write(opts...)).
+		WithID(m.ID).
+		WithSendError(m.SendError).
+		WithSendTime(m.SentAt), nil
+}
+
+func mapAddress(addr address) mail.Address {
+	return mail.Address{Name: addr.Name, Address: addr.Address}
+}
+
+func mapAddresses(addrs ...address) []mail.Address {
+	res := make([]mail.Address, len(addrs))
+	for i, addr := range addrs {
+		res[i] = mapAddress(addr)
+	}
+	return res
+}
+
+func rmapAddress(addr mail.Address) address {
+	return address{Name: addr.Name, Address: addr.Address}
+}
+
+func rmapAddresses(addrs ...mail.Address) []address {
+	res := make([]address, len(addrs))
+	for i, addr := range addrs {
+		res[i] = rmapAddress(addr)
+	}
+	return res
+}
+
+func newFilter(q query.Query) bson.D {
+	filter := bson.D{}
+
+	if len(q.Subjects) > 0 {
+		filter = withFilter(filter, []string{"subject"}, regexInFilter(q.Subjects))
+	}
+
+	if len(q.Texts) > 0 {
+		filter = withFilter(filter, []string{"text"}, regexInFilter(q.Texts))
+	}
+
+	if len(q.HTML) > 0 {
+		filter = withFilter(filter, []string{"html"}, regexInFilter(q.HTML))
+	}
+
+	if len(q.RFC) > 0 {
+		filter = withFilter(filter, []string{"rfc"}, regexInFilter(q.RFC))
+	}
+
+	if len(q.From) > 0 {
+		filter = withFilter(filter, []string{"from.name"}, regexInFilter(addressNames(q.From...)))
+		filter = withFilter(filter, []string{"from.address"}, regexInFilter(addresses(q.From...)))
+	}
+
+	if len(q.Recipients) > 0 {
+		filter = withFilter(filter, []string{"recipients.name"}, regexInFilter(addressNames(q.Recipients...)))
+		filter = withFilter(filter, []string{"recipients.address"}, regexInFilter(addresses(q.Recipients...)))
+	}
+
+	if len(q.To) > 0 {
+		filter = withFilter(filter, []string{"to.name"}, regexInFilter(addressNames(q.To...)))
+		filter = withFilter(filter, []string{"to.address"}, regexInFilter(addresses(q.To...)))
+	}
+
+	if len(q.CC) > 0 {
+		filter = withFilter(filter, []string{"cc.name"}, regexInFilter(addressNames(q.CC...)))
+		filter = withFilter(filter, []string{"cc.address"}, regexInFilter(addresses(q.CC...)))
+	}
+
+	if len(q.BCC) > 0 {
+		filter = withFilter(filter, []string{"bcc.name"}, regexInFilter(addressNames(q.BCC...)))
+		filter = withFilter(filter, []string{"bcc.address"}, regexInFilter(addresses(q.BCC...)))
+	}
+
+	if len(q.Attachment.Filenames) > 0 {
+		filter = withFilter(filter, []string{"attachments.filename"}, regexInFilter(q.Attachment.Filenames))
+	}
+
+	if len(q.Attachment.ContentTypes) > 0 {
+		filter = withFilter(filter, []string{"attachments.contentType"}, regexInFilter(q.Attachment.ContentTypes))
+	}
+
+	if len(q.Attachment.Size.Exact) > 0 {
+		filter = append(filter, bson.E{Key: "attachments.size", Value: bson.D{{Key: "$in", Value: q.Attachment.Size.Exact}}})
+	}
+
+	if len(q.Attachment.Size.Ranges) > 0 {
+		or := make([]bson.D, len(q.Attachment.Size.Ranges))
+		for i, rang := range q.Attachment.Size.Ranges {
+			or[i] = bson.D{{Key: "attachments.size", Value: bson.D{
+				{Key: "$gte", Value: rang[0]},
+				{Key: "$lte", Value: rang[1]},
+			}}}
+		}
+		filter = append(filter, bson.E{Key: "$or", Value: or})
+	}
+
+	if len(q.Attachment.Contents) > 0 {
+		filter = append(filter, bson.E{Key: "attachments.content", Value: bson.D{{Key: "$in", Value: q.Attachment.Contents}}})
+	}
+
+	if len(q.SendTime.Before) > 0 {
+		or := make([]bson.D, len(q.SendTime.Before))
+		for i, before := range q.SendTime.Before {
+			// mongo only has millisecond precision
+			before = before.Round(time.Millisecond)
+			or[i] = bson.D{{Key: "sentAt", Value: bson.D{{Key: "$lt", Value: before}}}}
+		}
+		filter = append(filter, bson.E{Key: "$or", Value: or})
+	}
+
+	if len(q.SendTime.After) > 0 {
+		or := make([]bson.D, len(q.SendTime.After))
+		for i, after := range q.SendTime.After {
+			// mongo only has millisecond precision
+			after = after.Round(time.Millisecond)
+			or[i] = bson.D{{Key: "sentAt", Value: bson.D{{Key: "$gt", Value: after}}}}
+		}
+		filter = append(filter, bson.E{Key: "$or", Value: or})
+	}
+
+	if len(q.SendTime.Exact) > 0 {
+		or := make([]bson.D, len(q.SendTime.Exact))
+		for i, exact := range q.SendTime.Exact {
+			// mongo only has millisecond precision
+			exact = exact.Round(time.Millisecond)
+			or[i] = bson.D{{Key: "sentAt", Value: exact}}
+		}
+		filter = append(filter, bson.E{Key: "$or", Value: or})
+	}
+
+	if len(q.SendErrors) > 0 {
+		filter = append(filter, bson.E{Key: "sendError", Value: regexInFilter(q.SendErrors)})
+	}
+
+	return filter
+}
+
+func withFilter(filter bson.D, keys []string, vals interface{}) bson.D {
+	switch len(keys) {
+	case 0:
+		return filter
+	case 1:
+		return append(filter, bson.E{Key: keys[0], Value: vals})
+	}
+
+	or := make([]bson.D, len(keys))
+	for i, key := range keys {
+		or[i] = bson.D{{Key: key, Value: vals}}
+	}
+
+	return append(filter, bson.E{Key: "$or", Value: or})
+}
+
+func regexInFilter(texts []string) bson.D {
+	exprs := make([]primitive.Regex, len(texts))
+	for i, text := range texts {
+		exprs[i] = primitive.Regex{
+			Pattern: text,
+			Options: "i",
+		}
+	}
+	return bson.D{{
+		Key:   "$in",
+		Value: exprs,
+	}}
+}
+
+func addressNames(addrs ...mail.Address) []string {
+	names := make([]string, 0, len(addrs))
+	for _, addr := range addrs {
+		names = append(names, addr.Name)
+	}
+	return names
+}
+
+func addresses(addrs ...mail.Address) []string {
+	mails := make([]string, 0, len(addrs))
+	for _, addr := range addrs {
+		mails = append(mails, addr.Address)
+	}
+	return mails
+}
+
+func newSort(q query.Query) (sort bson.D) {
+	if q.Sorting == query.SortAny {
+		return
+	}
+
+	defer func() {
+		if q.SortDirection == query.SortDesc {
+			sort[0].Value = -1
+			return
+		}
+		sort[0].Value = 1
+	}()
+
+	sort = bson.D{{}}
+
+	switch q.Sorting {
+	case query.SortSendTime:
+		sort[0].Key = "sentAt"
+	case query.SortSubject:
+		sort[0].Key = "subject"
+	}
+	return
+}
+
+func (cur *cursor) Next(ctx context.Context) bool {
+	if !cur.cur.Next(ctx) {
+		cur.err = cur.cur.Err()
+		return false
+	}
+
+	var mail dbmail
+	if cur.err = cur.cur.Decode(&mail); cur.err != nil {
+		cur.current = archive.Mail{}
+		return false
+	}
+
+	attachments := make([]letter.Option, len(mail.Attachments))
+	for i, at := range mail.Attachments {
+		attachments[i] = letter.Attach(at.Filename, at.Content, letter.AttachmentType(at.ContentType))
+	}
+
+	cur.current = archive.
+		ExpandMail(letter.Write(append([]letter.Option{
+			letter.FromAddress(mail.From.netMail()),
+			letter.RecipientAddress(netMails(mail.Recipients...)...),
+			letter.ToAddress(netMails(mail.To...)...),
+			letter.CCAddress(netMails(mail.CC...)...),
+			letter.BCCAddress(netMails(mail.BCC...)...),
+			letter.ReplyToAddress(netMails(mail.ReplyTo...)...),
+			letter.Subject(mail.Subject),
+			letter.Content(mail.Text, mail.HTML),
+			letter.RFC(mail.RFC),
+		}, attachments...)...)).
+		WithID(mail.ID).
+		WithSendError(mail.SendError).
+		WithSendTime(mail.SentAt)
+
+	return true
+}
+
+func (cur *cursor) Current() archive.Mail {
+	return cur.current
+}
+
+func (cur *cursor) All(ctx context.Context) ([]archive.Mail, error) {
+	var mails []archive.Mail
+	for cur.Next(ctx) {
+		mails = append(mails, cur.current)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	if err := cur.Close(ctx); err != nil {
+		return mails, err
+	}
+	return mails, nil
+}
+
+func (cur *cursor) Err() error {
+	return cur.err
+}
+
+func (cur *cursor) Close(ctx context.Context) error {
+	cur.err = cur.cur.Close(ctx)
+	return cur.err
+}
+
+func netMails(addrs ...address) []mail.Address {
+	res := make([]mail.Address, len(addrs))
+	for i, addr := range addrs {
+		res[i] = addr.netMail()
+	}
+	return res
+}

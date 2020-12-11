@@ -89,7 +89,7 @@ func TestMail_Map(t *testing.T) {
 				letter.Subject("Hi."),
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("text/plain")),
+				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
 			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			want: func(m Mail) map[string]interface{} {
 				return merge(
@@ -113,7 +113,7 @@ func TestMail_Map(t *testing.T) {
 				letter.Subject("Hi."),
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte{1, 2, 3}, letter.ContentType("text/plain")),
+				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
 			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			mapOpts: []letter.MapOption{
 				letter.WithoutAttachmentContent(),

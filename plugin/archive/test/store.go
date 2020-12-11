@@ -31,8 +31,27 @@ var (
 	errMockSend = errors.New("mock send error")
 )
 
+// StoreTestOption is a test option.
+type StoreTestOption func(*storeTestConfig)
+
+type storeTestConfig struct {
+	roundTime time.Duration
+}
+
+// RoundTime returns an Option that rounds time values before running assertions on them.
+func RoundTime(d time.Duration) StoreTestOption {
+	return func(cfg *storeTestConfig) {
+		cfg.roundTime = d
+	}
+}
+
 // Store tests the archive.Store returned by newStore.
-func Store(t *testing.T, newStore func() archive.Store) {
+func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption) {
+	var cfg storeTestConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	Convey("Store", t, func() {
 		Convey("Insert()", func() {
 			s := newStore()
@@ -87,7 +106,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 		})
 
 		Convey("Query()", func() {
-			Convey("Given a Store with 3 mails", withFilledStore(newStore, 3, func(s archive.Store, mockMails []archive.Mail) {
+			Convey("Given a Store with 3 mails", withFilledStore(newStore, 3, cfg.roundTime, func(s archive.Store, mockMails []archive.Mail) {
 				Convey("When I query the sender `Sender 3 <sender3@example.com>`", func() {
 					cur, err := s.Query(stdctx.Background(), query.New(
 						query.From(mail.Address{
@@ -388,7 +407,7 @@ func Store(t *testing.T, newStore func() archive.Store) {
 				testSorting(s, mockMails)
 			}))
 
-			Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, func(s archive.Store) {
+			Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, cfg.roundTime, func(s archive.Store) {
 				Convey("When I query for the full error message", func() {
 					cur, err := s.Query(context.Background(), query.New(
 						query.SendError(errMockSend.Error()+" 2"),
@@ -542,7 +561,7 @@ func testSorting(s archive.Store, mockMails []archive.Mail) {
 	}
 }
 
-func makeMails(count int) []archive.Mail {
+func makeMails(count int, roundTime time.Duration) []archive.Mail {
 	mails := make([]archive.Mail, count)
 	for i := 0; i < count; i++ {
 		var contentType string
@@ -569,16 +588,16 @@ func makeMails(count int) []archive.Mail {
 			letter.BCC(fmt.Sprintf("BCC Recipient %d", i+1), fmt.Sprintf("bccrcpt%d@example.com", i+1)),
 			letter.Subject(fmt.Sprintf("Subject %d", i+1)),
 			letter.Content(fmt.Sprintf("Content %d", i+1), fmt.Sprintf("<p>Content %d</p>", i+1)),
-			letter.Attach(fmt.Sprintf("Attachment %d", i+1), content, letter.ContentType(contentType)),
-		)).WithSendTime(time.Now().Add(time.Duration(i) * time.Minute))
+			letter.Attach(fmt.Sprintf("Attachment %d", i+1), content, letter.AttachmentType(contentType)),
+		)).WithID(uuid.New()).WithSendTime(time.Now().UTC().Add(time.Duration(i) * time.Minute).Round(roundTime))
 	}
 	return mails
 }
 
-func withFilledStore(newStore func() archive.Store, count int, fn func(archive.Store, []archive.Mail)) func() {
+func withFilledStore(newStore func() archive.Store, count int, rt time.Duration, fn func(archive.Store, []archive.Mail)) func() {
 	return func() {
 		s := newStore()
-		mails := makeMails(count)
+		mails := makeMails(count, rt)
 		for _, m := range mails {
 			if err := s.Insert(stdctx.Background(), m); err != nil {
 				panic(err)
@@ -588,10 +607,10 @@ func withFilledStore(newStore func() archive.Store, count int, fn func(archive.S
 	}
 }
 
-func withFilledErrMailStore(newStore func() archive.Store, count int, fn func(archive.Store)) func() {
+func withFilledErrMailStore(newStore func() archive.Store, count int, rt time.Duration, fn func(archive.Store)) func() {
 	return func() {
 		s := newStore()
-		mails := makeMails(count)
+		mails := makeMails(count, rt)
 		for i := range mails {
 			mails[i] = mails[i].WithSendError(fmt.Sprintf("%s %d", errMockSend.Error(), i+1))
 			if err := s.Insert(stdctx.Background(), mails[i]); err != nil {
