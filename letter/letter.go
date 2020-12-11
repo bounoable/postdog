@@ -479,8 +479,63 @@ func (l Letter) Map(opts ...MapOption) map[string]interface{} {
 		"subject":     l.Subject(),
 		"text":        l.Text(),
 		"html":        l.HTML(),
+		"rfc":         l.RFC(),
 		"attachments": attachments,
 	}
+}
+
+// Parse parses m into l.
+func (l *Letter) Parse(m map[string]interface{}) {
+	if from, ok := m["from"].(map[string]interface{}); ok {
+		l.from = parseAddress(from)
+	}
+
+	if recipients, ok := m["recipients"].([]map[string]interface{}); ok {
+		l.recipients = parseAddresses(recipients...)
+	}
+
+	if to, ok := m["to"].([]map[string]interface{}); ok {
+		l.to = parseAddresses(to...)
+	}
+
+	if cc, ok := m["cc"].([]map[string]interface{}); ok {
+		l.cc = parseAddresses(cc...)
+	}
+
+	if bcc, ok := m["bcc"].([]map[string]interface{}); ok {
+		l.bcc = parseAddresses(bcc...)
+	}
+
+	if replyTo, ok := m["replyTo"].([]map[string]interface{}); ok {
+		l.replyTo = parseAddresses(replyTo...)
+	}
+
+	if subject, ok := m["subject"].(string); ok {
+		l.subject = subject
+	}
+
+	if text, ok := m["text"].(string); ok {
+		l.text = text
+	}
+
+	if html, ok := m["html"].(string); ok {
+		l.html = html
+	}
+
+	if rfc, ok := m["rfc"].(string); ok {
+		l.rfc = rfc
+	}
+
+	if attachments, ok := m["attachments"].([]map[string]interface{}); ok {
+		ats := make([]Attachment, len(attachments))
+		for i := range attachments {
+			ats[i].Parse(attachments[i])
+		}
+		l.attachments = ats
+	}
+
+	l.normalizeRFC()
+	l.normalizeRecipients()
 }
 
 func (l *Letter) normalizeRecipients() {
@@ -582,9 +637,12 @@ func (at *Attachment) Parse(m map[string]interface{}) {
 		at.contentType = contentType
 	}
 
-	size, ok := m["size"].(int)
-	if ok {
+	if size, ok := m["size"].(int); ok {
 		at.size = size
+	}
+
+	if header, ok := m["header"].(map[string][]string); ok {
+		at.header = textproto.MIMEHeader(header)
 	}
 }
 
@@ -682,6 +740,23 @@ func mapAddresses(addrs ...mail.Address) []map[string]interface{} {
 	res := make([]map[string]interface{}, len(addrs))
 	for i, addr := range addrs {
 		res[i] = mapAddress(addr)
+	}
+	return res
+}
+
+func parseAddress(m map[string]interface{}) mail.Address {
+	name, _ := m["name"].(string)
+	addr, _ := m["address"].(string)
+	return mail.Address{
+		Name:    name,
+		Address: addr,
+	}
+}
+
+func parseAddresses(maps ...map[string]interface{}) []mail.Address {
+	res := make([]mail.Address, len(maps))
+	for i, m := range maps {
+		res[i] = parseAddress(m)
 	}
 	return res
 }

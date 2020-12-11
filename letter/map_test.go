@@ -1,6 +1,8 @@
 package letter
 
 import (
+	"net/mail"
+	"net/textproto"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -154,6 +156,7 @@ func TestLetter_Map(t *testing.T) {
 				Text("Hello."),
 				HTML("<p>Hello.</p>"),
 				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
+				RFC("rfc body"),
 			},
 			want: func(l Letter) map[string]interface{} {
 				return map[string]interface{}{
@@ -211,11 +214,12 @@ func TestLetter_Map(t *testing.T) {
 							"header":      (map[string][]string)(l.attachments[0].header),
 						},
 					},
+					"rfc": "rfc body",
 				}
 			},
 		},
 		{
-			name: "default",
+			name: "without attachment content",
 			letterOpts: []Option{
 				From("Bob Belcher", "bob@example.com"),
 				To("Linda Belcher", "linda@example.com"),
@@ -226,6 +230,10 @@ func TestLetter_Map(t *testing.T) {
 				Text("Hello."),
 				HTML("<p>Hello.</p>"),
 				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
+				RFC("rfc body"),
+			},
+			opts: []MapOption{
+				WithoutAttachmentContent(),
 			},
 			want: func(l Letter) map[string]interface{} {
 				return map[string]interface{}{
@@ -277,12 +285,13 @@ func TestLetter_Map(t *testing.T) {
 					"attachments": []map[string]interface{}{
 						{
 							"filename":    "at1",
-							"content":     []byte{1, 2, 3},
+							"content":     []byte{},
 							"size":        3,
 							"contentType": "text/plain",
 							"header":      (map[string][]string)(l.attachments[0].header),
 						},
 					},
+					"rfc": "rfc body",
 				}
 			},
 		},
@@ -296,26 +305,118 @@ func TestLetter_Map(t *testing.T) {
 	}
 }
 
-// func TestLetter_Parse(t *testing.T) {
-// 	tests := []struct {
-// 		name   string
-// 		give   map[string]interface{}
-// 		assert func(*testing.T, Letter)
-// 	}{
-// 		{
-// 			name: "default",
-// 			give: map[string]interface{}{
-// 				"from":        mail.Address{Name},
-// 				"recipients":  "",
-// 				"to":          "",
-// 				"cc":          "",
-// 				"bcc":         "",
-// 				"replyTo":     "",
-// 				"subject":     "",
-// 				"text":        "",
-// 				"html":        "",
-// 				"attachments": "",
-// 			},
-// 		},
-// 	}
-// }
+func TestLetter_Parse(t *testing.T) {
+	tests := []struct {
+		name   string
+		give   map[string]interface{}
+		assert func(*testing.T, Letter)
+	}{
+		{
+			name: "default",
+			give: map[string]interface{}{
+				"from": map[string]interface{}{
+					"name":    "Bob Belcher",
+					"address": "bob@example.com",
+				},
+				"recipients": []map[string]interface{}{
+					{
+						"name":    "Linda Belcher",
+						"address": "linda@example.com",
+					},
+					{
+						"name":    "Tina Belcher",
+						"address": "tina@example.com",
+					},
+					{
+						"name":    "Gene Belcher",
+						"address": "gene@example.com",
+					},
+				},
+				"to": []map[string]interface{}{
+					{
+						"name":    "Linda Belcher",
+						"address": "linda@example.com",
+					},
+				},
+				"cc": []map[string]interface{}{
+					{
+						"name":    "Tina Belcher",
+						"address": "tina@example.com",
+					},
+				},
+				"bcc": []map[string]interface{}{
+					{
+						"name":    "Gene Belcher",
+						"address": "gene@example.com",
+					},
+				},
+				"replyTo": []map[string]interface{}{
+					{
+						"name":    "Louise Belcher",
+						"address": "louise@example.com",
+					},
+				},
+				"subject": "Hi.",
+				"text":    "Hello.",
+				"html":    "<p>Hello.</p>",
+				"attachments": []map[string]interface{}{
+					{
+						"filename":    "at1",
+						"content":     []byte{1, 2, 3},
+						"size":        3,
+						"contentType": "text/plain",
+						"header": map[string][]string{
+							"key1": {"val"},
+							"key2": {"val1", "val2"},
+						},
+					},
+				},
+				"rfc": "rfc body",
+			},
+			assert: func(t *testing.T, l Letter) {
+				assert.Equal(t, mail.Address{Name: "Bob Belcher", Address: "bob@example.com"}, l.From())
+				assert.Equal(t, []mail.Address{
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+					{Name: "Tina Belcher", Address: "tina@example.com"},
+					{Name: "Gene Belcher", Address: "gene@example.com"},
+				}, l.Recipients())
+				assert.Equal(t, []mail.Address{
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+				}, l.To())
+				assert.Equal(t, []mail.Address{
+					{Name: "Tina Belcher", Address: "tina@example.com"},
+				}, l.CC())
+				assert.Equal(t, []mail.Address{
+					{Name: "Gene Belcher", Address: "gene@example.com"},
+				}, l.BCC())
+				assert.Equal(t, []mail.Address{
+					{Name: "Louise Belcher", Address: "louise@example.com"},
+				}, l.ReplyTo())
+				assert.Equal(t, "Hi.", l.Subject())
+				assert.Equal(t, "Hello.", l.Text())
+				assert.Equal(t, "<p>Hello.</p>", l.HTML())
+				assert.Equal(t, "rfc body", l.RFC())
+				assert.Equal(t, []Attachment{
+					{
+						filename:    "at1",
+						content:     []byte{1, 2, 3},
+						contentType: "text/plain",
+						size:        3,
+						header: textproto.MIMEHeader{
+							"key1": {"val"},
+							"key2": {"val1", "val2"},
+						},
+					},
+				}, l.Attachments())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var l Letter
+			l.Parse(tt.give)
+			tt.assert(t, l)
+		})
+	}
+}
