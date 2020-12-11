@@ -470,12 +470,12 @@ func (l Letter) Map(opts ...MapOption) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"from":        l.From(),
-		"recipients":  l.Recipients(),
-		"to":          l.To(),
-		"cc":          l.CC(),
-		"bcc":         l.BCC(),
-		"replyTo":     l.ReplyTo(),
+		"from":        mapAddress(l.From()),
+		"recipients":  mapAddresses(l.Recipients()...),
+		"to":          mapAddresses(l.To()...),
+		"cc":          mapAddresses(l.CC()...),
+		"bcc":         mapAddresses(l.BCC()...),
+		"replyTo":     mapAddresses(l.ReplyTo()...),
 		"subject":     l.Subject(),
 		"text":        l.Text(),
 		"html":        l.HTML(),
@@ -558,6 +558,7 @@ func (at Attachment) Map(opts ...MapOption) map[string]interface{} {
 		"content":     []byte{},
 		"size":        at.Size(),
 		"contentType": at.contentType,
+		"header":      (map[string][]string)(at.header),
 	}
 
 	if !cfg.withoutAttachmentContent {
@@ -668,4 +669,19 @@ func containsAddress(addrs []mail.Address, addr mail.Address) bool {
 		}
 	}
 	return false
+}
+
+func mapAddress(addr mail.Address) map[string]interface{} {
+	return map[string]interface{}{
+		"name":    addr.Name,
+		"address": addr.Address,
+	}
+}
+
+func mapAddresses(addrs ...mail.Address) []map[string]interface{} {
+	res := make([]map[string]interface{}, len(addrs))
+	for i, addr := range addrs {
+		res[i] = mapAddress(addr)
+	}
+	return res
 }

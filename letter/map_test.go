@@ -11,7 +11,7 @@ func TestAttachment_Map(t *testing.T) {
 		name string
 		give Attachment
 		opts []MapOption
-		want map[string]interface{}
+		want func(Attachment) map[string]interface{}
 	}{
 		{
 			name: "default",
@@ -20,11 +20,14 @@ func TestAttachment_Map(t *testing.T) {
 				content:     []byte{1, 2, 3},
 				contentType: "text/plain",
 			},
-			want: map[string]interface{}{
-				"filename":    "at1",
-				"content":     []byte{1, 2, 3},
-				"size":        3,
-				"contentType": "text/plain",
+			want: func(at Attachment) map[string]interface{} {
+				return map[string]interface{}{
+					"filename":    "at1",
+					"content":     []byte{1, 2, 3},
+					"size":        3,
+					"contentType": "text/plain",
+					"header":      (map[string][]string)(at.header),
+				}
 			},
 		},
 		{
@@ -34,11 +37,14 @@ func TestAttachment_Map(t *testing.T) {
 				content:     []byte{1, 2, 3},
 				contentType: "text/plain",
 			},
-			want: map[string]interface{}{
-				"filename":    "at1",
-				"content":     []byte{},
-				"size":        3,
-				"contentType": "text/plain",
+			want: func(at Attachment) map[string]interface{} {
+				return map[string]interface{}{
+					"filename":    "at1",
+					"content":     []byte{},
+					"size":        3,
+					"contentType": "text/plain",
+					"header":      (map[string][]string)(at.header),
+				}
 			},
 			opts: []MapOption{
 				WithoutAttachmentContent(),
@@ -49,7 +55,7 @@ func TestAttachment_Map(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.give.Map(tt.opts...)
-			assert.Equal(t, tt.want, m)
+			assert.Equal(t, tt.want(tt.give), m)
 		})
 	}
 }
@@ -145,27 +151,71 @@ func TestLetter_Map(t *testing.T) {
 				BCC("Gene Belcher", "gene@example.com"),
 				ReplyTo("Louise Belcher", "louise@example.com"),
 				Subject("Hi."),
-				Text("Hello"),
+				Text("Hello."),
 				HTML("<p>Hello.</p>"),
-				Attach("attach1", []byte{1, 2, 3}, ContentType("text/plain")),
+				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
 			},
 			want: func(l Letter) map[string]interface{} {
 				return map[string]interface{}{
-					"from":        l.From(),
-					"recipients":  l.Recipients(),
-					"to":          l.To(),
-					"cc":          l.CC(),
-					"bcc":         l.BCC(),
-					"replyTo":     l.ReplyTo(),
-					"subject":     l.Subject(),
-					"text":        l.Text(),
-					"html":        l.HTML(),
-					"attachments": mapAttachments(l.Attachments()),
+					"from": map[string]interface{}{
+						"name":    "Bob Belcher",
+						"address": "bob@example.com",
+					},
+					"recipients": []map[string]interface{}{
+						{
+							"name":    "Linda Belcher",
+							"address": "linda@example.com",
+						},
+						{
+							"name":    "Tina Belcher",
+							"address": "tina@example.com",
+						},
+						{
+							"name":    "Gene Belcher",
+							"address": "gene@example.com",
+						},
+					},
+					"to": []map[string]interface{}{
+						{
+							"name":    "Linda Belcher",
+							"address": "linda@example.com",
+						},
+					},
+					"cc": []map[string]interface{}{
+						{
+							"name":    "Tina Belcher",
+							"address": "tina@example.com",
+						},
+					},
+					"bcc": []map[string]interface{}{
+						{
+							"name":    "Gene Belcher",
+							"address": "gene@example.com",
+						},
+					},
+					"replyTo": []map[string]interface{}{
+						{
+							"name":    "Louise Belcher",
+							"address": "louise@example.com",
+						},
+					},
+					"subject": "Hi.",
+					"text":    "Hello.",
+					"html":    "<p>Hello.</p>",
+					"attachments": []map[string]interface{}{
+						{
+							"filename":    "at1",
+							"content":     []byte{1, 2, 3},
+							"size":        3,
+							"contentType": "text/plain",
+							"header":      (map[string][]string)(l.attachments[0].header),
+						},
+					},
 				}
 			},
 		},
 		{
-			name: "without attachment contents",
+			name: "default",
 			letterOpts: []Option{
 				From("Bob Belcher", "bob@example.com"),
 				To("Linda Belcher", "linda@example.com"),
@@ -173,25 +223,66 @@ func TestLetter_Map(t *testing.T) {
 				BCC("Gene Belcher", "gene@example.com"),
 				ReplyTo("Louise Belcher", "louise@example.com"),
 				Subject("Hi."),
-				Text("Hello"),
+				Text("Hello."),
 				HTML("<p>Hello.</p>"),
-				Attach("attach1", []byte{1, 2, 3}, ContentType("text/plain")),
-			},
-			opts: []MapOption{
-				WithoutAttachmentContent(),
+				Attach("at1", []byte{1, 2, 3}, ContentType("text/plain")),
 			},
 			want: func(l Letter) map[string]interface{} {
 				return map[string]interface{}{
-					"from":        l.From(),
-					"recipients":  l.Recipients(),
-					"to":          l.To(),
-					"cc":          l.CC(),
-					"bcc":         l.BCC(),
-					"replyTo":     l.ReplyTo(),
-					"subject":     l.Subject(),
-					"text":        l.Text(),
-					"html":        l.HTML(),
-					"attachments": mapAttachments(l.Attachments(), WithoutAttachmentContent()),
+					"from": map[string]interface{}{
+						"name":    "Bob Belcher",
+						"address": "bob@example.com",
+					},
+					"recipients": []map[string]interface{}{
+						{
+							"name":    "Linda Belcher",
+							"address": "linda@example.com",
+						},
+						{
+							"name":    "Tina Belcher",
+							"address": "tina@example.com",
+						},
+						{
+							"name":    "Gene Belcher",
+							"address": "gene@example.com",
+						},
+					},
+					"to": []map[string]interface{}{
+						{
+							"name":    "Linda Belcher",
+							"address": "linda@example.com",
+						},
+					},
+					"cc": []map[string]interface{}{
+						{
+							"name":    "Tina Belcher",
+							"address": "tina@example.com",
+						},
+					},
+					"bcc": []map[string]interface{}{
+						{
+							"name":    "Gene Belcher",
+							"address": "gene@example.com",
+						},
+					},
+					"replyTo": []map[string]interface{}{
+						{
+							"name":    "Louise Belcher",
+							"address": "louise@example.com",
+						},
+					},
+					"subject": "Hi.",
+					"text":    "Hello.",
+					"html":    "<p>Hello.</p>",
+					"attachments": []map[string]interface{}{
+						{
+							"filename":    "at1",
+							"content":     []byte{1, 2, 3},
+							"size":        3,
+							"contentType": "text/plain",
+							"header":      (map[string][]string)(l.attachments[0].header),
+						},
+					},
 				}
 			},
 		},
@@ -205,10 +296,26 @@ func TestLetter_Map(t *testing.T) {
 	}
 }
 
-func mapAttachments(ats []Attachment, opts ...MapOption) []map[string]interface{} {
-	mapped := make([]map[string]interface{}, len(ats))
-	for i, at := range ats {
-		mapped[i] = at.Map(opts...)
-	}
-	return mapped
-}
+// func TestLetter_Parse(t *testing.T) {
+// 	tests := []struct {
+// 		name   string
+// 		give   map[string]interface{}
+// 		assert func(*testing.T, Letter)
+// 	}{
+// 		{
+// 			name: "default",
+// 			give: map[string]interface{}{
+// 				"from":        mail.Address{Name},
+// 				"recipients":  "",
+// 				"to":          "",
+// 				"cc":          "",
+// 				"bcc":         "",
+// 				"replyTo":     "",
+// 				"subject":     "",
+// 				"text":        "",
+// 				"html":        "",
+// 				"attachments": "",
+// 			},
+// 		},
+// 	}
+// }
