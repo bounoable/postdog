@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/queue/dispatch"
+	"github.com/bounoable/postdog/send"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSendOptions(t *testing.T) {
-	cfg := dispatch.Configure(dispatch.SendOptions(postdog.Use("a"), postdog.Use("b")))
+	cfg := dispatch.Configure(dispatch.SendOptions(send.Use("a"), send.Use("b")))
 	assert.Len(t, cfg.SendOptions, 2)
-	dispatch.SendOptions(postdog.Use("a"), postdog.Use("b"))(&cfg)
+	dispatch.SendOptions(send.Use("a"), send.Use("b"))(&cfg)
 	assert.Len(t, cfg.SendOptions, 4)
 }
 

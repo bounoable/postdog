@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/internal/context"
+	"github.com/bounoable/postdog/send"
 )
 
 const (
@@ -74,14 +75,6 @@ type Mail interface {
 type Waiter interface {
 	// Wait should block until the next mail can be sent.
 	Wait(stdctx.Context) error
-}
-
-// SendOption is an option for the Send() method of a *Dog.
-type SendOption func(*sendConfig)
-
-type sendConfig struct {
-	transport string
-	timeout   time.Duration
 }
 
 // A Hook is a hook point.
@@ -153,20 +146,6 @@ func WithHook(h Hook, l Listener) OptionFunc {
 	}
 }
 
-// Use sets the transport name that should be used for sending a Mail.
-func Use(transport string) SendOption {
-	return func(cfg *sendConfig) {
-		cfg.transport = transport
-	}
-}
-
-// Timeout returns an Option that adds a timeout a send.
-func Timeout(dur time.Duration) SendOption {
-	return func(cfg *sendConfig) {
-		cfg.timeout = dur
-	}
-}
-
 // Use sets the default transport.
 func (dog *Dog) Use(transport string) {
 	dog.mux.Lock()
@@ -186,21 +165,21 @@ func (dog *Dog) Use(transport string) {
 // The default transport is automatically the first transport that has been
 // registered and can be overriden by calling dog.Use("transport-name").
 // If there's no default transport available, Send() will return ErrNoTransport.
-func (dog *Dog) Send(ctx stdctx.Context, m Mail, opts ...SendOption) error {
-	var cfg sendConfig
+func (dog *Dog) Send(ctx stdctx.Context, m Mail, opts ...send.Option) error {
+	var cfg send.Config
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
 	var cancel stdctx.CancelFunc
-	if cfg.timeout == 0 {
+	if cfg.Timeout == 0 {
 		ctx, cancel = stdctx.WithCancel(ctx)
 	} else {
-		ctx, cancel = stdctx.WithTimeout(ctx, cfg.timeout)
+		ctx, cancel = stdctx.WithTimeout(ctx, cfg.Timeout)
 	}
 	defer cancel()
 
-	tr, err := dog.transport(cfg.transport)
+	tr, err := dog.transport(cfg.Transport)
 	if err != nil {
 		return err
 	}

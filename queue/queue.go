@@ -11,6 +11,7 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/queue/dispatch"
+	"github.com/bounoable/postdog/send"
 )
 
 var (
@@ -37,7 +38,7 @@ type Queue struct {
 
 // Mailer is an interface for *postdog.Dog.
 type Mailer interface {
-	Send(context.Context, postdog.Mail, ...postdog.SendOption) error
+	Send(context.Context, postdog.Mail, ...send.Option) error
 }
 
 // Job is a queue job.
@@ -46,7 +47,7 @@ type Job struct {
 	cancel context.CancelFunc
 
 	mail         postdog.Mail
-	sendOptions  []postdog.SendOption
+	sendOptions  []send.Option
 	dispatchedAt time.Time
 	finishedAt   time.Time
 	done         chan struct{}
@@ -188,8 +189,8 @@ func (j *Job) Mail() postdog.Mail {
 	return j.mail
 }
 
-// SendOptions returns the job's postdog.SendOptions.
-func (j *Job) SendOptions() []postdog.SendOption {
+// SendOptions returns the job's send.Options.
+func (j *Job) SendOptions() []send.Option {
 	return j.sendOptions
 }
 

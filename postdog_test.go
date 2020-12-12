@@ -11,6 +11,7 @@ import (
 	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/letter"
 	mock_postdog "github.com/bounoable/postdog/mocks"
+	"github.com/bounoable/postdog/send"
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/time/rate"
@@ -45,7 +46,7 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("When I send a mail and specify the transport", func() {
-					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test"))
+					err := dog.Send(stdctx.Background(), mockLetter, send.Use("test"))
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldBeError, postdog.ErrUnconfiguredTransport)
@@ -75,7 +76,7 @@ func TestPostdog(t *testing.T) {
 						Send(gomock.Any(), mockLetter).
 						Return(nil)
 
-					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test"))
+					err := dog.Send(stdctx.Background(), mockLetter, send.Use("test"))
 
 					Convey("Then the configured transport should be used", func() {
 						So(err, ShouldBeNil)
@@ -83,7 +84,7 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("When I send a mail and specify another transport", func() {
-					err := dog.Send(stdctx.Background(), mockLetter, postdog.Use("test2"))
+					err := dog.Send(stdctx.Background(), mockLetter, send.Use("test2"))
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldBeError, postdog.ErrUnconfiguredTransport)
@@ -264,7 +265,7 @@ func TestPostdog(t *testing.T) {
 				dog := postdog.New(postdog.WithTransport("test", tr))
 
 				Convey("When I send a mail with a timeout of 20 milliseconds", func() {
-					err := dog.Send(stdctx.Background(), mockLetter, postdog.Timeout(20*time.Millisecond))
+					err := dog.Send(stdctx.Background(), mockLetter, send.Timeout(20*time.Millisecond))
 
 					Convey("It should fail with stdctx.DeadlineExceeded", func() {
 						So(errors.Is(err, stdctx.DeadlineExceeded), ShouldBeTrue)
@@ -283,7 +284,7 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("When I send a mail with a timeout of 60 milliseconds", func() {
-					err := dog.Send(stdctx.Background(), mockLetter, postdog.Timeout(60*time.Millisecond))
+					err := dog.Send(stdctx.Background(), mockLetter, send.Timeout(60*time.Millisecond))
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)

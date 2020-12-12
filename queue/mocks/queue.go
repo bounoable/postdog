@@ -7,6 +7,7 @@ package mock_queue
 import (
 	context "context"
 	postdog "github.com/bounoable/postdog"
+	send "github.com/bounoable/postdog/send"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -35,7 +36,7 @@ func (m *MockMailer) EXPECT() *MockMailerMockRecorder {
 }
 
 // Send mocks base method
-func (m *MockMailer) Send(arg0 context.Context, arg1 postdog.Mail, arg2 ...postdog.SendOption) error {
+func (m *MockMailer) Send(arg0 context.Context, arg1 postdog.Mail, arg2 ...send.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
