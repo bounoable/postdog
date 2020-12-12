@@ -19,6 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Store is the mongo store.
 type Store struct {
 	client         *mongo.Client
 	databaseName   string
@@ -26,6 +27,7 @@ type Store struct {
 	col            *mongo.Collection
 }
 
+// Option is a Store option.
 type Option func(*Store)
 
 type dbmail struct {
@@ -64,6 +66,7 @@ type cursor struct {
 	err     error
 }
 
+// NewStore returns a mongo store.
 func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
 	s := Store{client: client, databaseName: "postdog", collectionName: "mails"}
 	for _, opt := range opts {
@@ -76,18 +79,22 @@ func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
 	return &s, nil
 }
 
+// Database returns an Option that specifies the used database.
 func Database(name string) Option {
 	return func(s *Store) {
 		s.databaseName = name
 	}
 }
 
+// Collection returns an Option that specifies the used collection.
 func Collection(name string) Option {
 	return func(s *Store) {
 		s.collectionName = name
 	}
 }
 
+// Insert stores m into the database. If there's already a stored mail with the
+// same ID as m, m will override the previously stored mail.
 func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 	attachments := make([]attachment, len(m.Attachments()))
 	for i, at := range m.Attachments() {
@@ -124,18 +131,19 @@ func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 	return nil
 }
 
+// Find fetches the mail with the given id from the database. If it can't find
+// the mail, it returns archive.ErrNotFound.
 func (s *Store) Find(ctx context.Context, id uuid.UUID) (archive.Mail, error) {
 	res := s.col.FindOne(ctx, bson.M{"id": id})
 	return decode(res)
 }
 
+// Query queries the database for mails matching the query q.
 func (s *Store) Query(ctx context.Context, q query.Query) (archive.Cursor, error) {
 	filter := newFilter(q)
 	opts := options.Find()
-	sort := newSort(q)
-	if sort != nil {
-		opts = opts.SetSort(sort)
-	}
+	opts = withSorting(opts, q)
+	opts = withPagination(opts, q)
 	cur, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("mongo: %w", err)
@@ -143,6 +151,7 @@ func (s *Store) Query(ctx context.Context, q query.Query) (archive.Cursor, error
 	return &cursor{cur: cur}, nil
 }
 
+// Remove deletes the mail m from the database.
 func (s *Store) Remove(ctx context.Context, m archive.Mail) error {
 	if _, err := s.col.DeleteOne(ctx, bson.M{"id": m.ID()}); err != nil {
 		return fmt.Errorf("mongo: %w", err)
@@ -178,6 +187,69 @@ func (s *Store) ensureIndexes() error {
 
 func (addr address) netMail() mail.Address {
 	return mail.Address{Name: addr.Name, Address: addr.Address}
+}
+
+func (cur *cursor) Next(ctx context.Context) bool {
+	if !cur.cur.Next(ctx) {
+		cur.err = cur.cur.Err()
+		return false
+	}
+
+	var mail dbmail
+	if cur.err = cur.cur.Decode(&mail); cur.err != nil {
+		cur.current = archive.Mail{}
+		return false
+	}
+
+	attachments := make([]letter.Option, len(mail.Attachments))
+	for i, at := range mail.Attachments {
+		attachments[i] = letter.Attach(at.Filename, at.Content, letter.AttachmentType(at.ContentType))
+	}
+
+	cur.current = archive.
+		ExpandMail(letter.Write(append([]letter.Option{
+			letter.FromAddress(mail.From.netMail()),
+			letter.RecipientAddress(netMails(mail.Recipients...)...),
+			letter.ToAddress(netMails(mail.To...)...),
+			letter.CCAddress(netMails(mail.CC...)...),
+			letter.BCCAddress(netMails(mail.BCC...)...),
+			letter.ReplyToAddress(netMails(mail.ReplyTo...)...),
+			letter.Subject(mail.Subject),
+			letter.Content(mail.Text, mail.HTML),
+			letter.RFC(mail.RFC),
+		}, attachments...)...)).
+		WithID(mail.ID).
+		WithSendError(mail.SendError).
+		WithSendTime(mail.SentAt)
+
+	return true
+}
+
+func (cur *cursor) Current() archive.Mail {
+	return cur.current
+}
+
+func (cur *cursor) All(ctx context.Context) ([]archive.Mail, error) {
+	var mails []archive.Mail
+	for cur.Next(ctx) {
+		mails = append(mails, cur.current)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	if err := cur.Close(ctx); err != nil {
+		return mails, err
+	}
+	return mails, nil
+}
+
+func (cur *cursor) Err() error {
+	return cur.err
+}
+
+func (cur *cursor) Close(ctx context.Context) error {
+	cur.err = cur.cur.Close(ctx)
+	return cur.err
 }
 
 func decode(res *mongo.SingleResult) (archive.Mail, error) {
@@ -420,73 +492,26 @@ func newSort(q query.Query) (sort bson.D) {
 	return
 }
 
-func (cur *cursor) Next(ctx context.Context) bool {
-	if !cur.cur.Next(ctx) {
-		cur.err = cur.cur.Err()
-		return false
-	}
-
-	var mail dbmail
-	if cur.err = cur.cur.Decode(&mail); cur.err != nil {
-		cur.current = archive.Mail{}
-		return false
-	}
-
-	attachments := make([]letter.Option, len(mail.Attachments))
-	for i, at := range mail.Attachments {
-		attachments[i] = letter.Attach(at.Filename, at.Content, letter.AttachmentType(at.ContentType))
-	}
-
-	cur.current = archive.
-		ExpandMail(letter.Write(append([]letter.Option{
-			letter.FromAddress(mail.From.netMail()),
-			letter.RecipientAddress(netMails(mail.Recipients...)...),
-			letter.ToAddress(netMails(mail.To...)...),
-			letter.CCAddress(netMails(mail.CC...)...),
-			letter.BCCAddress(netMails(mail.BCC...)...),
-			letter.ReplyToAddress(netMails(mail.ReplyTo...)...),
-			letter.Subject(mail.Subject),
-			letter.Content(mail.Text, mail.HTML),
-			letter.RFC(mail.RFC),
-		}, attachments...)...)).
-		WithID(mail.ID).
-		WithSendError(mail.SendError).
-		WithSendTime(mail.SentAt)
-
-	return true
-}
-
-func (cur *cursor) Current() archive.Mail {
-	return cur.current
-}
-
-func (cur *cursor) All(ctx context.Context) ([]archive.Mail, error) {
-	var mails []archive.Mail
-	for cur.Next(ctx) {
-		mails = append(mails, cur.current)
-	}
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-	if err := cur.Close(ctx); err != nil {
-		return mails, err
-	}
-	return mails, nil
-}
-
-func (cur *cursor) Err() error {
-	return cur.err
-}
-
-func (cur *cursor) Close(ctx context.Context) error {
-	cur.err = cur.cur.Close(ctx)
-	return cur.err
-}
-
 func netMails(addrs ...address) []mail.Address {
 	res := make([]mail.Address, len(addrs))
 	for i, addr := range addrs {
 		res[i] = addr.netMail()
 	}
 	return res
+}
+
+func withSorting(opts *options.FindOptions, q query.Query) *options.FindOptions {
+	if sort := newSort(q); sort != nil {
+		return opts.SetSort(sort)
+	}
+	return opts
+}
+
+func withPagination(opts *options.FindOptions, q query.Query) *options.FindOptions {
+	if q.Pagination.Page == 0 {
+		return opts
+	}
+	return opts.
+		SetSkip(int64((q.Pagination.Page - 1) * q.Pagination.PerPage)).
+		SetLimit(int64(q.Pagination.PerPage))
 }

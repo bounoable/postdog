@@ -51,6 +51,7 @@ func (s *Store) Query(_ context.Context, q query.Query) (archive.Cursor, error) 
 		}
 	}
 	mails = sortMails(mails, q)
+	mails = paginate(mails, q)
 	return cursor.New(mails...), nil
 }
 
@@ -277,4 +278,22 @@ func compareTime(a, b time.Time, desc bool) bool {
 		return a.After(b)
 	}
 	return a.Before(b)
+}
+
+func paginate(mails []archive.Mail, q query.Query) []archive.Mail {
+	if len(mails) == 0 {
+		return mails
+	}
+	if q.Pagination.Page == 0 {
+		return mails
+	}
+	if q.Pagination.PerPage == 0 {
+		return nil
+	}
+	start := (q.Pagination.Page - 1) * q.Pagination.PerPage
+	end := q.Pagination.Page * q.Pagination.PerPage
+	if end > len(mails) {
+		end = len(mails)
+	}
+	return mails[start:end]
 }

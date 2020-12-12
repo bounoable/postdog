@@ -446,6 +446,25 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					})
 				})
 			}))
+
+			Convey("Given a Store with 30 mails", withFilledStore(newStore, 30, cfg.roundTime, func(s archive.Store, mockMails []archive.Mail) {
+				Convey("When I query with pagination", func() {
+					cur, err := s.Query(context.Background(), query.New(
+						query.Sort(query.SortSendTime, query.SortAsc),
+						query.Paginate(2, 7),
+					))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("It should return paginated mails", func() {
+						mails := drain(cur)
+						So(mails, ShouldHaveLength, 7)
+						So(mails, ShouldResemble, mockMails[7:14])
+					})
+				})
+			}))
 		})
 
 		Convey("Remove()", func() {
