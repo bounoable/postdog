@@ -40,6 +40,7 @@ func TestStore(t *testing.T) {
 			client,
 			mongostore.Database(fmt.Sprintf("postdog_%d", count)),
 			mongostore.Collection(fmt.Sprintf("mails_%d", count)),
+			mongostore.CreateIndexes(true),
 		)
 		if err != nil {
 			panic(err)

@@ -24,6 +24,7 @@ type Store struct {
 	client         *mongo.Client
 	databaseName   string
 	collectionName string
+	wantIndexes    bool
 	col            *mongo.Collection
 }
 
@@ -66,16 +67,22 @@ type cursor struct {
 	err     error
 }
 
-// NewStore returns a mongo store.
+// NewStore returns a mongo store. It returns an error if either client is nil
+// or CreateIndexes() is used and index creation fails.
 func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
+	if client == nil {
+		return nil, errors.New("client must not be nil")
+	}
 	s := Store{client: client, databaseName: "postdog", collectionName: "mails"}
 	for _, opt := range opts {
 		opt(&s)
 	}
 	s.col = s.client.Database(s.databaseName).Collection(s.collectionName)
-	// if err := s.ensureIndexes(); err != nil {
-	// 	return nil, fmt.Errorf("ensure indexes: %w", err)
-	// }
+	if s.wantIndexes {
+		if err := s.createIndexes(); err != nil {
+			return nil, fmt.Errorf("create indexes: %w", err)
+		}
+	}
 	return &s, nil
 }
 
@@ -90,6 +97,13 @@ func Database(name string) Option {
 func Collection(name string) Option {
 	return func(s *Store) {
 		s.collectionName = name
+	}
+}
+
+// CreateIndexes returns an Option that creates the indexes for the mails collection.
+func CreateIndexes(ci bool) Option {
+	return func(s *Store) {
+		s.wantIndexes = ci
 	}
 }
 
@@ -159,7 +173,7 @@ func (s *Store) Remove(ctx context.Context, m archive.Mail) error {
 	return nil
 }
 
-func (s *Store) ensureIndexes() error {
+func (s *Store) createIndexes() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, err := index.CreateFromConfig(ctx, s.col.Database(), index.Config{
