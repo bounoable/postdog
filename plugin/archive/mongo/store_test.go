@@ -1,7 +1,10 @@
+// +build store
+
 package mongo_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -51,7 +54,7 @@ var once sync.Once
 func connect(ctx context.Context) (*mongo.Client, error) {
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
-		uri = "mongodb://127.0.0.1:27017"
+		return nil, errors.New("environment variable MONGO_URI must be set")
 	}
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
