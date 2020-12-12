@@ -258,14 +258,14 @@ func TestWrite(t *testing.T) {
 		{
 			name: "Attach(): detect content-type by extension",
 			opts: []letter.Option{
-				letter.Attach("attach1.txt", []byte{1, 2, 3}),
+				letter.Attach("attach1.html", []byte{1, 2, 3}),
 			},
 			expect: func(t *testing.T, l letter.Letter) {
 				at := l.Attachments()[0]
-				assert.Equal(t, "attach1.txt", at.Filename())
+				assert.Equal(t, "attach1.html", at.Filename())
 				assert.Equal(t, 3, at.Size())
 				assert.Equal(t, []byte{1, 2, 3}, at.Content())
-				assert.Equal(t, "text/plain; charset=utf-8", at.ContentType())
+				assert.Equal(t, "text/html; charset=utf-8", at.ContentType())
 				assertAttachmentHeader(t, at)
 			},
 		},

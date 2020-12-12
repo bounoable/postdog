@@ -79,6 +79,7 @@ func TestNew(t *testing.T) {
 							err := dog.Send(context.Background(), mockLetter)
 
 							Convey("It should fail", func() {
+								<-storedMail
 								So(errors.Is(err, mockTransportError), ShouldBeTrue)
 							})
 
