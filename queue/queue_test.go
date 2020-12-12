@@ -72,7 +72,7 @@ func TestQueue(t *testing.T) {
 					})
 
 					Convey("job.Done() should be closed after ~50 milliseconds", func() {
-						<-time.After(time.Millisecond * 55)
+						<-time.After(60 * time.Millisecond)
 						So(job.Done(), should.BeClosed)
 					})
 
@@ -93,7 +93,7 @@ func TestQueue(t *testing.T) {
 					})
 
 					Convey("When I cancel the job after it's done", func() {
-						<-time.After(time.Millisecond * 60)
+						<-time.After(time.Millisecond * 70)
 						err := job.Cancel(context.Background())
 
 						Convey("It should fail", func() {

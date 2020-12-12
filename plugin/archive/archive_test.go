@@ -120,6 +120,7 @@ func TestNew(t *testing.T) {
 								err := dog.Send(context.Background(), mockLetter)
 
 								Convey("It shouldn't fail", func() {
+									<-time.After(20 * time.Millisecond)
 									So(err, ShouldBeNil)
 								})
 
