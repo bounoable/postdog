@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/bounoable/postdog"
-	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/plugin/archive/query"
 	"github.com/google/uuid"
 )
@@ -79,8 +78,8 @@ func New(s Store, opts ...Option) postdog.Plugin {
 			_ postdog.Hook,
 			pm postdog.Mail,
 		) {
-			sendError := context.SendError(ctx)
-			sentAt := context.SendTime(ctx)
+			sendError := postdog.SendError(ctx)
+			sentAt := postdog.SendTime(ctx)
 
 			var errMsg string
 			if sendError != nil {

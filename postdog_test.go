@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog"
-	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/letter"
 	mock_postdog "github.com/bounoable/postdog/mocks"
 	"github.com/bounoable/postdog/send"
@@ -427,7 +426,7 @@ func TestPostdog(t *testing.T) {
 					lis.EXPECT().
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
 						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
-							gotTime <- context.SendTime(ctx)
+							gotTime <- postdog.SendTime(ctx)
 						}).
 						AnyTimes()
 
@@ -458,7 +457,7 @@ func TestPostdog(t *testing.T) {
 					lis.EXPECT().
 						Handle(gomock.Any(), postdog.AfterSend, mockLetter).
 						Do(func(ctx stdctx.Context, _ postdog.Hook, _ postdog.Mail) {
-							gotError <- context.SendError(ctx)
+							gotError <- postdog.SendError(ctx)
 						}).
 						AnyTimes()
 

@@ -3,14 +3,13 @@ package postdog
 //go:generate mockgen -source=postdog.go -destination=./mocks/postdog.go
 
 import (
-	stdctx "context"
+	"context"
 	"errors"
 	"fmt"
 	"net/mail"
 	"sync"
 	"time"
 
-	"github.com/bounoable/postdog/internal/context"
 	"github.com/bounoable/postdog/send"
 )
 
@@ -19,6 +18,11 @@ const (
 	BeforeSend = Hook(iota + 1)
 	// AfterSend is the Hook that's called after a mail has been sent.
 	AfterSend
+)
+
+const (
+	ctxSendError = ctxKey("sendError")
+	ctxSendTime  = ctxKey("sendTime")
 )
 
 var (
@@ -39,16 +43,16 @@ type Dog struct {
 
 // A Transport is responsible for actually sending mails.
 type Transport interface {
-	Send(stdctx.Context, Mail) error
+	Send(context.Context, Mail) error
 }
 
 // Middleware is called on every Send(), allowing manipulation of mails before they are passed to the Transport.
 type Middleware interface {
-	Handle(stdctx.Context, Mail, func(stdctx.Context, Mail) (Mail, error)) (Mail, error)
+	Handle(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
 }
 
 // A MiddlewareFunc allows functions to be used as Middleware.
-type MiddlewareFunc func(stdctx.Context, Mail, func(stdctx.Context, Mail) (Mail, error)) (Mail, error)
+type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
 
 // Option is a *Dog option.
 type Option interface {
@@ -74,7 +78,7 @@ type Mail interface {
 // A Waiter implements rate limiting.
 type Waiter interface {
 	// Wait should block until the next mail can be sent.
-	Wait(stdctx.Context) error
+	Wait(context.Context) error
 }
 
 // A Hook is a hook point.
@@ -82,11 +86,13 @@ type Hook uint8
 
 // Listener is a callback for a Hook.
 type Listener interface {
-	Handle(stdctx.Context, Hook, Mail)
+	Handle(context.Context, Hook, Mail)
 }
 
 // ListenerFunc allows functions to be used as Listeners.
-type ListenerFunc func(stdctx.Context, Hook, Mail)
+type ListenerFunc func(context.Context, Hook, Mail)
+
+type ctxKey string
 
 // New returns a new *Dog.
 func New(opts ...Option) *Dog {
@@ -128,9 +134,9 @@ func WithMiddlewareFunc(mws ...MiddlewareFunc) OptionFunc {
 // The middleware will call rl.Wait() for every mail that's sent.
 func WithRateLimiter(rl Waiter) OptionFunc {
 	return WithMiddlewareFunc(func(
-		ctx stdctx.Context,
+		ctx context.Context,
 		m Mail,
-		next func(stdctx.Context, Mail) (Mail, error),
+		next func(context.Context, Mail) (Mail, error),
 	) (Mail, error) {
 		if err := rl.Wait(ctx); err != nil {
 			return m, fmt.Errorf("rate limiter: %w", err)
@@ -144,6 +150,18 @@ func WithHook(h Hook, l Listener) OptionFunc {
 	return func(dog *Dog) {
 		dog.hooks[h] = append(dog.hooks[h], l)
 	}
+}
+
+// SendError returns the error of the last (*Dog).Send() call that has been made using ctx.
+func SendError(ctx context.Context) error {
+	err, _ := ctx.Value(ctxSendError).(error)
+	return err
+}
+
+// SendTime returns the time of the last (*Dog).Send() call that has been made using ctx.
+func SendTime(ctx context.Context) time.Time {
+	t, _ := ctx.Value(ctxSendTime).(time.Time)
+	return t
 }
 
 // Use sets the default transport.
@@ -165,17 +183,17 @@ func (dog *Dog) Use(transport string) {
 // The default transport is automatically the first transport that has been
 // registered and can be overriden by calling dog.Use("transport-name").
 // If there's no default transport available, Send() will return ErrNoTransport.
-func (dog *Dog) Send(ctx stdctx.Context, m Mail, opts ...send.Option) error {
+func (dog *Dog) Send(ctx context.Context, m Mail, opts ...send.Option) error {
 	var cfg send.Config
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
-	var cancel stdctx.CancelFunc
+	var cancel context.CancelFunc
 	if cfg.Timeout == 0 {
-		ctx, cancel = stdctx.WithCancel(ctx)
+		ctx, cancel = context.WithCancel(ctx)
 	} else {
-		ctx, cancel = stdctx.WithTimeout(ctx, cfg.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
 	}
 	defer cancel()
 
@@ -192,24 +210,24 @@ func (dog *Dog) Send(ctx stdctx.Context, m Mail, opts ...send.Option) error {
 	defer func() { dog.callHooks(ctx, AfterSend, m) }()
 
 	err = tr.Send(ctx, m)
-	ctx = context.WithSendTime(ctx, time.Now())
+	ctx = withSendTime(ctx, time.Now())
 	if err != nil {
-		ctx = context.WithSendError(ctx, err)
+		ctx = withSendError(ctx, err)
 		return fmt.Errorf("transport: %w", err)
 	}
 
 	return nil
 }
 
-func (dog *Dog) applyMiddleware(ctx stdctx.Context, m Mail) (Mail, error) {
+func (dog *Dog) applyMiddleware(ctx context.Context, m Mail) (Mail, error) {
 	if len(dog.middlewares) == 0 {
 		return m, nil
 	}
 	return dog.middlewares[0].Handle(ctx, m, dog.nextFunc(0))
 }
 
-func (dog *Dog) nextFunc(i int) func(stdctx.Context, Mail) (Mail, error) {
-	return func(ctx stdctx.Context, let Mail) (Mail, error) {
+func (dog *Dog) nextFunc(i int) func(context.Context, Mail) (Mail, error) {
+	return func(ctx context.Context, let Mail) (Mail, error) {
 		if i >= len(dog.middlewares)-1 {
 			return let, nil
 		}
@@ -217,7 +235,7 @@ func (dog *Dog) nextFunc(i int) func(stdctx.Context, Mail) (Mail, error) {
 	}
 }
 
-func (dog *Dog) callHooks(ctx stdctx.Context, h Hook, m Mail) {
+func (dog *Dog) callHooks(ctx context.Context, h Hook, m Mail) {
 	for _, lis := range dog.listeners(h) {
 		go lis.Handle(ctx, h, m)
 	}
@@ -263,7 +281,7 @@ func (dog *Dog) configureTransport(name string, tr Transport) {
 }
 
 // Handle calls mw() with the given arguments.
-func (mw MiddlewareFunc) Handle(ctx stdctx.Context, m Mail, fn func(stdctx.Context, Mail) (Mail, error)) (Mail, error) {
+func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
 	return mw(ctx, m, fn)
 }
 
@@ -280,6 +298,14 @@ func (p Plugin) Apply(d *Dog) {
 }
 
 // Handle calls lis(ctx, h, m).
-func (lis ListenerFunc) Handle(ctx stdctx.Context, h Hook, m Mail) {
+func (lis ListenerFunc) Handle(ctx context.Context, h Hook, m Mail) {
 	lis(ctx, h, m)
+}
+
+func withSendError(ctx context.Context, err error) context.Context {
+	return context.WithValue(ctx, ctxSendError, err)
+}
+
+func withSendTime(ctx context.Context, t time.Time) context.Context {
+	return context.WithValue(ctx, ctxSendTime, t)
 }
