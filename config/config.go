@@ -23,6 +23,7 @@ var (
 type Config struct {
 	transports         map[string]Transport
 	transportFactories map[string]TransportFactory
+	defaultTransport   string
 	opts               []postdog.Option
 }
 
@@ -44,6 +45,7 @@ type TransportFactory interface {
 type TransportFactoryFunc func(context.Context, map[string]interface{}) (postdog.Transport, error)
 
 type rawConfig struct {
+	Default    string               `yaml:"default"`
 	Transports map[string]Transport `yaml:"transports"`
 }
 
@@ -91,6 +93,7 @@ func (cfg *Config) Parse(raw []byte) error {
 		return fmt.Errorf("unmarshal yaml: %w", err)
 	}
 	cfg.transports = rawCfg.Transports
+	cfg.defaultTransport = rawCfg.Default
 	return nil
 }
 
@@ -133,8 +136,13 @@ func (cfg *Config) Dog(ctx context.Context, opts ...Option) (*postdog.Dog, error
 	}
 
 	dogOpts = append(dogOpts, cfg.opts...)
+	dog := postdog.New(dogOpts...)
 
-	return postdog.New(dogOpts...), nil
+	if cfg.defaultTransport != "" {
+		dog.Use(cfg.defaultTransport)
+	}
+
+	return dog, nil
 }
 
 // Transport accepts the transport-specific configuration and instantiates a transport from that configuration.
