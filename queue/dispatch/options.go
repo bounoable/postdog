@@ -8,8 +8,10 @@ import (
 
 // Config is the dispatch config.
 type Config struct {
-	SendOptions []send.Option
-	Timeout     time.Duration
+	Send    send.Config
+	Timeout time.Duration
+
+	sendOpts []send.Option
 }
 
 // Option is a dispatch option.
@@ -21,13 +23,15 @@ func Configure(opts ...Option) Config {
 	for _, opt := range opts {
 		opt(&cfg)
 	}
+	cfg.Send = send.Configure(cfg.sendOpts...)
+	cfg.sendOpts = nil
 	return cfg
 }
 
 // SendOptions returns an Option that adds send.Options to the dispatch.
 func SendOptions(opts ...send.Option) Option {
 	return func(cfg *Config) {
-		cfg.SendOptions = append(cfg.SendOptions, opts...)
+		cfg.sendOpts = append(cfg.sendOpts, opts...)
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/send"
+	"github.com/bounoable/postdog/queue/dispatch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,12 +17,11 @@ func TestJob_Mail(t *testing.T) {
 	assert.Equal(t, m, j.Mail())
 }
 
-func TestJob_SendOptions(t *testing.T) {
-	j := &Job{sendOptions: []send.Option{
-		send.Use("a"),
-		send.Use("b"),
+func TestJob_Config(t *testing.T) {
+	j := &Job{cfg: dispatch.Config{
+		Timeout: 3 * time.Second,
 	}}
-	assert.Len(t, j.SendOptions(), 2)
+	assert.Equal(t, j.cfg, j.Config())
 }
 
 func TestJob_Context(t *testing.T) {

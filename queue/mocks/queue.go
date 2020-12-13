@@ -35,21 +35,16 @@ func (m *MockMailer) EXPECT() *MockMailerMockRecorder {
 	return m.recorder
 }
 
-// Send mocks base method
-func (m *MockMailer) Send(arg0 context.Context, arg1 postdog.Mail, arg2 ...send.Option) error {
+// SendConfig mocks base method
+func (m *MockMailer) SendConfig(arg0 context.Context, arg1 postdog.Mail, arg2 send.Config) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Send", varargs...)
+	ret := m.ctrl.Call(m, "SendConfig", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Send indicates an expected call of Send
-func (mr *MockMailerMockRecorder) Send(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// SendConfig indicates an expected call of SendConfig
+func (mr *MockMailerMockRecorder) SendConfig(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockMailer)(nil).Send), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendConfig", reflect.TypeOf((*MockMailer)(nil).SendConfig), arg0, arg1, arg2)
 }

@@ -38,7 +38,7 @@ type Queue struct {
 
 // Mailer is an interface for *postdog.Dog.
 type Mailer interface {
-	Send(context.Context, postdog.Mail, ...send.Option) error
+	SendConfig(context.Context, postdog.Mail, send.Config) error
 }
 
 // Job is a queue job.
@@ -47,7 +47,7 @@ type Job struct {
 	cancel context.CancelFunc
 
 	mail         postdog.Mail
-	sendOptions  []send.Option
+	cfg          dispatch.Config
 	dispatchedAt time.Time
 	finishedAt   time.Time
 	done         chan struct{}
@@ -116,7 +116,7 @@ func (q *Queue) run() {
 		go func() {
 			defer wg.Done()
 			for job := range q.jobs {
-				err := q.mailer.Send(job.ctx, job.mail, job.sendOptions...)
+				err := q.mailer.SendConfig(job.ctx, job.mail, job.cfg.Send)
 				job.finish(err)
 			}
 		}()
@@ -165,11 +165,11 @@ func (q *Queue) DispatchConfig(ctx context.Context, m postdog.Mail, cfg dispatch
 	}
 
 	j := &Job{
-		ctx:         ctx,
-		cancel:      cancel,
-		mail:        m,
-		sendOptions: cfg.SendOptions,
-		done:        make(chan struct{}),
+		ctx:    ctx,
+		cancel: cancel,
+		mail:   m,
+		cfg:    cfg,
+		done:   make(chan struct{}),
 	}
 
 	select {
@@ -192,9 +192,9 @@ func (j *Job) Mail() postdog.Mail {
 	return j.mail
 }
 
-// SendOptions returns the job's send.Options.
-func (j *Job) SendOptions() []send.Option {
-	return j.sendOptions
+// Config returns the job's dispatch.Config.
+func (j *Job) Config() dispatch.Config {
+	return j.cfg
 }
 
 // DispatchedAt returns the time at which j was dispatched.

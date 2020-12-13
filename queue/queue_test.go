@@ -330,7 +330,7 @@ func TestQueue(t *testing.T) {
 			})
 		}))
 
-		Convey("Given a Mailer that counts send.Options passed to it", WithOptionCountingMailer(ctrl, func(m *mock_queue.MockMailer, optCount <-chan int) {
+		Convey("Given a Mailer that counts send.Options passed to it", WithConfigMailer(ctrl, func(m *mock_queue.MockMailer, usedConfig <-chan send.Config) {
 			Convey("Given a started *Queue that uses that Mailer", func() {
 				q := queue.New(m)
 				q.Start()
@@ -346,12 +346,12 @@ func TestQueue(t *testing.T) {
 						So(err, ShouldBeNil)
 					})
 
-					Convey("<-optCount should be 2", func() {
-						So(<-optCount, ShouldEqual, 2)
+					Convey("The correct send config should be used", func() {
+						So(<-usedConfig, ShouldResemble, send.Configure(opts...))
 					})
 
-					Convey("job.SendOptions() should return the passed options", func() {
-						So(job.SendOptions(), ShouldHaveLength, 2)
+					Convey("job.Config() should return the dispatch config", func() {
+						So(job.Config(), ShouldResemble, dispatch.Configure(dispatch.SendOptions(opts...)))
 					})
 				})
 			})
@@ -363,8 +363,8 @@ func WithDelayedMailer(ctrl *gomock.Controller, d time.Duration, fn func(*mock_q
 	return func() {
 		m := mock_queue.NewMockMailer(ctrl)
 		m.EXPECT().
-			Send(gomock.Any(), mockLetter).
-			DoAndReturn(func(ctx context.Context, _ postdog.Mail) error {
+			SendConfig(gomock.Any(), mockLetter, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, _ postdog.Mail, _ send.Config) error {
 				select {
 				case <-ctx.Done():
 					return fmt.Errorf("abort send: %w", ctx.Err())
@@ -381,8 +381,8 @@ func WithErrorMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer)) f
 	return func() {
 		m := mock_queue.NewMockMailer(ctrl)
 		m.EXPECT().
-			Send(gomock.Any(), mockLetter).
-			DoAndReturn(func(context.Context, postdog.Mail) error {
+			SendConfig(gomock.Any(), mockLetter, gomock.Any()).
+			DoAndReturn(func(context.Context, postdog.Mail, send.Config) error {
 				return mockError
 			}).
 			AnyTimes()
@@ -390,16 +390,16 @@ func WithErrorMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer)) f
 	}
 }
 
-func WithOptionCountingMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer, <-chan int)) func() {
+func WithConfigMailer(ctrl *gomock.Controller, fn func(*mock_queue.MockMailer, <-chan send.Config)) func() {
 	return func() {
-		count := make(chan int)
+		cfg := make(chan send.Config)
 		m := mock_queue.NewMockMailer(ctrl)
 		m.EXPECT().
-			Send(gomock.Any(), mockLetter, gomock.Any()).
-			DoAndReturn(func(_ context.Context, _ postdog.Mail, opts ...send.Option) error {
-				count <- len(opts)
+			SendConfig(gomock.Any(), mockLetter, gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ postdog.Mail, xcfg send.Config) error {
+				cfg <- xcfg
 				return nil
 			})
-		fn(m, count)
+		fn(m, cfg)
 	}
 }

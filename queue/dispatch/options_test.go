@@ -11,9 +11,7 @@ import (
 
 func TestSendOptions(t *testing.T) {
 	cfg := dispatch.Configure(dispatch.SendOptions(send.Use("a"), send.Use("b")))
-	assert.Len(t, cfg.SendOptions, 2)
-	dispatch.SendOptions(send.Use("a"), send.Use("b"))(&cfg)
-	assert.Len(t, cfg.SendOptions, 4)
+	assert.Equal(t, cfg.Send, send.Configure(send.Use("a"), send.Use("b")))
 }
 
 func TestTimeout(t *testing.T) {
