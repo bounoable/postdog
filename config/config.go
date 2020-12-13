@@ -6,6 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 
 	"github.com/bounoable/postdog"
 	"gopkg.in/yaml.v3"
@@ -22,6 +25,9 @@ type Config struct {
 	transportFactories map[string]TransportFactory
 }
 
+// Option is an option for the (*Config).Dog() method.
+type Option func(*Config)
+
 // Transport is a transport configuration.
 type Transport struct {
 	Use    string                 `yaml:"use"`
@@ -31,6 +37,40 @@ type Transport struct {
 // A TransportFactory accepts the transport-specific configuration and instantiates a transport from that configuration.
 type TransportFactory interface {
 	Transport(context.Context, map[string]interface{}) (postdog.Transport, error)
+}
+
+type rawConfig struct {
+	Transports map[string]Transport `yaml:"transports"`
+}
+
+// File parses the configuration file at path into a Config.
+func File(path string) (*Config, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close()
+	return Reader(f)
+}
+
+// Reader parses the configuration in r into a Config.
+func Reader(r io.Reader) (*Config, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	var cfg Config
+	if err = cfg.Parse(b); err != nil {
+		return nil, fmt.Errorf("parse: %w", err)
+	}
+	return &cfg, nil
+}
+
+// WithTransportFactory returns an Option that specifies the TransportFactory for a `transport.use` value.
+func WithTransportFactory(use string, factory TransportFactory) Option {
+	return func(cfg *Config) {
+		cfg.transportFactories[use] = factory
+	}
 }
 
 // Parse parses the YAML configuration in raw.
@@ -82,18 +122,4 @@ func (cfg *Config) Dog(ctx context.Context, opts ...Option) (*postdog.Dog, error
 	}
 
 	return postdog.New(dogOpts...), nil
-}
-
-// Option is an option for the (*Config).Dog() method.
-type Option func(*Config)
-
-// WithTransportFactory returns an Option that specifies the TransportFactory for a `transport.use` value.
-func WithTransportFactory(use string, factory TransportFactory) Option {
-	return func(cfg *Config) {
-		cfg.transportFactories[use] = factory
-	}
-}
-
-type rawConfig struct {
-	Transports map[string]Transport `yaml:"transports"`
 }
