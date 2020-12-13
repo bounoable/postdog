@@ -39,6 +39,9 @@ type TransportFactory interface {
 	Transport(context.Context, map[string]interface{}) (postdog.Transport, error)
 }
 
+// TransportFactoryFunc allows functions to be used as TransportFactories.
+type TransportFactoryFunc func(context.Context, map[string]interface{}) (postdog.Transport, error)
+
 type rawConfig struct {
 	Transports map[string]Transport `yaml:"transports"`
 }
@@ -122,4 +125,9 @@ func (cfg *Config) Dog(ctx context.Context, opts ...Option) (*postdog.Dog, error
 	}
 
 	return postdog.New(dogOpts...), nil
+}
+
+// Transport accepts the transport-specific configuration and instantiates a transport from that configuration.
+func (fn TransportFactoryFunc) Transport(ctx context.Context, m map[string]interface{}) (postdog.Transport, error) {
+	return fn(ctx, m)
 }
