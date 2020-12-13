@@ -147,11 +147,14 @@ func (q *Queue) Stop(ctx context.Context) error {
 
 // Dispatch adds m to q and returns the queue *Job, or an error if the dispatch failed.
 func (q *Queue) Dispatch(ctx context.Context, m postdog.Mail, opts ...dispatch.Option) (*Job, error) {
+	return q.DispatchConfig(ctx, m, dispatch.Configure(opts...))
+}
+
+// DispatchConfig does the same as Dispatch() but accepts a dispatch.Config instead if dispatch.Options.
+func (q *Queue) DispatchConfig(ctx context.Context, m postdog.Mail, cfg dispatch.Config) (*Job, error) {
 	if !q.started() {
 		return nil, ErrNotStarted
 	}
-
-	cfg := dispatch.Configure(opts...)
 
 	var cancel context.CancelFunc
 

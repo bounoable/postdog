@@ -184,11 +184,11 @@ func (dog *Dog) Use(transport string) {
 // registered and can be overriden by calling dog.Use("transport-name").
 // If there's no default transport available, Send() will return ErrNoTransport.
 func (dog *Dog) Send(ctx context.Context, m Mail, opts ...send.Option) error {
-	var cfg send.Config
-	for _, opt := range opts {
-		opt(&cfg)
-	}
+	return dog.SendConfig(ctx, m, send.Configure(opts...))
+}
 
+// SendConfig does the same as Send() but accepts a send.Config instead of send.Options.
+func (dog *Dog) SendConfig(ctx context.Context, m Mail, cfg send.Config) error {
 	var cancel context.CancelFunc
 	if cfg.Timeout == 0 {
 		ctx, cancel = context.WithCancel(ctx)
