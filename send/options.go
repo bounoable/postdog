@@ -11,6 +11,15 @@ type Config struct {
 	Timeout   time.Duration
 }
 
+// Configure builds Config from opts.
+func Configure(opts ...Option) Config {
+	var cfg Config
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return cfg
+}
+
 // Use sets the transport name that should be used for sending a Mail.
 func Use(transport string) Option {
 	return func(cfg *Config) {
