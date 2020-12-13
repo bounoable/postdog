@@ -23,6 +23,7 @@ var (
 type Config struct {
 	transports         map[string]Transport
 	transportFactories map[string]TransportFactory
+	opts               []postdog.Option
 }
 
 // Option is an option for the (*Config).Dog() method.
@@ -76,6 +77,13 @@ func WithTransportFactory(use string, factory TransportFactory) Option {
 	}
 }
 
+// WithOptions returns an Option that adds postdog.Options to the postdog.Dog returned by cfg.Dog().
+func WithOptions(opts ...postdog.Option) Option {
+	return func(cfg *Config) {
+		cfg.opts = append(cfg.opts, opts...)
+	}
+}
+
 // Parse parses the YAML configuration in raw.
 func (cfg *Config) Parse(raw []byte) error {
 	var rawCfg rawConfig
@@ -123,6 +131,8 @@ func (cfg *Config) Dog(ctx context.Context, opts ...Option) (*postdog.Dog, error
 		}
 		dogOpts = append(dogOpts, postdog.WithTransport(name, tr))
 	}
+
+	dogOpts = append(dogOpts, cfg.opts...)
 
 	return postdog.New(dogOpts...), nil
 }
