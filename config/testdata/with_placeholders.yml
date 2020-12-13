@@ -1,0 +1,13 @@
+default: ${DEFAULT_TRANSPORT}
+
+transports:
+  test1:
+    use: ${TRANSPORT1_USE}
+    config:
+      key1: ${VAL1}
+      key2: ${VAL2}
+  test2:
+    use: ${TRANSPORT2_USE}
+    config:
+      key3:
+        key3.1: ${VAL3}

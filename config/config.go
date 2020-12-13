@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/bounoable/postdog"
 	"gopkg.in/yaml.v3"
@@ -92,6 +93,7 @@ func (cfg *Config) Parse(raw []byte) error {
 	if err := yaml.Unmarshal(raw, &rawCfg); err != nil {
 		return fmt.Errorf("unmarshal yaml: %w", err)
 	}
+	rawCfg.replaceVars()
 	cfg.transports = rawCfg.Transports
 	cfg.defaultTransport = rawCfg.Default
 	return nil
@@ -148,4 +150,33 @@ func (cfg *Config) Dog(ctx context.Context, opts ...Option) (*postdog.Dog, error
 // Transport accepts the transport-specific configuration and instantiates a transport from that configuration.
 func (fn TransportFactoryFunc) Transport(ctx context.Context, m map[string]interface{}) (postdog.Transport, error) {
 	return fn(ctx, m)
+}
+
+func (cfg *rawConfig) replaceVars() {
+	cfg.Default = replaceEnvVars(cfg.Default)
+	for name, trans := range cfg.Transports {
+		trans.Use = replaceEnvVars(trans.Use)
+		replaceMapEnvVars(trans.Config)
+		cfg.Transports[name] = trans
+	}
+}
+
+func replaceMapEnvVars(m map[string]interface{}) {
+	for k, v := range m {
+		switch tv := v.(type) {
+		case string:
+			m[k] = replaceEnvVars(tv)
+		case map[string]interface{}:
+			replaceMapEnvVars(tv)
+		}
+	}
+}
+
+var envRE = regexp.MustCompile(`(?Ui)\${(.+)}`)
+
+func replaceEnvVars(s string) string {
+	return envRE.ReplaceAllStringFunc(s, func(match string) string {
+		key := envRE.ReplaceAllString(match, "$1")
+		return os.Getenv(key)
+	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"os"
 	"sync"
 	"testing"
 
@@ -222,6 +223,53 @@ func TestConfig(t *testing.T) {
 					})
 				})
 			}))
+
+			Convey("Given filled environment variables", func() {
+				os.Setenv("DEFAULT_TRANSPORT", "test2")
+				os.Setenv("TRANSPORT1_USE", "trans1")
+				os.Setenv("TRANSPORT2_USE", "trans2")
+				os.Setenv("VAL1", "value1")
+				os.Setenv("VAL2", "value2")
+
+				Convey("Given a configuration with placeholder variables", WithParsedConfig("./testdata/with_placeholders.yml", func(cfg *config.Config) {
+					Convey("When I instantiate postdog.Dog and provide the config.TransportFactories", func() {
+						factory1 := mock_config.NewMockTransportFactory(ctrl)
+						mockTransport1 := mock_postdog.NewMockTransport(ctrl)
+						factory1.EXPECT().
+							Transport(gomock.Any(), map[string]interface{}{
+								"key1": "value1",
+								"key2": "value2",
+							}).
+							Return(mockTransport1, nil)
+
+						factory2 := mock_config.NewMockTransportFactory(ctrl)
+						mockTransport2 := mock_postdog.NewMockTransport(ctrl)
+						factory2.EXPECT().
+							Transport(gomock.Any(), map[string]interface{}{
+								"key3": map[string]interface{}{
+									"key3.1": "",
+								},
+							}).
+							Return(mockTransport2, nil)
+
+						dog, err := cfg.Dog(
+							context.Background(),
+							config.WithTransportFactory("trans1", factory1),
+							config.WithTransportFactory("trans2", factory2),
+						)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("dog should use the specified default transport", func() {
+							tr, err := dog.Transport("")
+							So(err, ShouldBeNil)
+							So(tr, ShouldEqual, mockTransport2)
+						})
+					})
+				}))
+			})
 		})
 	})
 }
