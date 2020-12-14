@@ -37,6 +37,7 @@ func TestStore(t *testing.T) {
 		count := atomic.AddInt32(&counter, 1)
 
 		s, err := mongostore.NewStore(
+			context.Background(),
 			client,
 			mongostore.Database(fmt.Sprintf("postdog_%d", count)),
 			mongostore.Collection(fmt.Sprintf("mails_%d", count)),
