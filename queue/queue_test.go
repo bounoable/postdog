@@ -44,7 +44,7 @@ func TestQueue(t *testing.T) {
 					})
 
 					Convey("The job should know the dispatch time", func() {
-						So(job.DispatchedAt().UnixNano(), ShouldAlmostEqual, time.Now().UnixNano(), time.Millisecond)
+						So(job.DispatchedAt().UnixNano(), ShouldAlmostEqual, time.Now().UnixNano(), 5*time.Millisecond)
 					})
 
 					Convey("job.Err() should return nil", func() {
