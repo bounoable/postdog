@@ -21,11 +21,12 @@ import (
 
 // Store is the mongo store.
 type Store struct {
-	client         *mongo.Client
-	databaseName   string
-	collectionName string
-	wantIndexes    bool
-	col            *mongo.Collection
+	client                   *mongo.Client
+	databaseName             string
+	collectionName           string
+	wantIndexes              bool
+	withoutAttachmentContent bool
+	col                      *mongo.Collection
 }
 
 // Option is a Store option.
@@ -69,7 +70,7 @@ type cursor struct {
 
 // NewStore returns a mongo store. It returns an error if either client is nil
 // or CreateIndexes() is used and index creation fails.
-func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
+func NewStore(ctx context.Context, client *mongo.Client, opts ...Option) (*Store, error) {
 	if client == nil {
 		return nil, errors.New("client must not be nil")
 	}
@@ -79,7 +80,7 @@ func NewStore(client *mongo.Client, opts ...Option) (*Store, error) {
 	}
 	s.col = s.client.Database(s.databaseName).Collection(s.collectionName)
 	if s.wantIndexes {
-		if err := s.createIndexes(); err != nil {
+		if err := s.createIndexes(ctx); err != nil {
 			return nil, fmt.Errorf("create indexes: %w", err)
 		}
 	}
@@ -107,14 +108,26 @@ func CreateIndexes(ci bool) Option {
 	}
 }
 
+// WithoutAttachmentContent returns an Option that empties the attachment
+// contents of mails before they are stored in the database.
+func WithoutAttachmentContent(ac bool) Option {
+	return func(s *Store) {
+		s.withoutAttachmentContent = ac
+	}
+}
+
 // Insert stores m into the database. If there's already a stored mail with the
 // same ID as m, m will override the previously stored mail.
 func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 	attachments := make([]attachment, len(m.Attachments()))
 	for i, at := range m.Attachments() {
+		content := []byte{}
+		if !s.withoutAttachmentContent {
+			content = at.Content()
+		}
 		attachments[i] = attachment{
 			Filename:    at.Filename(),
-			Content:     at.Content(),
+			Content:     content,
 			Size:        at.Size(),
 			ContentType: at.ContentType(),
 			Header:      at.Header(),
@@ -173,9 +186,12 @@ func (s *Store) Remove(ctx context.Context, m archive.Mail) error {
 	return nil
 }
 
-func (s *Store) createIndexes() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+func (s *Store) createIndexes(ctx context.Context) error {
+	if ctx == nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+	}
 	_, err := index.CreateFromConfig(ctx, s.col.Database(), index.Config{
 		s.collectionName: []mongo.IndexModel{
 			{Keys: bson.D{{Key: "id", Value: 1}}, Options: options.Index().SetUnique(true)},
@@ -193,6 +209,7 @@ func (s *Store) createIndexes() error {
 			{Keys: bson.D{{Key: "bcc.address", Value: 1}}},
 			{Keys: bson.D{{Key: "attachments.filename", Value: 1}}},
 			{Keys: bson.D{{Key: "attachments.contentType", Value: 1}}},
+			{Keys: bson.D{{Key: "attachments.content", Value: 1}}},
 			{Keys: bson.D{{Key: "attachments.size", Value: 1}}},
 		},
 	})

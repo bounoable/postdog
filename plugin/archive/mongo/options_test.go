@@ -26,3 +26,10 @@ func TestCreateIndexes(t *testing.T) {
 	CreateIndexes(false)(&s)
 	assert.Equal(t, false, s.wantIndexes)
 }
+
+func TestWithoutAttachmentContent(t *testing.T) {
+	var s Store
+	assert.Equal(t, false, s.withoutAttachmentContent)
+	WithoutAttachmentContent(true)(&s)
+	assert.Equal(t, true, s.withoutAttachmentContent)
+}
