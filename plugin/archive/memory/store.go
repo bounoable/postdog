@@ -176,6 +176,14 @@ func containsAnyAddress(addrs []mail.Address, search []mail.Address) bool {
 			if given == want {
 				return true
 			}
+
+			if want.Name == "" && want.Address == given.Address {
+				return true
+			}
+
+			if want.Address == "" && want.Name == given.Name {
+				return true
+			}
 		}
 	}
 	return false

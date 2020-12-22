@@ -222,6 +222,28 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					})
 				})
 
+				Convey("When I query the `Bcc` recipient `BCC Recipient 1 <ccrcpt1@example.com> by email`", func() {
+					cur, err := s.Query(stdctx.Background(), query.New(
+						query.BCC(mail.Address{
+							Address: "bccrcpt1@example.com",
+						}),
+					))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("Cursor should have one element", func() {
+						So(drain(cur), ShouldHaveLength, 1)
+					})
+
+					Convey("Cursor should return the correct mail", func() {
+						mails := drain(cur)
+						mail := mails[0]
+						So(mail, ShouldResemble, mockMails[0])
+					})
+				})
+
 				Convey("When I query the RFC body of a mail", func() {
 					cur, err := s.Query(stdctx.Background(), query.New(
 						query.RFC(`To: "Recipient 2" <rcpt2@example.com>`),
