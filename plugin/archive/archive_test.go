@@ -117,7 +117,7 @@ func TestNew(t *testing.T) {
 								a,
 							)
 
-							Convey("When I Send a Mail", func() {
+							Convey("When I send a Mail", func() {
 								err := dog.Send(context.Background(), mockLetter)
 
 								Convey("It shouldn't fail", func() {
@@ -131,6 +131,29 @@ func TestNew(t *testing.T) {
 							})
 						})
 					}))
+				})
+			}))
+
+			Convey("Given that the Store takes 3 seconds to insert a mail", WithDelayedStoreInserts(s, 3*time.Second, func(<-chan postdog.Mail) {
+				Convey("Given an archive with an InsertTimeout of 1 second", func() {
+					logger := make(loggerChan, 1)
+					a := archive.New(s, archive.InsertTimeout(time.Second), archive.WithLogger(logger))
+
+					Convey("When I send a Mail", func() {
+						tr := newMockTransport(ctrl)
+						tr.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+
+						dog := postdog.New(postdog.WithTransport("test", tr), a)
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("Insert should fail with context.DeadlineExceeded", func() {
+							So(<-logger, ShouldContainSubstring, context.DeadlineExceeded.Error())
+						})
+					})
 				})
 			}))
 		})
@@ -161,6 +184,25 @@ func WithFailingStoreInsert(s *mock_archive.MockStore, fn func()) func() {
 			Insert(gomock.Any(), gomock.Any()).
 			Return(mockInsertError)
 		fn()
+	}
+}
+
+func WithDelayedStoreInserts(s *mock_archive.MockStore, d time.Duration, fn func(<-chan postdog.Mail)) func() {
+	return func() {
+		ch := make(chan postdog.Mail, 1)
+		s.EXPECT().
+			Insert(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, pm postdog.Mail) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(d):
+					ch <- pm
+					return nil
+				}
+			}).
+			AnyTimes()
+		fn(ch)
 	}
 }
 

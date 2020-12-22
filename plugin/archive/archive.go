@@ -3,9 +3,11 @@ package archive
 //go:generate mockgen -source=archive.go -destination=./mocks/archive.go
 
 import (
+	"context"
 	stdctx "context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/plugin/archive/query"
@@ -62,7 +64,8 @@ type Printer interface {
 type Option func(*config)
 
 type config struct {
-	logger Printer
+	logger        Printer
+	insertTimeout time.Duration
 }
 
 // New creates the archive plugin.
@@ -91,6 +94,14 @@ func New(s Store, opts ...Option) postdog.Plugin {
 				WithSendError(errMsg).
 				WithSendTime(sentAt)
 
+			var cancel context.CancelFunc
+			if cfg.insertTimeout == 0 {
+				ctx, cancel = context.WithCancel(context.Background())
+			} else {
+				ctx, cancel = context.WithTimeout(context.Background(), cfg.insertTimeout)
+			}
+			defer cancel()
+
 			if err := s.Insert(ctx, m); err != nil {
 				cfg.logInsertError(err)
 			}
@@ -102,6 +113,13 @@ func New(s Store, opts ...Option) postdog.Plugin {
 func WithLogger(l Printer) Option {
 	return func(cfg *config) {
 		cfg.logger = l
+	}
+}
+
+// InsertTimeout returns an Option that sets the timeout for inserts.
+func InsertTimeout(d time.Duration) Option {
+	return func(cfg *config) {
+		cfg.insertTimeout = d
 	}
 }
 
