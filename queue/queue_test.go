@@ -343,6 +343,7 @@ func TestQueue(t *testing.T) {
 					job, err := q.Dispatch(context.Background(), mockLetter, dispatch.SendOptions(opts...))
 
 					Convey("It shouldn't fail", func() {
+						<-usedConfig
 						So(err, ShouldBeNil)
 					})
 
@@ -351,6 +352,7 @@ func TestQueue(t *testing.T) {
 					})
 
 					Convey("job.Config() should return the dispatch config", func() {
+						<-usedConfig
 						So(job.Config(), ShouldResemble, dispatch.Configure(dispatch.SendOptions(opts...)))
 					})
 				})

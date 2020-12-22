@@ -241,6 +241,7 @@ func TestPostdog(t *testing.T) {
 						err := dog.Send(context.Background(), mockLetter)
 
 						Convey("It shouldn't fail", func() {
+							<-receivedContext
 							So(err, ShouldBeNil)
 						})
 
