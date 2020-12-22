@@ -73,7 +73,7 @@ func (m *MockMiddleware) EXPECT() *MockMiddlewareMockRecorder {
 }
 
 // Handle mocks base method
-func (m *MockMiddleware) Handle(arg0 context.Context, arg1 postdog.Mail, arg2 func(context.Context, postdog.Mail) (postdog.Mail, error)) (postdog.Mail, error) {
+func (m *MockMiddleware) Handle(arg0 context.Context, arg1 postdog.Mail, arg2 postdog.NextMiddleware) (postdog.Mail, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Handle", arg0, arg1, arg2)
 	ret0, _ := ret[0].(postdog.Mail)

@@ -48,11 +48,14 @@ type Transport interface {
 
 // Middleware is called on every Send(), allowing manipulation of mails before they are passed to the Transport.
 type Middleware interface {
-	Handle(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
+	Handle(context.Context, Mail, NextMiddleware) (Mail, error)
 }
 
+// NextMiddleware wraps the next function that Middlewares receive as the last parameter.
+type NextMiddleware func(context.Context, Mail) (Mail, error)
+
 // A MiddlewareFunc allows functions to be used as Middleware.
-type MiddlewareFunc func(context.Context, Mail, func(context.Context, Mail) (Mail, error)) (Mail, error)
+type MiddlewareFunc func(context.Context, Mail, NextMiddleware) (Mail, error)
 
 // Option is a *Dog option.
 type Option interface {
@@ -136,7 +139,7 @@ func WithRateLimiter(rl Waiter) OptionFunc {
 	return WithMiddlewareFunc(func(
 		ctx context.Context,
 		m Mail,
-		next func(context.Context, Mail) (Mail, error),
+		next NextMiddleware,
 	) (Mail, error) {
 		if err := rl.Wait(ctx); err != nil {
 			return m, fmt.Errorf("rate limiter: %w", err)
@@ -202,7 +205,7 @@ func (dog *Dog) SendConfig(ctx context.Context, m Mail, cfg send.Config) error {
 		return err
 	}
 
-	if m, err = dog.applyMiddleware(ctx, m); err != nil {
+	if ctx, m, err = dog.applyMiddleware(ctx, m); err != nil {
 		return fmt.Errorf("middleware: %w", err)
 	}
 
@@ -219,19 +222,27 @@ func (dog *Dog) SendConfig(ctx context.Context, m Mail, cfg send.Config) error {
 	return nil
 }
 
-func (dog *Dog) applyMiddleware(ctx context.Context, m Mail) (Mail, error) {
+func (dog *Dog) applyMiddleware(ctx context.Context, m Mail) (context.Context, Mail, error) {
 	if len(dog.middlewares) == 0 {
-		return m, nil
+		return ctx, m, nil
 	}
-	return dog.middlewares[0].Handle(ctx, m, dog.nextFunc(0))
+
+	rctx := ctx
+	pipeline := append(dog.middlewares, MiddlewareFunc(func(ctx context.Context, m Mail, next NextMiddleware) (Mail, error) {
+		rctx = ctx
+		return next(ctx, m)
+	}))
+
+	m, err := dog.middlewares[0].Handle(ctx, m, dog.nextFunc(0, pipeline))
+	return rctx, m, err
 }
 
-func (dog *Dog) nextFunc(i int) func(context.Context, Mail) (Mail, error) {
+func (dog *Dog) nextFunc(i int, pipeline []Middleware) NextMiddleware {
 	return func(ctx context.Context, let Mail) (Mail, error) {
-		if i >= len(dog.middlewares)-1 {
+		if i >= len(pipeline)-1 {
 			return let, nil
 		}
-		return dog.middlewares[i+1].Handle(ctx, let, dog.nextFunc(i+1))
+		return pipeline[i+1].Handle(ctx, let, dog.nextFunc(i+1, pipeline))
 	}
 }
 
@@ -281,7 +292,7 @@ func (dog *Dog) configureTransport(name string, tr Transport) {
 }
 
 // Handle calls mw() with the given arguments.
-func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn func(context.Context, Mail) (Mail, error)) (Mail, error) {
+func (mw MiddlewareFunc) Handle(ctx context.Context, m Mail, fn NextMiddleware) (Mail, error) {
 	return mw(ctx, m, fn)
 }
 

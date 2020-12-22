@@ -1,6 +1,7 @@
 package postdog_test
 
 import (
+	"context"
 	stdctx "context"
 	"errors"
 	"sync"
@@ -203,6 +204,50 @@ func TestPostdog(t *testing.T) {
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)
+					})
+				})
+			})
+
+			Convey("Given a Middleware that modifies the context", func() {
+				type ctxKey string
+
+				mw := mock_postdog.NewMockMiddleware(ctrl)
+				mw.EXPECT().
+					Handle(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, m postdog.Mail, next postdog.NextMiddleware) (postdog.Mail, error) {
+						ctx = context.WithValue(ctx, ctxKey("foo"), "bar")
+						return next(ctx, m)
+					})
+
+				Convey("Given an AfterSend Hook that needs the modified context", func() {
+					receivedContext := make(chan context.Context)
+					lis := mock_postdog.NewMockListener(ctrl)
+					lis.EXPECT().
+						Handle(gomock.Any(), postdog.AfterSend, gomock.Any()).
+						DoAndReturn(func(ctx context.Context, _ postdog.Hook, _ postdog.Mail) {
+							receivedContext <- ctx
+						})
+
+					Convey("When I send a Mail", func() {
+						tr := newMockTransport(ctrl)
+						tr.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil)
+
+						dog := postdog.New(
+							postdog.WithTransport("test", tr),
+							postdog.WithMiddleware(mw),
+							postdog.WithHook(postdog.AfterSend, lis),
+						)
+
+						err := dog.Send(context.Background(), mockLetter)
+
+						Convey("It shouldn't fail", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("The context should contain the value from the Middleware", func() {
+							ctx := <-receivedContext
+							So(ctx.Value(ctxKey("foo")), ShouldEqual, "bar")
+						})
 					})
 				})
 			})
