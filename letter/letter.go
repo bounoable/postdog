@@ -470,7 +470,7 @@ func (l Letter) String() string {
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment contents in the map.
 func (l Letter) Map(opts ...MapOption) map[string]interface{} {
-	attachments := make([]map[string]interface{}, len(l.attachments))
+	attachments := make([]interface{}, len(l.attachments))
 	for i, at := range l.attachments {
 		attachments[i] = at.Map(opts...)
 	}
@@ -496,24 +496,24 @@ func (l *Letter) Parse(m map[string]interface{}) {
 		l.from = parseAddress(from)
 	}
 
-	if recipients, ok := m["recipients"].([]map[string]interface{}); ok {
-		l.recipients = parseAddresses(recipients...)
+	if recipients, ok := m["recipients"].([]interface{}); ok {
+		l.recipients = parseIFaceAddresses(recipients...)
 	}
 
-	if to, ok := m["to"].([]map[string]interface{}); ok {
-		l.to = parseAddresses(to...)
+	if to, ok := m["to"].([]interface{}); ok {
+		l.to = parseIFaceAddresses(to...)
 	}
 
-	if cc, ok := m["cc"].([]map[string]interface{}); ok {
-		l.cc = parseAddresses(cc...)
+	if cc, ok := m["cc"].([]interface{}); ok {
+		l.cc = parseIFaceAddresses(cc...)
 	}
 
-	if bcc, ok := m["bcc"].([]map[string]interface{}); ok {
-		l.bcc = parseAddresses(bcc...)
+	if bcc, ok := m["bcc"].([]interface{}); ok {
+		l.bcc = parseIFaceAddresses(bcc...)
 	}
 
-	if replyTo, ok := m["replyTo"].([]map[string]interface{}); ok {
-		l.replyTo = parseAddresses(replyTo...)
+	if replyTo, ok := m["replyTo"].([]interface{}); ok {
+		l.replyTo = parseIFaceAddresses(replyTo...)
 	}
 
 	if subject, ok := m["subject"].(string); ok {
@@ -532,10 +532,14 @@ func (l *Letter) Parse(m map[string]interface{}) {
 		l.rfc = rfc
 	}
 
-	if attachments, ok := m["attachments"].([]map[string]interface{}); ok {
-		ats := make([]Attachment, len(attachments))
-		for i := range attachments {
-			ats[i].Parse(attachments[i])
+	if attachments, ok := m["attachments"].([]interface{}); ok {
+		ats := make([]Attachment, 0, len(attachments))
+		for _, v := range attachments {
+			if m, ok := v.(map[string]interface{}); ok {
+				var at Attachment
+				at.Parse(m)
+				ats = append(ats, at)
+			}
 		}
 		l.attachments = ats
 	}
@@ -761,8 +765,8 @@ func mapAddress(addr mail.Address) map[string]interface{} {
 	}
 }
 
-func mapAddresses(addrs ...mail.Address) []map[string]interface{} {
-	res := make([]map[string]interface{}, len(addrs))
+func mapAddresses(addrs ...mail.Address) []interface{} {
+	res := make([]interface{}, len(addrs))
 	for i, addr := range addrs {
 		res[i] = mapAddress(addr)
 	}
@@ -784,4 +788,14 @@ func parseAddresses(maps ...map[string]interface{}) []mail.Address {
 		res[i] = parseAddress(m)
 	}
 	return res
+}
+
+func parseIFaceAddresses(ifs ...interface{}) []mail.Address {
+	addrs := make([]mail.Address, 0, len(ifs))
+	for _, iface := range ifs {
+		if m, ok := iface.(map[string]interface{}); ok {
+			addrs = append(addrs, parseAddress(m))
+		}
+	}
+	return addrs
 }

@@ -164,40 +164,40 @@ func TestLetter_Map(t *testing.T) {
 						"name":    "Bob Belcher",
 						"address": "bob@example.com",
 					},
-					"recipients": []map[string]interface{}{
-						{
+					"recipients": []interface{}{
+						map[string]interface{}{
 							"name":    "Linda Belcher",
 							"address": "linda@example.com",
 						},
-						{
+						map[string]interface{}{
 							"name":    "Tina Belcher",
 							"address": "tina@example.com",
 						},
-						{
+						map[string]interface{}{
 							"name":    "Gene Belcher",
 							"address": "gene@example.com",
 						},
 					},
-					"to": []map[string]interface{}{
-						{
+					"to": []interface{}{
+						map[string]interface{}{
 							"name":    "Linda Belcher",
 							"address": "linda@example.com",
 						},
 					},
-					"cc": []map[string]interface{}{
-						{
+					"cc": []interface{}{
+						map[string]interface{}{
 							"name":    "Tina Belcher",
 							"address": "tina@example.com",
 						},
 					},
-					"bcc": []map[string]interface{}{
-						{
+					"bcc": []interface{}{
+						map[string]interface{}{
 							"name":    "Gene Belcher",
 							"address": "gene@example.com",
 						},
 					},
-					"replyTo": []map[string]interface{}{
-						{
+					"replyTo": []interface{}{
+						map[string]interface{}{
 							"name":    "Louise Belcher",
 							"address": "louise@example.com",
 						},
@@ -205,8 +205,8 @@ func TestLetter_Map(t *testing.T) {
 					"subject": "Hi.",
 					"text":    "Hello.",
 					"html":    "<p>Hello.</p>",
-					"attachments": []map[string]interface{}{
-						{
+					"attachments": []interface{}{
+						map[string]interface{}{
 							"filename":    "at1",
 							"content":     []byte{1, 2, 3},
 							"size":        3,
@@ -241,40 +241,40 @@ func TestLetter_Map(t *testing.T) {
 						"name":    "Bob Belcher",
 						"address": "bob@example.com",
 					},
-					"recipients": []map[string]interface{}{
-						{
+					"recipients": []interface{}{
+						map[string]interface{}{
 							"name":    "Linda Belcher",
 							"address": "linda@example.com",
 						},
-						{
+						map[string]interface{}{
 							"name":    "Tina Belcher",
 							"address": "tina@example.com",
 						},
-						{
+						map[string]interface{}{
 							"name":    "Gene Belcher",
 							"address": "gene@example.com",
 						},
 					},
-					"to": []map[string]interface{}{
-						{
+					"to": []interface{}{
+						map[string]interface{}{
 							"name":    "Linda Belcher",
 							"address": "linda@example.com",
 						},
 					},
-					"cc": []map[string]interface{}{
-						{
+					"cc": []interface{}{
+						map[string]interface{}{
 							"name":    "Tina Belcher",
 							"address": "tina@example.com",
 						},
 					},
-					"bcc": []map[string]interface{}{
-						{
+					"bcc": []interface{}{
+						map[string]interface{}{
 							"name":    "Gene Belcher",
 							"address": "gene@example.com",
 						},
 					},
-					"replyTo": []map[string]interface{}{
-						{
+					"replyTo": []interface{}{
+						map[string]interface{}{
 							"name":    "Louise Belcher",
 							"address": "louise@example.com",
 						},
@@ -282,8 +282,8 @@ func TestLetter_Map(t *testing.T) {
 					"subject": "Hi.",
 					"text":    "Hello.",
 					"html":    "<p>Hello.</p>",
-					"attachments": []map[string]interface{}{
-						{
+					"attachments": []interface{}{
+						map[string]interface{}{
 							"filename":    "at1",
 							"content":     []byte{},
 							"size":        3,
@@ -318,40 +318,40 @@ func TestLetter_Parse(t *testing.T) {
 					"name":    "Bob Belcher",
 					"address": "bob@example.com",
 				},
-				"recipients": []map[string]interface{}{
-					{
+				"recipients": []interface{}{
+					map[string]interface{}{
 						"name":    "Linda Belcher",
 						"address": "linda@example.com",
 					},
-					{
+					map[string]interface{}{
 						"name":    "Tina Belcher",
 						"address": "tina@example.com",
 					},
-					{
+					map[string]interface{}{
 						"name":    "Gene Belcher",
 						"address": "gene@example.com",
 					},
 				},
-				"to": []map[string]interface{}{
-					{
+				"to": []interface{}{
+					map[string]interface{}{
 						"name":    "Linda Belcher",
 						"address": "linda@example.com",
 					},
 				},
-				"cc": []map[string]interface{}{
-					{
+				"cc": []interface{}{
+					map[string]interface{}{
 						"name":    "Tina Belcher",
 						"address": "tina@example.com",
 					},
 				},
-				"bcc": []map[string]interface{}{
-					{
+				"bcc": []interface{}{
+					map[string]interface{}{
 						"name":    "Gene Belcher",
 						"address": "gene@example.com",
 					},
 				},
-				"replyTo": []map[string]interface{}{
-					{
+				"replyTo": []interface{}{
+					map[string]interface{}{
 						"name":    "Louise Belcher",
 						"address": "louise@example.com",
 					},
@@ -359,8 +359,8 @@ func TestLetter_Parse(t *testing.T) {
 				"subject": "Hi.",
 				"text":    "Hello.",
 				"html":    "<p>Hello.</p>",
-				"attachments": []map[string]interface{}{
-					{
+				"attachments": []interface{}{
+					map[string]interface{}{
 						"filename":    "at1",
 						"content":     []byte{1, 2, 3},
 						"size":        3,
