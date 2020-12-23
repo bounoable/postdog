@@ -532,7 +532,7 @@ func (l *Letter) Parse(m map[string]interface{}) {
 		l.rfc = rfc
 	}
 
-	if attachments, ok := m["attachments"].([]interface{}); ok {
+	if attachments, ok := m["attachments"].([]interface{}); ok && len(attachments) > 0 {
 		ats := make([]Attachment, 0, len(attachments))
 		for _, v := range attachments {
 			if m, ok := v.(map[string]interface{}); ok {
