@@ -5,6 +5,8 @@ go 1.15
 require (
 	cloud.google.com/go v0.73.0 // indirect
 	github.com/bounoable/mongoutil v0.3.3
+	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
+	github.com/emersion/go-smtp v0.14.0
 	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.1.2
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect

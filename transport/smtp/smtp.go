@@ -3,11 +3,13 @@ package smtp
 //go:generate mockgen -source=smtp.go -destination=./mocks/smtp.go
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"net/smtp"
 
 	"github.com/bounoable/postdog"
+	"github.com/emersion/go-sasl"
+	"github.com/emersion/go-smtp"
 )
 
 // Transport returns an SMTP transport.
@@ -24,13 +26,13 @@ func TransportWithSender(sender MailSender, host string, port int, username, pas
 		username: username,
 		password: password,
 		addr:     fmt.Sprintf("%s:%d", host, port),
-		auth:     smtp.PlainAuth("", username, password, host),
+		auth:     sasl.NewPlainClient("", username, password),
 	}
 }
 
 // MailSender wraps the smtp.SendMail() function in an interface.
 type MailSender interface {
-	SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+	SendMail(addr string, a sasl.Client, from string, to []string, msg []byte) error
 }
 
 type transport struct {
@@ -41,7 +43,7 @@ type transport struct {
 	password string
 
 	addr string
-	auth smtp.Auth
+	auth sasl.Client
 }
 
 func (tr *transport) Send(_ context.Context, m postdog.Mail) error {
@@ -54,6 +56,6 @@ func (tr *transport) Send(_ context.Context, m postdog.Mail) error {
 
 type smtpSender struct{}
 
-func (s smtpSender) SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-	return smtp.SendMail(addr, a, from, to, msg)
+func (s smtpSender) SendMail(addr string, a sasl.Client, from string, to []string, msg []byte) error {
+	return smtp.SendMail(addr, a, from, to, bytes.NewReader(msg))
 }

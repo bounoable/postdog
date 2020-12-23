@@ -5,8 +5,8 @@
 package mock_smtp
 
 import (
+	sasl "github.com/emersion/go-sasl"
 	gomock "github.com/golang/mock/gomock"
-	smtp "net/smtp"
 	reflect "reflect"
 )
 
@@ -34,7 +34,7 @@ func (m *MockMailSender) EXPECT() *MockMailSenderMockRecorder {
 }
 
 // SendMail mocks base method
-func (m *MockMailSender) SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+func (m *MockMailSender) SendMail(addr string, a sasl.Client, from string, to []string, msg []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMail", addr, a, from, to, msg)
 	ret0, _ := ret[0].(error)
