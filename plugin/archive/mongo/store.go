@@ -349,52 +349,47 @@ func newFilter(q query.Query) bson.D {
 	filter := bson.D{}
 
 	if len(q.Subjects) > 0 {
-		filter = withFilter(filter, []string{"subject"}, regexInFilter(q.Subjects))
+		filter = withFilter(filter, []string{"subject"}, regexInValues(q.Subjects))
 	}
 
 	if len(q.Texts) > 0 {
-		filter = withFilter(filter, []string{"text"}, regexInFilter(q.Texts))
+		filter = withFilter(filter, []string{"text"}, regexInValues(q.Texts))
 	}
 
 	if len(q.HTML) > 0 {
-		filter = withFilter(filter, []string{"html"}, regexInFilter(q.HTML))
+		filter = withFilter(filter, []string{"html"}, regexInValues(q.HTML))
 	}
 
 	if len(q.RFC) > 0 {
-		filter = withFilter(filter, []string{"rfc"}, regexInFilter(q.RFC))
+		filter = withFilter(filter, []string{"rfc"}, regexInValues(q.RFC))
 	}
 
 	if len(q.From) > 0 {
-		filter = withFilter(filter, []string{"from.name"}, regexInFilter(addressNames(q.From...)))
-		filter = withFilter(filter, []string{"from.address"}, regexInFilter(addresses(q.From...)))
+		filter = withAddressesFilter(filter, "from", q.From...)
 	}
 
 	if len(q.Recipients) > 0 {
-		filter = withFilter(filter, []string{"recipients.name"}, regexInFilter(addressNames(q.Recipients...)))
-		filter = withFilter(filter, []string{"recipients.address"}, regexInFilter(addresses(q.Recipients...)))
+		filter = withAddressesFilter(filter, "recipients", q.Recipients...)
 	}
 
 	if len(q.To) > 0 {
-		filter = withFilter(filter, []string{"to.name"}, regexInFilter(addressNames(q.To...)))
-		filter = withFilter(filter, []string{"to.address"}, regexInFilter(addresses(q.To...)))
+		filter = withAddressesFilter(filter, "to", q.To...)
 	}
 
 	if len(q.CC) > 0 {
-		filter = withFilter(filter, []string{"cc.name"}, regexInFilter(addressNames(q.CC...)))
-		filter = withFilter(filter, []string{"cc.address"}, regexInFilter(addresses(q.CC...)))
+		filter = withAddressesFilter(filter, "cc", q.CC...)
 	}
 
 	if len(q.BCC) > 0 {
-		filter = withFilter(filter, []string{"bcc.name"}, regexInFilter(addressNames(q.BCC...)))
-		filter = withFilter(filter, []string{"bcc.address"}, regexInFilter(addresses(q.BCC...)))
+		filter = withAddressesFilter(filter, "bcc", q.BCC...)
 	}
 
 	if len(q.Attachment.Filenames) > 0 {
-		filter = withFilter(filter, []string{"attachments.filename"}, regexInFilter(q.Attachment.Filenames))
+		filter = withFilter(filter, []string{"attachments.filename"}, regexInValues(q.Attachment.Filenames))
 	}
 
 	if len(q.Attachment.ContentTypes) > 0 {
-		filter = withFilter(filter, []string{"attachments.contentType"}, regexInFilter(q.Attachment.ContentTypes))
+		filter = withFilter(filter, []string{"attachments.contentType"}, regexInValues(q.Attachment.ContentTypes))
 	}
 
 	if len(q.Attachment.Size.Exact) > 0 {
@@ -447,7 +442,7 @@ func newFilter(q query.Query) bson.D {
 	}
 
 	if len(q.SendErrors) > 0 {
-		filter = append(filter, bson.E{Key: "sendError", Value: regexInFilter(q.SendErrors)})
+		filter = append(filter, bson.E{Key: "sendError", Value: regexInValues(q.SendErrors)})
 	}
 
 	return filter
@@ -469,7 +464,33 @@ func withFilter(filter bson.D, keys []string, vals interface{}) bson.D {
 	return append(filter, bson.E{Key: "$or", Value: or})
 }
 
-func regexInFilter(texts []string) bson.D {
+func withAddressesFilter(filter bson.D, field string, addrs ...mail.Address) bson.D {
+	names := regexInValues(addressNames(addrs...))
+	addresses := regexInValues(addresses(addrs...))
+
+	if len(names) == 0 && len(addresses) == 0 {
+		return filter
+	}
+
+	if len(names) == 0 {
+		return append(filter, bson.E{Key: "$or", Value: []bson.D{
+			{{Key: field + ".address", Value: addresses}},
+		}})
+	}
+
+	if len(addresses) == 0 {
+		return append(filter, bson.E{Key: "$or", Value: []bson.D{
+			{{Key: field + ".name", Value: names}},
+		}})
+	}
+
+	return append(filter, bson.E{Key: "$or", Value: []bson.D{
+		{{Key: field + ".name", Value: names}},
+		{{Key: field + ".address", Value: addresses}},
+	}})
+}
+
+func regexInValues(texts []string) bson.D {
 	exprs := make([]primitive.Regex, len(texts))
 	for i, text := range texts {
 		exprs[i] = primitive.Regex{
@@ -486,7 +507,9 @@ func regexInFilter(texts []string) bson.D {
 func addressNames(addrs ...mail.Address) []string {
 	names := make([]string, 0, len(addrs))
 	for _, addr := range addrs {
-		names = append(names, addr.Name)
+		if addr.Name != "" {
+			names = append(names, addr.Name)
+		}
 	}
 	return names
 }
@@ -494,7 +517,9 @@ func addressNames(addrs ...mail.Address) []string {
 func addresses(addrs ...mail.Address) []string {
 	mails := make([]string, 0, len(addrs))
 	for _, addr := range addrs {
-		mails = append(mails, addr.Address)
+		if addr.Address != "" {
+			mails = append(mails, addr.Address)
+		}
 	}
 	return mails
 }

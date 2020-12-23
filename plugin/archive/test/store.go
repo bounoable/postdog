@@ -153,6 +153,26 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					})
 				})
 
+				Convey("When I query the recipient `Recipient 2 <rcpt2@example.com>` only by address", func() {
+					cur, err := s.Query(stdctx.Background(), query.New(
+						query.Recipient(mail.Address{Address: "rcpt2@example.com"}),
+					))
+
+					Convey("It shouldn't fail", func() {
+						So(err, ShouldBeNil)
+					})
+
+					Convey("Cursor should have one element", func() {
+						So(drain(cur), ShouldHaveLength, 1)
+					})
+
+					Convey("Cursor should return the correct mail", func() {
+						mails := drain(cur)
+						mail := mails[0]
+						So(mail, ShouldResemble, mockMails[1])
+					})
+				})
+
 				Convey("When I query the `To` recipient `Recipient 2 <rcpt2@example.com>`", func() {
 					cur, err := s.Query(stdctx.Background(), query.New(
 						query.To(mail.Address{
