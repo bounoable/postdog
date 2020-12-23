@@ -496,39 +496,39 @@ func (l *Letter) Parse(m map[string]interface{}) {
 		l.from = parseAddress(from)
 	}
 
-	if recipients, ok := m["recipients"].([]interface{}); ok {
+	if recipients, ok := m["recipients"].([]interface{}); ok && len(recipients) > 0 {
 		l.recipients = parseIFaceAddresses(recipients...)
 	}
 
-	if to, ok := m["to"].([]interface{}); ok {
+	if to, ok := m["to"].([]interface{}); ok && len(to) > 0 {
 		l.to = parseIFaceAddresses(to...)
 	}
 
-	if cc, ok := m["cc"].([]interface{}); ok {
+	if cc, ok := m["cc"].([]interface{}); ok && len(cc) > 0 {
 		l.cc = parseIFaceAddresses(cc...)
 	}
 
-	if bcc, ok := m["bcc"].([]interface{}); ok {
+	if bcc, ok := m["bcc"].([]interface{}); ok && len(bcc) > 0 {
 		l.bcc = parseIFaceAddresses(bcc...)
 	}
 
-	if replyTo, ok := m["replyTo"].([]interface{}); ok {
+	if replyTo, ok := m["replyTo"].([]interface{}); ok && len(replyTo) > 0 {
 		l.replyTo = parseIFaceAddresses(replyTo...)
 	}
 
-	if subject, ok := m["subject"].(string); ok {
+	if subject, ok := m["subject"].(string); ok && len(subject) > 0 {
 		l.subject = subject
 	}
 
-	if text, ok := m["text"].(string); ok {
+	if text, ok := m["text"].(string); ok && len(text) > 0 {
 		l.text = text
 	}
 
-	if html, ok := m["html"].(string); ok {
+	if html, ok := m["html"].(string); ok && len(html) > 0 {
 		l.html = html
 	}
 
-	if rfc, ok := m["rfc"].(string); ok {
+	if rfc, ok := m["rfc"].(string); ok && len(rfc) > 0 {
 		l.rfc = rfc
 	}
 
