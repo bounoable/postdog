@@ -146,12 +146,12 @@ func TestMail_Parse(t *testing.T) {
 			"name":    "Bob Belcher",
 			"address": "bob@example.com",
 		},
-		"recipients": []map[string]interface{}{
-			{
+		"recipients": []interface{}{
+			map[string]interface{}{
 				"name":    "Linda Belcher",
 				"address": "linda@example.com",
 			},
-			{
+			map[string]interface{}{
 				"name":    "Tina Belcher",
 				"address": "tina@example.com",
 			},
