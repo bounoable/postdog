@@ -235,7 +235,7 @@ func (tr *transport) init(ctx context.Context) error {
 	defer tr.Unlock()
 
 	if tr.tokenSource == nil && tr.newTokenSource != nil {
-		ts, err := tr.newTokenSource(ctx)
+		ts, err := tr.newTokenSource(ctx, tr.scopes...)
 		if err != nil {
 			return fmt.Errorf("new token source: %w", err)
 		}
