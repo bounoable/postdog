@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/bounoable/postdog"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,17 +161,6 @@ func TestExpand(t *testing.T) {
 			},
 		},
 		{
-			name: "mail with default rfc",
-			give: Write(
-				Text("text body"),
-				RFC(Write(Text("text body")).RFC()),
-			),
-			want: Letter{
-				rfc:  "",
-				text: "text body",
-			},
-		},
-		{
 			name: "mail with Attachments() method",
 			give: Write(
 				AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
@@ -198,7 +188,7 @@ func (m basicMail) Recipients() []mail.Address {
 	return m.recipients
 }
 
-func (m basicMail) RFC() string {
+func (m basicMail) RFC(...rfc.Option) string {
 	return m.body
 }
 

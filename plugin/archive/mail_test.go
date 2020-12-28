@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/expand"
+	"github.com/bounoable/postdog/letter/mapper"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -72,10 +75,14 @@ func TestMail_Map(t *testing.T) {
 	mockSendError := errors.New("send error")
 	mockSendTime := time.Now()
 
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+
 	tests := []struct {
 		name    string
 		give    Mail
-		mapOpts []letter.MapOption
+		mapOpts []mapper.Option
 		want    func(Mail) map[string]interface{}
 	}{
 		{
@@ -90,10 +97,14 @@ func TestMail_Map(t *testing.T) {
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
 				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
-			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			), expand.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))).
+				WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			mapOpts: []mapper.Option{
+				mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)),
+			},
 			want: func(m Mail) map[string]interface{} {
 				return merge(
-					m.Letter.Map(),
+					m.Letter.Map(mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))),
 					map[string]interface{}{
 						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
@@ -114,13 +125,15 @@ func TestMail_Map(t *testing.T) {
 				letter.Text("Hello"),
 				letter.HTML("<p>Hello.</p>"),
 				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
-			)).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
-			mapOpts: []letter.MapOption{
-				letter.WithoutAttachmentContent(),
+			), expand.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))).
+				WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			mapOpts: []mapper.Option{
+				mapper.WithoutAttachmentContent(),
+				mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)),
 			},
 			want: func(m Mail) map[string]interface{} {
 				return merge(
-					m.Letter.Map(letter.WithoutAttachmentContent()),
+					m.Letter.Map(mapper.WithoutAttachmentContent(), mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))),
 					map[string]interface{}{
 						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
@@ -187,11 +200,11 @@ func (m basicMail) Recipients() []mail.Address {
 	return m.recipients
 }
 
-func (m basicMail) RFC() string {
+func (m basicMail) RFC(...rfc.Option) string {
 	return m.rfc
 }
 
-func mapAttachments(ats []letter.Attachment, opts ...letter.MapOption) []map[string]interface{} {
+func mapAttachments(ats []letter.Attachment, opts ...mapper.Option) []map[string]interface{} {
 	mapped := make([]map[string]interface{}, len(ats))
 	for i, at := range ats {
 		mapped[i] = at.Map(opts...)

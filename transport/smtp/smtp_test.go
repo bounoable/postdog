@@ -3,8 +3,10 @@ package smtp_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/transport/smtp"
 	mock_smtp "github.com/bounoable/postdog/transport/smtp/mocks"
 	"github.com/golang/mock/gomock"
@@ -20,6 +22,8 @@ var (
 )
 
 func TestTransport_Send(t *testing.T) {
+	rfcOpts := rfcOpts()
+
 	tests := []struct {
 		name         string
 		letterOpts   []letter.Option
@@ -36,7 +40,7 @@ func TestTransport_Send(t *testing.T) {
 			},
 			assertSender: func(let letter.Letter, s *mock_smtp.MockMailSender) {
 				s.EXPECT().
-					SendMail(addr, gomock.Any(), "bob@example.com", []string{"linda@example.com"}, []byte(let.RFC())).
+					SendMail(addr, gomock.Any(), "bob@example.com", []string{"linda@example.com"}, []byte(let.RFC(rfcOpts...))).
 					Return(nil)
 			},
 		},
@@ -57,7 +61,7 @@ func TestTransport_Send(t *testing.T) {
 						"linda@example.com",
 						"tina@example.com",
 						"gene@example.com",
-					}, []byte(let.RFC())).
+					}, []byte(let.RFC(rfcOpts...))).
 					Return(nil)
 			},
 		},
@@ -76,9 +80,19 @@ func TestTransport_Send(t *testing.T) {
 				test.assertSender(let, s)
 			}
 
-			tr := smtp.TransportWithSender(s, host, port, username, password)
+			tr := smtp.TransportWithSender(s, host, port, username, password, smtp.RFCOptions(rfcOpts...))
 			err = tr.Send(context.Background(), let)
 			assert.Nil(t, err)
 		})
+	}
+}
+
+func rfcOpts() []rfc.Option {
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+	return []rfc.Option{
+		rfc.WithClock(clock),
+		rfc.WithIDGenerator(idgen),
 	}
 }

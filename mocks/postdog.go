@@ -7,6 +7,7 @@ package mock_postdog
 import (
 	context "context"
 	postdog "github.com/bounoable/postdog"
+	rfc "github.com/bounoable/postdog/letter/rfc"
 	gomock "github.com/golang/mock/gomock"
 	mail "net/mail"
 	reflect "reflect"
@@ -174,17 +175,21 @@ func (mr *MockMailMockRecorder) Recipients() *gomock.Call {
 }
 
 // RFC mocks base method
-func (m *MockMail) RFC() string {
+func (m *MockMail) RFC(arg0 ...rfc.Option) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RFC")
+	varargs := []interface{}{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RFC", varargs...)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // RFC indicates an expected call of RFC
-func (mr *MockMailMockRecorder) RFC() *gomock.Call {
+func (mr *MockMailMockRecorder) RFC(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RFC", reflect.TypeOf((*MockMail)(nil).RFC))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RFC", reflect.TypeOf((*MockMail)(nil).RFC), arg0...)
 }
 
 // MockWaiter is a mock of Waiter interface

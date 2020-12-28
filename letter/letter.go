@@ -15,6 +15,8 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/internal/encode"
+	"github.com/bounoable/postdog/letter/expand"
+	"github.com/bounoable/postdog/letter/mapper"
 	"github.com/bounoable/postdog/letter/rfc"
 )
 
@@ -47,13 +49,6 @@ type Option func(*Letter) error
 
 // AttachmentOption configures an attachment.
 type AttachmentOption func(*Attachment)
-
-// MapOption configures a Map() call.
-type MapOption func(*mapConfig)
-
-type mapConfig struct {
-	withoutAttachmentContent bool
-}
 
 // Write a letter with the given opts. Panics if TryWrite() returns an error.
 func Write(opts ...Option) Letter {
@@ -313,13 +308,6 @@ func AttachmentSize(s int) AttachmentOption {
 	}
 }
 
-// WithoutAttachmentContent returns a MapOption that clears the content of one or multiple Attachments.
-func WithoutAttachmentContent() MapOption {
-	return func(cfg *mapConfig) {
-		cfg.withoutAttachmentContent = true
-	}
-}
-
 // Expand converts the postdog.Mail pm to a Letter.
 //
 // Add additional information
@@ -331,52 +319,57 @@ func WithoutAttachmentContent() MapOption {
 // If pm has an Attachments() method, the return type of that method must be
 // a slice of a type that implements the following methods: Filename() string,
 // Content() []byte, ContentType() string, Header() textproto.MIMEHeader.
-func Expand(pm postdog.Mail) Letter {
+func Expand(pm postdog.Mail, opts ...expand.Option) Letter {
 	if l, ok := pm.(Letter); ok {
 		return l
 	}
 
-	opts := []Option{
+	var cfg expand.Config
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	letterOpts := []Option{
 		FromAddress(pm.From()),
 		RecipientAddress(pm.Recipients()...),
-		RFC(pm.RFC()),
+		RFC(pm.RFC(cfg.RFCOptions...)),
 	}
 
 	if toMail, ok := pm.(interface{ To() []mail.Address }); ok {
-		opts = append(opts, ToAddress(toMail.To()...))
+		letterOpts = append(letterOpts, ToAddress(toMail.To()...))
 	}
 
 	if ccMail, ok := pm.(interface{ CC() []mail.Address }); ok {
-		opts = append(opts, CCAddress(ccMail.CC()...))
+		letterOpts = append(letterOpts, CCAddress(ccMail.CC()...))
 	}
 
 	if bccMail, ok := pm.(interface{ BCC() []mail.Address }); ok {
-		opts = append(opts, BCCAddress(bccMail.BCC()...))
+		letterOpts = append(letterOpts, BCCAddress(bccMail.BCC()...))
 	}
 
 	if rtMail, ok := pm.(interface{ ReplyTo() []mail.Address }); ok {
-		opts = append(opts, ReplyToAddress(rtMail.ReplyTo()...))
+		letterOpts = append(letterOpts, ReplyToAddress(rtMail.ReplyTo()...))
 	}
 
 	if sMail, ok := pm.(interface{ Subject() string }); ok {
-		opts = append(opts, Subject(sMail.Subject()))
+		letterOpts = append(letterOpts, Subject(sMail.Subject()))
 	}
 
 	if textMail, ok := pm.(interface{ Text() string }); ok {
-		opts = append(opts, Text(textMail.Text()))
+		letterOpts = append(letterOpts, Text(textMail.Text()))
 	}
 
 	if htmlMail, ok := pm.(interface{ HTML() string }); ok {
-		opts = append(opts, HTML(htmlMail.HTML()))
+		letterOpts = append(letterOpts, HTML(htmlMail.HTML()))
 	}
 
 	if attachments := getAttachments(pm); len(attachments) > 0 {
 		for _, at := range attachments {
-			opts = append(opts, Attach(at.Filename(), at.Content(), AttachmentType(at.ContentType())))
+			letterOpts = append(letterOpts, Attach(at.Filename(), at.Content(), AttachmentType(at.ContentType())))
 		}
 	}
 
-	l := Write(opts...)
+	l := Write(letterOpts...)
 
 	return l
 }
@@ -446,7 +439,7 @@ func (l Letter) Attachments() []Attachment {
 }
 
 // RFC returns the letter as a RFC 5322 string.
-func (l Letter) RFC() string {
+func (l Letter) RFC(opts ...rfc.Option) string {
 	if l.rfc != "" {
 		return l.rfc
 	}
@@ -460,7 +453,7 @@ func (l Letter) RFC() string {
 		Text:        l.Text(),
 		HTML:        l.HTML(),
 		Attachments: rfcAttachments(l.Attachments()),
-	})
+	}, opts...)
 }
 
 func (l Letter) String() string {
@@ -469,7 +462,9 @@ func (l Letter) String() string {
 
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment contents in the map.
-func (l Letter) Map(opts ...MapOption) map[string]interface{} {
+func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
+	cfg := mapper.Configure(opts...)
+
 	attachments := make([]interface{}, len(l.attachments))
 	for i, at := range l.attachments {
 		attachments[i] = at.Map(opts...)
@@ -485,7 +480,7 @@ func (l Letter) Map(opts ...MapOption) map[string]interface{} {
 		"subject":     l.Subject(),
 		"text":        l.Text(),
 		"html":        l.HTML(),
-		"rfc":         l.RFC(),
+		"rfc":         l.RFC(cfg.RFCOptions...),
 		"attachments": attachments,
 	}
 }
@@ -548,7 +543,6 @@ func (l *Letter) Parse(m map[string]interface{}) {
 }
 
 func (l *Letter) normalize() {
-	l.normalizeRFC()
 	l.normalizeRecipients()
 	l.normalizeAttachments()
 }
@@ -574,17 +568,6 @@ L:
 		remaining = nil
 	}
 	l.recipients = remaining
-}
-
-func (l *Letter) normalizeRFC() {
-	if l.rfc == "" {
-		return
-	}
-	copy := *l
-	copy.rfc = ""
-	if copy.RFC() == l.rfc {
-		l.rfc = ""
-	}
 }
 
 func (l *Letter) normalizeAttachments() {
@@ -623,11 +606,8 @@ func (at Attachment) Header() textproto.MIMEHeader {
 
 // Map maps at to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment content in the map.
-func (at Attachment) Map(opts ...MapOption) map[string]interface{} {
-	var cfg mapConfig
-	for _, opt := range opts {
-		opt(&cfg)
-	}
+func (at Attachment) Map(opts ...mapper.Option) map[string]interface{} {
+	cfg := mapper.Configure(opts...)
 
 	m := map[string]interface{}{
 		"filename":    at.filename,
@@ -637,7 +617,7 @@ func (at Attachment) Map(opts ...MapOption) map[string]interface{} {
 		"header":      (map[string][]string)(at.header),
 	}
 
-	if !cfg.withoutAttachmentContent {
+	if !cfg.WithoutAttachmentContent {
 		m["content"] = at.content
 	}
 

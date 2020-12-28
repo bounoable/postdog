@@ -5,6 +5,7 @@ import (
 	"net/textproto"
 	"testing"
 
+	"github.com/bounoable/postdog/letter/mapper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +13,7 @@ func TestAttachment_Map(t *testing.T) {
 	tests := []struct {
 		name string
 		give Attachment
-		opts []MapOption
+		opts []mapper.Option
 		want func(Attachment) map[string]interface{}
 	}{
 		{
@@ -48,8 +49,8 @@ func TestAttachment_Map(t *testing.T) {
 					"header":      (map[string][]string)(at.header),
 				}
 			},
-			opts: []MapOption{
-				WithoutAttachmentContent(),
+			opts: []mapper.Option{
+				mapper.WithoutAttachmentContent(),
 			},
 		},
 	}
@@ -141,7 +142,7 @@ func TestLetter_Map(t *testing.T) {
 	tests := []struct {
 		name       string
 		letterOpts []Option
-		opts       []MapOption
+		opts       []mapper.Option
 		want       func(Letter) map[string]interface{}
 	}{
 		{
@@ -232,8 +233,8 @@ func TestLetter_Map(t *testing.T) {
 				Attach("at1", []byte{1, 2, 3}, AttachmentType("text/plain")),
 				RFC("rfc body"),
 			},
-			opts: []MapOption{
-				WithoutAttachmentContent(),
+			opts: []mapper.Option{
+				mapper.WithoutAttachmentContent(),
 			},
 			want: func(l Letter) map[string]interface{} {
 				return map[string]interface{}{

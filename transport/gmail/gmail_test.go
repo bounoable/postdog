@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/transport/gmail"
 	mock_gmail "github.com/bounoable/postdog/transport/gmail/mocks"
 	"github.com/golang/mock/gomock"
@@ -45,10 +47,12 @@ func TestTransport(t *testing.T) {
 			Convey("Scenario: provide sender directly", func() {
 				sender := mock_gmail.NewMockSender(ctrl)
 
-				// It should call the sender with the correct message
-				expectSend(t, sender)
+				rfcOpts := rfcOpts()
 
-				tr := gmail.Transport(gmail.WithSender(sender))
+				// It should call the sender with the correct message
+				expectSend(t, sender, rfcOpts...)
+
+				tr := gmail.Transport(gmail.WithSender(sender), gmail.WithRFCOptions(rfcOpts...))
 
 				Convey("When I send a mail", func() {
 					err := tr.Send(context.Background(), mockLetter)
@@ -65,14 +69,17 @@ func TestTransport(t *testing.T) {
 
 				sender := mock_gmail.NewMockSender(ctrl)
 
+				rfcOpts := rfcOpts()
+
 				// It should call the sender with the correct message
-				expectSend(t, sender)
+				expectSend(t, sender, rfcOpts...)
 
 				tr := gmail.Transport(
 					gmail.WithTokenSource(ts),
 					gmail.WithSenderFactory(func(_ context.Context, ts oauth2.TokenSource, _ ...option.ClientOption) (gmail.Sender, error) {
 						return sender, nil
 					}),
+					gmail.WithRFCOptions(rfcOpts...),
 				)
 
 				Convey("When I send a mail", func() {
@@ -90,8 +97,10 @@ func TestTransport(t *testing.T) {
 
 				sender := mock_gmail.NewMockSender(ctrl)
 
+				rfcOpts := rfcOpts()
+
 				// It should call the sender with the correct message
-				expectSend(t, sender)
+				expectSend(t, sender, rfcOpts...)
 
 				tr := gmail.Transport(
 					gmail.WithTokenSourceFactory(func(context.Context, ...string) (oauth2.TokenSource, error) {
@@ -100,6 +109,7 @@ func TestTransport(t *testing.T) {
 					gmail.WithSenderFactory(func(_ context.Context, ts oauth2.TokenSource, _ ...option.ClientOption) (gmail.Sender, error) {
 						return sender, nil
 					}),
+					gmail.WithRFCOptions(rfcOpts...),
 				)
 
 				Convey("When I send a mail", func() {
@@ -114,12 +124,22 @@ func TestTransport(t *testing.T) {
 	})
 }
 
-func expectSend(t *testing.T, sender *mock_gmail.MockSender) {
+func expectSend(t *testing.T, sender *mock_gmail.MockSender, rfcOpts ...rfc.Option) {
 	sender.EXPECT().
 		Send("me", gomock.Any()).
 		DoAndReturn(func(_ string, msg *ggmail.Message) error {
-			expected := base64.URLEncoding.EncodeToString([]byte(mockLetter.RFC()))
+			expected := base64.URLEncoding.EncodeToString([]byte(mockLetter.RFC(rfcOpts...)))
 			assert.Equal(t, expected, msg.Raw)
 			return nil
 		})
+}
+
+func rfcOpts() []rfc.Option {
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+	return []rfc.Option{
+		rfc.WithClock(clock),
+		rfc.WithIDGenerator(idgen),
+	}
 }

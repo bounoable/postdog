@@ -5,6 +5,8 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/expand"
+	"github.com/bounoable/postdog/letter/mapper"
 	"github.com/google/uuid"
 )
 
@@ -20,12 +22,12 @@ type Mail struct {
 // ExpandMail takes a postdog.Mail and builds a Mail from it. If pm has a
 // SendError() method, the error will be added to the Mail. If pm has a
 // SentAt() method, the time will be added as the send time.
-func ExpandMail(pm postdog.Mail) Mail {
+func ExpandMail(pm postdog.Mail, opts ...expand.Option) Mail {
 	if m, ok := pm.(Mail); ok {
 		return m
 	}
 
-	m := Mail{Letter: letter.Expand(pm)}
+	m := Mail{Letter: letter.Expand(pm, opts...)}
 
 	if idMail, ok := pm.(interface{ ID() uuid.UUID }); ok {
 		m.id = idMail.ID()
@@ -76,7 +78,7 @@ func (m Mail) WithID(id uuid.UUID) Mail {
 }
 
 // Map maps m to a map[string]interface{}.
-func (m Mail) Map(opts ...letter.MapOption) map[string]interface{} {
+func (m Mail) Map(opts ...mapper.Option) map[string]interface{} {
 	res := m.Letter.Map(opts...)
 	res["id"] = m.id.String()
 	res["sendError"] = m.sendError
@@ -97,7 +99,7 @@ func (m *Mail) Parse(mm map[string]interface{}) {
 	}
 	if sentAt, ok := mm["sentAt"].(string); ok {
 		if t, err := time.Parse(time.RFC3339, sentAt); err == nil {
-			m.sentAt = t
+			m.sentAt = t.Round(0)
 		}
 	}
 }

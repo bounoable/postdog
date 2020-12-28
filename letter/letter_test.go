@@ -2,6 +2,7 @@ package letter_test
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
@@ -9,9 +10,11 @@ import (
 	"net/mail"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/internal/encode"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -464,6 +467,9 @@ func TestLetter_Recipients(t *testing.T) {
 }
 
 func TestLetter_RFC(t *testing.T) {
+	clock := staticClock(time.Now())
+	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+
 	let, err := letter.TryWrite(
 		letter.Subject("Hi."),
 		letter.Text("Hello."),
@@ -483,6 +489,8 @@ func TestLetter_RFC(t *testing.T) {
 
 	expected := join(
 		"MIME-Version: 1.0",
+		"Message-ID: <id@domain>",
+		fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 		fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 		`From: "Bob Belcher" <bob@example.com>`,
 		`To: "Linda Belcher" <linda@example.com>`,
@@ -534,8 +542,7 @@ func TestLetter_RFC(t *testing.T) {
 		endBoundary(0),
 	)
 
-	assert.Equal(t, expected, let.RFC())
-	assert.Equal(t, expected, let.String())
+	assert.Equal(t, expected, let.RFC(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)))
 }
 
 func TestLetter_RFC_override(t *testing.T) {
@@ -556,7 +563,7 @@ func join(lines ...string) string {
 }
 
 func boundary(i int) string {
-	return fmt.Sprintf("%064d", i+1)
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%064d", i+1))))
 }
 
 func startBoundary(i int) string {
@@ -582,4 +589,8 @@ func fold(s string, after int) string {
 		}
 	}
 	return strings.Join(subs, "\r\n")
+}
+
+func staticClock(t time.Time) rfc.Clock {
+	return rfc.ClockFunc(func() time.Time { return t })
 }

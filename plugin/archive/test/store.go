@@ -18,16 +18,6 @@ import (
 )
 
 var (
-	mockMail = archive.ExpandMail(letter.Write(
-		letter.From("Bob Belcher", "bob@example.com"),
-		letter.To("Linda Belcher", "linda@example.com"),
-		letter.CC("Tina Belcher", "tina@example.com"),
-		letter.BCC("Gene Belcher", "gene@example.com"),
-		letter.Subject("Hi."),
-		letter.Content("Hello.", "<p>Hello.</p>"),
-		letter.Attach("attach-1", []byte{1}),
-	))
-
 	errMockSend = errors.New("mock send error")
 )
 
@@ -38,7 +28,7 @@ type storeTestConfig struct {
 	roundTime time.Duration
 }
 
-// RoundTime returns an Option that rounds time values before running assertions on them.
+// RoundTime returns an StoreTestOption that rounds time values before running assertions on them.
 func RoundTime(d time.Duration) StoreTestOption {
 	return func(cfg *storeTestConfig) {
 		cfg.roundTime = d
@@ -51,6 +41,16 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 	for _, opt := range opts {
 		opt(&cfg)
 	}
+
+	mockMail := archive.ExpandMail(letter.Write(
+		letter.From("Bob Belcher", "bob@example.com"),
+		letter.To("Linda Belcher", "linda@example.com"),
+		letter.CC("Tina Belcher", "tina@example.com"),
+		letter.BCC("Gene Belcher", "gene@example.com"),
+		letter.Subject("Hi."),
+		letter.Content("Hello.", "<p>Hello.</p>"),
+		letter.Attach("attach-1", []byte{1}),
+	))
 
 	Convey("Store", t, func() {
 		Convey("Insert()", func() {
@@ -77,7 +77,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					})
 
 					Convey("The mail should be zero-value", func() {
-						So(m, ShouldResemble, archive.Mail{})
+						So(m, shouldResembleMail, archive.Mail{})
 					})
 				})
 
@@ -98,7 +98,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 						})
 
 						Convey("It should find the correct mail", func() {
-							So(found, ShouldResemble, m)
+							So(found, shouldResembleMail, m)
 						})
 					})
 				})
@@ -126,7 +126,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[2])
+						So(mail, shouldResembleMail, mockMails[2])
 					})
 				})
 
@@ -149,7 +149,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -169,7 +169,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -192,7 +192,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -215,7 +215,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[2])
+						So(mail, shouldResembleMail, mockMails[2])
 					})
 				})
 
@@ -238,7 +238,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[0])
+						So(mail, shouldResembleMail, mockMails[0])
 					})
 				})
 
@@ -260,7 +260,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[0])
+						So(mail, shouldResembleMail, mockMails[0])
 					})
 				})
 
@@ -280,7 +280,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -300,7 +300,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -320,7 +320,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -340,7 +340,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[1])
+						So(mail, shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -360,7 +360,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[2])
+						So(mail, shouldResembleMail, mockMails[2])
 					})
 				})
 
@@ -380,7 +380,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 
 					Convey("Cursor should return the mails", func() {
 						mails := drain(cur)
-						So(mails, ShouldResemble, mockMails[:len(mockMails)-1])
+						So(mails, shouldResembleMails, mockMails[:len(mockMails)-1])
 					})
 				})
 
@@ -399,7 +399,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 
 					Convey("Cursor should return the mails", func() {
 						mails := drain(cur)
-						So(mails, ShouldResemble, mockMails[:len(mockMails)-1])
+						So(mails, shouldResembleMails, mockMails[:len(mockMails)-1])
 					})
 				})
 
@@ -419,7 +419,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("Cursor should return the correct mail", func() {
 						mails := drain(cur)
 						mail := mails[0]
-						So(mail, ShouldResemble, mockMails[2])
+						So(mail, shouldResembleMail, mockMails[2])
 					})
 				})
 
@@ -441,8 +441,8 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 
 					Convey("Cursor should return the correct mails", func() {
 						mails := drain(cur)
-						So(mails[0], ShouldResemble, mockMails[0])
-						So(mails[1], ShouldResemble, mockMails[1])
+						So(mails[0], shouldResembleMail, mockMails[0])
+						So(mails[1], shouldResembleMail, mockMails[1])
 					})
 				})
 
@@ -503,7 +503,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					Convey("It should return paginated mails", func() {
 						mails := drain(cur)
 						So(mails, ShouldHaveLength, 7)
-						So(mails, ShouldResemble, mockMails[7:14])
+						So(mails, shouldResembleMails, mockMails[7:14])
 					})
 				})
 			}))
@@ -536,7 +536,7 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 							})
 
 							Convey("The returned Mail should be zero-value", func() {
-								So(m, ShouldResemble, archive.Mail{})
+								So(m, shouldResembleMail, archive.Mail{})
 							})
 						})
 					})
@@ -592,7 +592,7 @@ func testSorting(s archive.Store, mockMails []archive.Mail) {
 				})
 
 				mails := drain(cur)
-				So(mails, ShouldResemble, want)
+				So(mails, shouldResembleMails, want)
 			})
 		})
 
@@ -616,7 +616,7 @@ func testSorting(s archive.Store, mockMails []archive.Mail) {
 				})
 
 				mails := drain(cur)
-				So(mails, ShouldResemble, want)
+				So(mails, shouldResembleMails, want)
 			})
 		})
 	}
@@ -688,4 +688,64 @@ func drain(cur archive.Cursor) []archive.Mail {
 		panic(err)
 	}
 	return mails
+}
+
+func shouldResembleMail(actual interface{}, expected ...interface{}) string {
+	if len(expected) != 1 {
+		return fmt.Sprintf("expected should have exact length 1, but has length %d", len(expected))
+	}
+
+	am, ok := actual.(archive.Mail)
+	if !ok {
+		return fmt.Sprintf("actual should be an archive.Mail, but is %T", am)
+	}
+
+	em, ok := expected[0].(archive.Mail)
+	if !ok {
+		return fmt.Sprintf("expected should be an archive.Mail, but is %T", am)
+	}
+
+	if am.ID() != em.ID() {
+		return fmt.Sprintf("mail ids not equal")
+	}
+
+	amm := am.Map()
+	delete(amm, "rfc")
+
+	emm := em.Map()
+	delete(emm, "rfc")
+
+	return ShouldResemble(amm, emm)
+}
+
+func shouldResembleMails(actual interface{}, expected ...interface{}) string {
+	if len(expected) != 1 {
+		return fmt.Sprintf("expected should have exact length 1, but has length %d", len(expected))
+	}
+
+	ams, ok := actual.([]archive.Mail)
+	if !ok {
+		return fmt.Sprintf("actual should be an []archive.Mail, but is %T", ams)
+	}
+
+	ems, ok := expected[0].([]archive.Mail)
+	if !ok {
+		return fmt.Sprintf("expected should be an []archive.Mail, but is %T", ams)
+	}
+
+	amms := make([]map[string]interface{}, len(ams))
+	for i, am := range ams {
+		amm := am.Map()
+		delete(amm, "rfc")
+		amms[i] = amm
+	}
+
+	emms := make([]map[string]interface{}, len(ems))
+	for i, em := range ems {
+		emm := em.Map()
+		delete(emm, "rfc")
+		emms[i] = emm
+	}
+
+	return ShouldResemble(amms, emms)
 }
