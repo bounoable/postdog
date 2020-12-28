@@ -363,7 +363,7 @@ func TestPostdog(t *testing.T) {
 						})
 
 						Convey("The Hook Listener should have been called ~immediately", func() {
-							So((<-handledAt).UnixNano(), ShouldAlmostEqual, start.UnixNano(), 500*time.Microsecond)
+							So((<-handledAt).UnixNano(), ShouldAlmostEqual, start.UnixNano(), 5*time.Millisecond)
 						})
 					})
 				})
