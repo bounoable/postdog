@@ -1,6 +1,7 @@
 package rfc_test
 
 import (
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -256,7 +257,9 @@ func join(lines ...string) string {
 }
 
 func boundary(i int) string {
-	return fmt.Sprintf("%064d", i+1)
+	v := fmt.Sprintf("%064d", i+1)
+	s := md5.Sum([]byte(v))
+	return fmt.Sprintf("%x", s)
 }
 
 func startBoundary(i int) string {

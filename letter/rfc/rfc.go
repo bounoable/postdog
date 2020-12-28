@@ -3,6 +3,7 @@ package rfc
 //go:generate mockgen -source=rfc.go -destination=./mocks/rfc.go
 
 import (
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -49,11 +50,6 @@ type IDGenerator interface {
 
 // IDGeneratorFunc allows a function to be used as an IDGenerator.
 type IDGeneratorFunc func(Mail) string
-
-// GenerateID generates a Message-ID.
-func (gen IDGeneratorFunc) GenerateID(m Mail) string {
-	return gen(m)
-}
 
 // Option is a builder option.
 type Option func(*builder)
@@ -206,13 +202,18 @@ func (b *builder) htmlLines(html string) []string {
 
 func (b *builder) newBoundary() string {
 	b.boundaries++
-	bd := fmt.Sprintf("%064d", b.boundaries)
-	return bd
+	v := fmt.Sprintf("%064d", b.boundaries)
+	return fmt.Sprintf("%x", md5.Sum([]byte(v)))
 }
 
 // Now returns the current time.
 func (c ClockFunc) Now() time.Time {
 	return c()
+}
+
+// GenerateID generates a Message-ID.
+func (gen IDGeneratorFunc) GenerateID(m Mail) string {
+	return gen(m)
 }
 
 func joinAddresses(addrs ...mail.Address) string {
