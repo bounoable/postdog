@@ -88,7 +88,7 @@ func (b *builder) build(mail Mail) string {
 				fmt.Sprintf("Content-ID: <%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content))[:12], encode.ToASCII(at.Filename)),
 				"Content-Transfer-Encoding: base64",
 				"",
-				fold(base64.StdEncoding.EncodeToString(at.Content), 78),
+				fold(base64.StdEncoding.EncodeToString(at.Content), 76),
 				"",
 			)
 		}
