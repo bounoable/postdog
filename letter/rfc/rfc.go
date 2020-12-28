@@ -185,7 +185,7 @@ func (b *builder) textLines(text string) []string {
 		"Content-Type: text/plain; charset=utf-8",
 		"Content-Transfer-Encoding: base64",
 		"",
-		fold(base64.StdEncoding.EncodeToString([]byte(text)), 78),
+		fold(base64.StdEncoding.EncodeToString([]byte(text)), 76),
 		"",
 	}
 }
@@ -199,7 +199,7 @@ func (b *builder) htmlLines(html string) []string {
 		"Content-Type: text/html; charset=utf-8",
 		"Content-Transfer-Encoding: base64",
 		"",
-		fold(base64.StdEncoding.EncodeToString([]byte(html)), 78),
+		fold(base64.StdEncoding.EncodeToString([]byte(html)), 76),
 		"",
 	}
 }
