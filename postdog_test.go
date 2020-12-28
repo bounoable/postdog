@@ -369,11 +369,6 @@ func TestPostdog(t *testing.T) {
 				})
 
 				Convey("Given multiple Hooks that take ~50 milliseconds to execute", func() {
-					// if runtime.GOMAXPROCS(0) < 2 {
-					// 	// t.Skip("Skipping test because machine only runs on 1 CPU.")
-					// 	return
-					// }
-
 					calls := make(chan time.Time, 3)
 					lis1 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
 					lis2 := newDelayedListener(ctrl, 50*time.Millisecond, postdog.BeforeSend, calls)
