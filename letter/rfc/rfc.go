@@ -1,5 +1,7 @@
 package rfc
 
+//go:generate mockgen -source=rfc.go -destination=./mocks/rfc.go
+
 import (
 	"crypto/sha1"
 	"encoding/base64"
@@ -7,15 +9,10 @@ import (
 	"net/mail"
 	"net/textproto"
 	"strings"
+	"time"
 
 	"github.com/bounoable/postdog/internal/encode"
 )
-
-// Build the mail according to RFC 5322.
-func Build(mail Mail) string {
-	var b builder
-	return b.build(mail)
-}
 
 // Mail contains the data of a mail.
 type Mail struct {
@@ -37,14 +34,73 @@ type Attachment struct {
 	Header   textproto.MIMEHeader
 }
 
+// A Clock provides the current time.
+type Clock interface {
+	Now() time.Time
+}
+
+// ClockFunc allows a function to be used as a Clock.
+type ClockFunc func() time.Time
+
+// IDGenerator generates Message-IDs.
+type IDGenerator interface {
+	GenerateID(Mail) string
+}
+
+// IDGeneratorFunc allows a function to be used as an IDGenerator.
+type IDGeneratorFunc func(Mail) string
+
+// GenerateID generates a Message-ID.
+func (gen IDGeneratorFunc) GenerateID(m Mail) string {
+	return gen(m)
+}
+
+// Option is a builder option.
+type Option func(*builder)
+
 type builder struct {
+	clock      Clock
+	idgen      IDGenerator
 	boundaries int
+}
+
+// Build the mail according to RFC 5322.
+func Build(mail Mail, opts ...Option) string {
+	var b builder
+	for _, opt := range opts {
+		opt(&b)
+	}
+	if b.clock == nil {
+		b.clock = ClockFunc(time.Now)
+	}
+	if b.idgen == nil {
+		b.idgen = UUIDGenerator("")
+	}
+	return b.build(mail)
+}
+
+// WithClock returns an Option that overrides the used Clock.
+func WithClock(c Clock) Option {
+	return func(b *builder) {
+		b.clock = c
+	}
+}
+
+// WithIDGenerator returns an Option that overrides the used IDGenerator.
+func WithIDGenerator(gen IDGenerator) Option {
+	return func(b *builder) {
+		b.idgen = gen
+	}
 }
 
 var emptyAddr mail.Address
 
 func (b *builder) build(mail Mail) string {
-	lines := []string{"MIME-Version: 1.0"}
+	lines := []string{
+		"MIME-Version: 1.0",
+		fmt.Sprintf("Message-ID: %s", b.idgen.GenerateID(mail)),
+		fmt.Sprintf("Date: %s", b.clock.Now().Format(time.RFC1123Z)),
+	}
 
 	if mail.Subject != "" {
 		lines = append(lines, fmt.Sprintf("Subject: %s", encode.UTF8(mail.Subject)))
@@ -148,6 +204,17 @@ func (b *builder) htmlLines(html string) []string {
 	}
 }
 
+func (b *builder) newBoundary() string {
+	b.boundaries++
+	bd := fmt.Sprintf("%064d", b.boundaries)
+	return bd
+}
+
+// Now returns the current time.
+func (c ClockFunc) Now() time.Time {
+	return c()
+}
+
 func joinAddresses(addrs ...mail.Address) string {
 	addrstrs := make([]string, len(addrs))
 	for i, addr := range addrs {
@@ -179,10 +246,4 @@ func fold(s string, after int) string {
 		}
 	}
 	return strings.Join(subs, "\r\n")
-}
-
-func (b *builder) newBoundary() string {
-	b.boundaries++
-	bd := fmt.Sprintf("%064d", b.boundaries)
-	return bd
 }

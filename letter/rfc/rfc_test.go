@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bounoable/postdog/internal/encode"
 	"github.com/bounoable/postdog/letter"
@@ -22,6 +23,9 @@ var (
 )
 
 func TestBuild(t *testing.T) {
+	clock := staticClock(time.Now())
+	idgen := staticID("<id@domain>")
+
 	tests := []struct {
 		name       string
 		letterOpts []letter.Option
@@ -35,6 +39,8 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -61,6 +67,8 @@ func TestBuild(t *testing.T) {
 			letterOpts: append(baseLetterOpts, letter.Text("Hello.")),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -76,6 +84,8 @@ func TestBuild(t *testing.T) {
 			letterOpts: append(baseLetterOpts, letter.HTML("<p>Hello.</p>")),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -99,6 +109,8 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -118,6 +130,8 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -176,6 +190,8 @@ func TestBuild(t *testing.T) {
 			),
 			expected: join(
 				"MIME-Version: 1.0",
+				"Message-ID: <id@domain>",
+				fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 				fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 				`From: "Bob Belcher" <bob@example.com>`,
 				`To: "Linda Belcher" <linda@example.com>`,
@@ -228,7 +244,7 @@ func TestBuild(t *testing.T) {
 				Text:        let.Text(),
 				HTML:        let.HTML(),
 				Attachments: mapAttachments(let.Attachments()...),
-			})
+			}, rfc.WithClock(clock), rfc.WithIDGenerator(idgen))
 
 			assert.Equal(t, test.expected, s)
 		})
@@ -278,4 +294,14 @@ func mapAttachments(ats ...letter.Attachment) []rfc.Attachment {
 		}
 	}
 	return res
+}
+
+func staticClock(t time.Time) rfc.Clock {
+	return rfc.ClockFunc(func() time.Time {
+		return t
+	})
+}
+
+func staticID(id string) rfc.IDGenerator {
+	return rfc.IDGeneratorFunc(func(rfc.Mail) string { return id })
 }
