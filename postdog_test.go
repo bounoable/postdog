@@ -151,7 +151,7 @@ func TestPostdog(t *testing.T) {
 
 		// 	err := dog.Send(context.Background(), mockLetter, send.RFCOptions(
 		// 		rfc.WithClock(clock),
-		// 		rfc.WithIDGenerator(idgen),
+		// 		rfc.WithMessageIDFactory(idgen),
 		// 	))
 
 		// 	Convey("It shouldn't fail", func() {

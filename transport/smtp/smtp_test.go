@@ -94,6 +94,6 @@ func rfcOpts() []rfc.Option {
 	idgen := rfc.MessageIDFunc(func(rfc.Mail) string { return "<id@domain>" })
 	return []rfc.Option{
 		rfc.WithClock(clock),
-		rfc.WithIDGenerator(idgen),
+		rfc.WithMessageIDFactory(idgen),
 	}
 }

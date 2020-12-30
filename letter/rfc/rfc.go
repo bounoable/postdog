@@ -93,8 +93,8 @@ func WithClock(c Clock) Option {
 	}
 }
 
-// WithIDGenerator returns an Option that specifies the used MessageIDFactory.
-func WithIDGenerator(id MessageIDFactory) Option {
+// WithMessageIDFactory returns an Option that specifies the used MessageIDFactory.
+func WithMessageIDFactory(id MessageIDFactory) Option {
 	return func(cfg *Config) {
 		cfg.MessageID = id
 	}

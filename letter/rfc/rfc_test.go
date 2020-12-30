@@ -245,7 +245,7 @@ func TestBuild(t *testing.T) {
 				Text:        let.Text(),
 				HTML:        let.HTML(),
 				Attachments: mapAttachments(let.Attachments()...),
-			}, rfc.WithClock(clock), rfc.WithIDGenerator(idgen))
+			}, rfc.WithClock(clock), rfc.WithMessageIDFactory(idgen))
 
 			assert.Equal(t, test.expected, s)
 		})
