@@ -167,6 +167,22 @@ func SendTime(ctx context.Context) time.Time {
 	return t
 }
 
+// ApplyMiddleware applies the Middleware mw on the Mail m.
+func ApplyMiddleware(ctx context.Context, m Mail, mw ...Middleware) (context.Context, Mail, error) {
+	if len(mw) == 0 {
+		return ctx, m, nil
+	}
+
+	rctx := ctx
+	pipeline := append(mw, MiddlewareFunc(func(ctx context.Context, m Mail, next NextMiddleware) (Mail, error) {
+		rctx = ctx
+		return next(ctx, m)
+	}))
+
+	m, err := mw[0].Handle(ctx, m, nextMiddlewareFunc(0, pipeline))
+	return rctx, m, err
+}
+
 // Use sets the default transport.
 func (dog *Dog) Use(transport string) {
 	dog.mux.Lock()
@@ -205,7 +221,7 @@ func (dog *Dog) SendConfig(ctx context.Context, m Mail, cfg send.Config) error {
 		return err
 	}
 
-	if ctx, m, err = dog.applyMiddleware(ctx, m); err != nil {
+	if ctx, m, err = ApplyMiddleware(ctx, m, dog.middlewares...); err != nil {
 		return fmt.Errorf("middleware: %w", err)
 	}
 
@@ -220,30 +236,6 @@ func (dog *Dog) SendConfig(ctx context.Context, m Mail, cfg send.Config) error {
 	}
 
 	return nil
-}
-
-func (dog *Dog) applyMiddleware(ctx context.Context, m Mail) (context.Context, Mail, error) {
-	if len(dog.middlewares) == 0 {
-		return ctx, m, nil
-	}
-
-	rctx := ctx
-	pipeline := append(dog.middlewares, MiddlewareFunc(func(ctx context.Context, m Mail, next NextMiddleware) (Mail, error) {
-		rctx = ctx
-		return next(ctx, m)
-	}))
-
-	m, err := dog.middlewares[0].Handle(ctx, m, dog.nextFunc(0, pipeline))
-	return rctx, m, err
-}
-
-func (dog *Dog) nextFunc(i int, pipeline []Middleware) NextMiddleware {
-	return func(ctx context.Context, let Mail) (Mail, error) {
-		if i >= len(pipeline)-1 {
-			return let, nil
-		}
-		return pipeline[i+1].Handle(ctx, let, dog.nextFunc(i+1, pipeline))
-	}
 }
 
 func (dog *Dog) callHooks(ctx context.Context, h Hook, m Mail) {
@@ -319,4 +311,13 @@ func withSendError(ctx context.Context, err error) context.Context {
 
 func withSendTime(ctx context.Context, t time.Time) context.Context {
 	return context.WithValue(ctx, ctxSendTime, t)
+}
+
+func nextMiddlewareFunc(i int, pipeline []Middleware) NextMiddleware {
+	return func(ctx context.Context, let Mail) (Mail, error) {
+		if i >= len(pipeline)-1 {
+			return let, nil
+		}
+		return pipeline[i+1].Handle(ctx, let, nextMiddlewareFunc(i+1, pipeline))
+	}
 }

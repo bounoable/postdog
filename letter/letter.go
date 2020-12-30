@@ -522,6 +522,12 @@ func (l Letter) WithRFCOptions(opts ...rfc.Option) Letter {
 	return l
 }
 
+// WithRFCConfig returns a copy of l with it's rfc configuration replaced by cfg.
+func (l Letter) WithRFCConfig(cfg rfc.Config) Letter {
+	l.rfcConfig = cfg
+	return l
+}
+
 // RFC returns the letter as a RFC 5322 string.
 func (l Letter) RFC() string {
 	if l.rfc != "" {

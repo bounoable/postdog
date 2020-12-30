@@ -4,12 +4,15 @@ import (
 	"context"
 	stdctx "context"
 	"errors"
+	"net/mail"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/rfc"
+	"github.com/bounoable/postdog/middleware"
 	mock_postdog "github.com/bounoable/postdog/mocks"
 	"github.com/bounoable/postdog/send"
 	"github.com/golang/mock/gomock"
@@ -213,18 +216,20 @@ func TestPostdog(t *testing.T) {
 					)
 				})
 
+				mw4 := middleware.MessageID(rfc.MessageIDFunc(func(rfc.Mail) string { return "foobar" }))
+
+				transportGot := make(chan letter.Letter, 1)
 				tr := mock_postdog.NewMockTransport(ctrl)
 				tr.EXPECT().
-					Send(gomock.Any(), letter.Write(
-						letter.To("Linda Belcher", "linda@example.com"),
-						letter.To("Tina Belcher", "tina@example.com"),
-						letter.To("Gene Belcher", "gene@example.com"),
-					)).
-					Return(nil)
+					Send(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, m postdog.Mail) error {
+						transportGot <- letter.Expand(m)
+						return nil
+					})
 
 				dog := postdog.New(
 					postdog.WithTransport("test", tr),
-					postdog.WithMiddleware(mw1, mw2, mw3),
+					postdog.WithMiddleware(mw1, mw2, mw3, mw4),
 				)
 
 				Convey("When I send a mail", func() {
@@ -232,6 +237,18 @@ func TestPostdog(t *testing.T) {
 
 					Convey("It shouldn't fail", func() {
 						So(err, ShouldBeNil)
+					})
+
+					Convey("The mail should contain the correct Message-ID", func() {
+						So((<-transportGot).RFC(), ShouldContainSubstring, "Message-ID: foobar")
+					})
+
+					Convey("The mail should contain the correct recipients", func() {
+						So((<-transportGot).Recipients(), ShouldResemble, []mail.Address{
+							{Name: "Linda Belcher", Address: "linda@example.com"},
+							{Name: "Tina Belcher", Address: "tina@example.com"},
+							{Name: "Gene Belcher", Address: "gene@example.com"},
+						})
 					})
 				})
 			})
