@@ -15,7 +15,6 @@ import (
 
 	"github.com/bounoable/postdog"
 	"github.com/bounoable/postdog/internal/encode"
-	"github.com/bounoable/postdog/letter/expand"
 	"github.com/bounoable/postdog/letter/mapper"
 	"github.com/bounoable/postdog/letter/rfc"
 )
@@ -33,6 +32,7 @@ type Letter struct {
 	text        string
 	html        string
 	attachments []Attachment
+	rfcConfig   rfc.Config
 }
 
 // Attachment is a file attachment.
@@ -323,20 +323,15 @@ func NewAttachment(filename string, content []byte, opts ...AttachmentOption) At
 // If pm has an Attachments() method, the return type of that method must be
 // a slice of a type that implements the following methods: Filename() string,
 // Content() []byte, ContentType() string, Header() textproto.MIMEHeader.
-func Expand(pm postdog.Mail, opts ...expand.Option) Letter {
+func Expand(pm postdog.Mail) Letter {
 	if l, ok := pm.(Letter); ok {
 		return l
-	}
-
-	var cfg expand.Config
-	for _, opt := range opts {
-		opt(&cfg)
 	}
 
 	letterOpts := []Option{
 		FromAddress(pm.From()),
 		RecipientAddress(pm.Recipients()...),
-		RFC(pm.RFC(cfg.RFCOptions...)),
+		RFC(pm.RFC()),
 	}
 
 	if toMail, ok := pm.(interface{ To() []mail.Address }); ok {
@@ -513,12 +508,26 @@ func (l Letter) WithAttachments(attach ...Attachment) Letter {
 	return l
 }
 
+// RFCConfig returns the RFC config that is used when calling l.RFC().
+func (l Letter) RFCConfig() rfc.Config {
+	return l.rfcConfig
+}
+
+// WithRFCOptions returns a copy of l with it's rfc configuration replaced.
+func (l Letter) WithRFCOptions(opts ...rfc.Option) Letter {
+	l.rfcConfig = rfc.Config{}
+	for _, opt := range opts {
+		opt(&l.rfcConfig)
+	}
+	return l
+}
+
 // RFC returns the letter as a RFC 5322 string.
-func (l Letter) RFC(opts ...rfc.Option) string {
+func (l Letter) RFC() string {
 	if l.rfc != "" {
 		return l.rfc
 	}
-	return rfc.Build(rfc.Mail{
+	return rfc.BuildConfig(rfc.Mail{
 		Subject:     l.Subject(),
 		From:        l.From(),
 		To:          l.To(),
@@ -528,7 +537,7 @@ func (l Letter) RFC(opts ...rfc.Option) string {
 		Text:        l.Text(),
 		HTML:        l.HTML(),
 		Attachments: rfcAttachments(l.Attachments()),
-	}, opts...)
+	}, l.rfcConfig)
 }
 
 func (l Letter) String() string {
@@ -538,7 +547,7 @@ func (l Letter) String() string {
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment contents in the map.
 func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
-	cfg := mapper.Configure(opts...)
+	// cfg := mapper.Configure(opts...)
 
 	attachments := make([]interface{}, len(l.attachments))
 	for i, at := range l.attachments {
@@ -555,7 +564,7 @@ func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
 		"subject":     l.Subject(),
 		"text":        l.Text(),
 		"html":        l.HTML(),
-		"rfc":         l.RFC(cfg.RFCOptions...),
+		"rfc":         l.RFC(),
 		"attachments": attachments,
 	}
 }

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/plugin/archive"
 	mongostore "github.com/bounoable/postdog/plugin/archive/mongo"
 	"github.com/bounoable/postdog/plugin/archive/test"
@@ -26,10 +25,6 @@ func TestStore(t *testing.T) {
 	if testing.Short() {
 		t.Skip("[plugin/archive]: Skipping mongodb store test.")
 	}
-
-	now := time.Now()
-	clock := rfc.ClockFunc(func() time.Time { return now })
-	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
 
 	var counter int32
 
@@ -47,7 +42,6 @@ func TestStore(t *testing.T) {
 			mongostore.Database(fmt.Sprintf("postdog_%d", count)),
 			mongostore.Collection(fmt.Sprintf("mails_%d", count)),
 			mongostore.CreateIndexes(false),
-			mongostore.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)),
 		)
 		if err != nil {
 			panic(err)

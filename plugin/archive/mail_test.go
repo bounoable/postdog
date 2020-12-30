@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/letter/expand"
 	"github.com/bounoable/postdog/letter/mapper"
 	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/google/uuid"
@@ -77,7 +76,7 @@ func TestMail_Map(t *testing.T) {
 
 	now := time.Now()
 	clock := rfc.ClockFunc(func() time.Time { return now })
-	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+	rfcOpts := []rfc.Option{rfc.WithClock(clock), rfc.WithMessageID("foobar")}
 
 	tests := []struct {
 		name    string
@@ -87,24 +86,22 @@ func TestMail_Map(t *testing.T) {
 	}{
 		{
 			name: "default",
-			give: ExpandMail(letter.Write(
-				letter.From("Bob Belcher", "bob@example.com"),
-				letter.To("Linda Belcher", "linda@example.com"),
-				letter.CC("Tina Belcher", "tina@example.com"),
-				letter.BCC("Gene Belcher", "gene@example.com"),
-				letter.ReplyTo("Louise Belcher", "louise@example.com"),
-				letter.Subject("Hi."),
-				letter.Text("Hello"),
-				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
-			), expand.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))).
-				WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
-			mapOpts: []mapper.Option{
-				mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)),
-			},
+			give: ExpandMail(
+				letter.Write(
+					letter.From("Bob Belcher", "bob@example.com"),
+					letter.To("Linda Belcher", "linda@example.com"),
+					letter.CC("Tina Belcher", "tina@example.com"),
+					letter.BCC("Gene Belcher", "gene@example.com"),
+					letter.ReplyTo("Louise Belcher", "louise@example.com"),
+					letter.Subject("Hi."),
+					letter.Text("Hello"),
+					letter.HTML("<p>Hello.</p>"),
+					letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
+				).WithRFCOptions(rfcOpts...),
+			).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			want: func(m Mail) map[string]interface{} {
 				return merge(
-					m.Letter.Map(mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))),
+					m.Letter.Map(),
 					map[string]interface{}{
 						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
@@ -115,25 +112,25 @@ func TestMail_Map(t *testing.T) {
 		},
 		{
 			name: "without contents",
-			give: ExpandMail(letter.Write(
-				letter.From("Bob Belcher", "bob@example.com"),
-				letter.To("Linda Belcher", "linda@example.com"),
-				letter.CC("Tina Belcher", "tina@example.com"),
-				letter.BCC("Gene Belcher", "gene@example.com"),
-				letter.ReplyTo("Louise Belcher", "louise@example.com"),
-				letter.Subject("Hi."),
-				letter.Text("Hello"),
-				letter.HTML("<p>Hello.</p>"),
-				letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
-			), expand.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))).
-				WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
+			give: ExpandMail(
+				letter.Write(
+					letter.From("Bob Belcher", "bob@example.com"),
+					letter.To("Linda Belcher", "linda@example.com"),
+					letter.CC("Tina Belcher", "tina@example.com"),
+					letter.BCC("Gene Belcher", "gene@example.com"),
+					letter.ReplyTo("Louise Belcher", "louise@example.com"),
+					letter.Subject("Hi."),
+					letter.Text("Hello"),
+					letter.HTML("<p>Hello.</p>"),
+					letter.Attach("attach1", []byte{1, 2, 3}, letter.AttachmentType("text/plain")),
+				).WithRFCOptions(rfcOpts...),
+			).WithID(mockID).WithSendError(mockSendError.Error()).WithSendTime(mockSendTime),
 			mapOpts: []mapper.Option{
 				mapper.WithoutAttachmentContent(),
-				mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)),
 			},
 			want: func(m Mail) map[string]interface{} {
 				return merge(
-					m.Letter.Map(mapper.WithoutAttachmentContent(), mapper.RFCOptions(rfc.WithClock(clock), rfc.WithIDGenerator(idgen))),
+					m.Letter.Map(mapper.WithoutAttachmentContent()),
 					map[string]interface{}{
 						"id":        mockID.String(),
 						"sendError": mockSendError.Error(),
@@ -200,7 +197,7 @@ func (m basicMail) Recipients() []mail.Address {
 	return m.recipients
 }
 
-func (m basicMail) RFC(...rfc.Option) string {
+func (m basicMail) RFC() string {
 	return m.rfc
 }
 

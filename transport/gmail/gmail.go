@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/bounoable/postdog"
-	"github.com/bounoable/postdog/letter/rfc"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
@@ -72,7 +71,6 @@ type transport struct {
 	sync.RWMutex
 	scopes         []string
 	clientOpts     []option.ClientOption
-	rfcOpts        []rfc.Option
 	sender         Sender
 	newSender      func(context.Context, oauth2.TokenSource, ...option.ClientOption) (Sender, error)
 	tokenSource    oauth2.TokenSource
@@ -82,14 +80,6 @@ type transport struct {
 // Sender wraps the *gmail.UsersMessagesService.Send().Do() method(s).
 type Sender interface {
 	Send(userID string, msg *gmail.Message) error
-}
-
-// WithRFCOptions returns an Option that adds rfc.Options while building the
-// RFC body of a mail.
-func WithRFCOptions(opts ...rfc.Option) Option {
-	return func(t *transport) {
-		t.rfcOpts = append(t.rfcOpts, opts...)
-	}
 }
 
 // WithSender returns an Option that sets the Sender for sending mails.
@@ -214,7 +204,7 @@ func (tr *transport) Send(ctx context.Context, m postdog.Mail) error {
 	}
 
 	if err := tr.sender.Send("me", &gmail.Message{
-		Raw: base64.URLEncoding.EncodeToString([]byte(m.RFC(tr.rfcOpts...))),
+		Raw: base64.URLEncoding.EncodeToString([]byte(m.RFC())),
 	}); err != nil {
 		return fmt.Errorf("gmail: %w", err)
 	}

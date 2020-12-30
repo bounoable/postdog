@@ -133,6 +133,34 @@ func TestPostdog(t *testing.T) {
 			})
 		})
 
+		// Convey("Feature: Custom RFC options", func() {
+		// 	body := make(chan string, 1)
+		// 	tr := newMockTransport(ctrl)
+		// 	tr.EXPECT().
+		// 		Send(gomock.Any(), mockLetter).
+		// 		DoAndReturn(func(_ context.Context, m postdog.Mail) error {
+		// 			body <- m.RFC()
+		// 			return nil
+		// 		})
+
+		// 	dog := postdog.New(postdog.WithTransport("foo", tr))
+
+		// 	now := time.Now()
+		// 	clock := rfc.ClockFunc(func() time.Time { return now })
+		// 	idgen := rfc.IDGeneratorFunc(func(m rfc.Mail) string { return "<id@domain>" })
+
+		// 	err := dog.Send(context.Background(), mockLetter, send.RFCOptions(
+		// 		rfc.WithClock(clock),
+		// 		rfc.WithIDGenerator(idgen),
+		// 	))
+
+		// 	Convey("It shouldn't fail", func() {
+		// 		So(err, ShouldBeNil)
+		// 	})
+
+		// 	Convey("")
+		// })
+
 		Convey("Feature: Get transport by name", func() {
 			Convey("Given a *postdog.Dog with configured transports", func() {
 				tr1 := mock_postdog.NewMockTransport(ctrl)

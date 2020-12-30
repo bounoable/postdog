@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bounoable/postdog/letter"
+	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/query"
 	"github.com/google/uuid"
@@ -42,15 +43,20 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 		opt(&cfg)
 	}
 
-	mockMail := archive.ExpandMail(letter.Write(
-		letter.From("Bob Belcher", "bob@example.com"),
-		letter.To("Linda Belcher", "linda@example.com"),
-		letter.CC("Tina Belcher", "tina@example.com"),
-		letter.BCC("Gene Belcher", "gene@example.com"),
-		letter.Subject("Hi."),
-		letter.Content("Hello.", "<p>Hello.</p>"),
-		letter.Attach("attach-1", []byte{1}),
-	))
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+
+	mockMail := archive.ExpandMail(
+		letter.Write(
+			letter.From("Bob Belcher", "bob@example.com"),
+			letter.To("Linda Belcher", "linda@example.com"),
+			letter.CC("Tina Belcher", "tina@example.com"),
+			letter.BCC("Gene Belcher", "gene@example.com"),
+			letter.Subject("Hi."),
+			letter.Content("Hello.", "<p>Hello.</p>"),
+			letter.Attach("attach-1", []byte{1}),
+		).WithRFCOptions(rfc.WithClock(clock), rfc.WithMessageID("foobar")),
+	)
 
 	Convey("Store", t, func() {
 		Convey("Insert()", func() {
@@ -623,6 +629,9 @@ func testSorting(s archive.Store, mockMails []archive.Mail) {
 }
 
 func makeMails(count int, roundTime time.Duration) []archive.Mail {
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+
 	mails := make([]archive.Mail, count)
 	for i := 0; i < count; i++ {
 		var contentType string
@@ -642,15 +651,17 @@ func makeMails(count int, roundTime time.Duration) []archive.Mail {
 		for i := range content {
 			content[i] = byte(i + 1)
 		}
-		mails[i] = archive.ExpandMail(letter.Write(
-			letter.From(fmt.Sprintf("Sender %d", i+1), fmt.Sprintf("sender%d@example.com", i+1)),
-			letter.To(fmt.Sprintf("Recipient %d", i+1), fmt.Sprintf("rcpt%d@example.com", i+1)),
-			letter.CC(fmt.Sprintf("CC Recipient %d", i+1), fmt.Sprintf("ccrcpt%d@example.com", i+1)),
-			letter.BCC(fmt.Sprintf("BCC Recipient %d", i+1), fmt.Sprintf("bccrcpt%d@example.com", i+1)),
-			letter.Subject(fmt.Sprintf("Subject %d", i+1)),
-			letter.Content(fmt.Sprintf("Content %d", i+1), fmt.Sprintf("<p>Content %d</p>", i+1)),
-			letter.Attach(fmt.Sprintf("Attachment %d", i+1), content, letter.AttachmentType(contentType)),
-		)).WithID(uuid.New()).WithSendTime(time.Now().UTC().Add(time.Duration(i) * time.Minute).Round(roundTime))
+		mails[i] = archive.ExpandMail(
+			letter.Write(
+				letter.From(fmt.Sprintf("Sender %d", i+1), fmt.Sprintf("sender%d@example.com", i+1)),
+				letter.To(fmt.Sprintf("Recipient %d", i+1), fmt.Sprintf("rcpt%d@example.com", i+1)),
+				letter.CC(fmt.Sprintf("CC Recipient %d", i+1), fmt.Sprintf("ccrcpt%d@example.com", i+1)),
+				letter.BCC(fmt.Sprintf("BCC Recipient %d", i+1), fmt.Sprintf("bccrcpt%d@example.com", i+1)),
+				letter.Subject(fmt.Sprintf("Subject %d", i+1)),
+				letter.Content(fmt.Sprintf("Content %d", i+1), fmt.Sprintf("<p>Content %d</p>", i+1)),
+				letter.Attach(fmt.Sprintf("Attachment %d", i+1), content, letter.AttachmentType(contentType)),
+			).WithRFCOptions(rfc.WithClock(clock), rfc.WithMessageID("foobar")),
+		).WithID(uuid.New()).WithSendTime(time.Now().UTC().Add(time.Duration(i) * time.Minute).Round(roundTime))
 	}
 	return mails
 }

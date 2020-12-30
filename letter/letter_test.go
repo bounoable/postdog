@@ -575,7 +575,6 @@ func TestLetter_WithAttachments(t *testing.T) {
 
 func TestLetter_RFC(t *testing.T) {
 	clock := staticClock(time.Now())
-	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
 
 	let, err := letter.TryWrite(
 		letter.Subject("Hi."),
@@ -596,7 +595,7 @@ func TestLetter_RFC(t *testing.T) {
 
 	expected := join(
 		"MIME-Version: 1.0",
-		"Message-ID: <id@domain>",
+		"Message-ID: foobar",
 		fmt.Sprintf("Date: %s", clock.Now().Format(time.RFC1123Z)),
 		fmt.Sprintf("Subject: %s", encode.UTF8("Hi.")),
 		`From: "Bob Belcher" <bob@example.com>`,
@@ -649,7 +648,7 @@ func TestLetter_RFC(t *testing.T) {
 		endBoundary(0),
 	)
 
-	assert.Equal(t, expected, let.RFC(rfc.WithClock(clock), rfc.WithIDGenerator(idgen)))
+	assert.Equal(t, expected, let.WithRFCOptions(rfc.WithClock(clock), rfc.WithMessageID("foobar")).RFC())
 }
 
 func TestLetter_RFC_override(t *testing.T) {

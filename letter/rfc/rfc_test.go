@@ -305,6 +305,6 @@ func staticClock(t time.Time) rfc.Clock {
 	})
 }
 
-func staticID(id string) rfc.IDGenerator {
-	return rfc.IDGeneratorFunc(func(rfc.Mail) string { return id })
+func staticID(id string) rfc.MessageIDFactory {
+	return rfc.MessageIDFunc(func(rfc.Mail) string { return id })
 }

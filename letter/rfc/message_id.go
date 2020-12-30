@@ -10,16 +10,14 @@ type uuidGenerator struct {
 	domain string
 }
 
-// UUIDGenerator returns a Message-ID generator using UUIDs. If domain is an
+// UUIDGenerator returns a Message-ID factory using UUIDs. If domain is an
 // empty string, it is set to "localhost". The generated IDs have the following
 // format: <UUID@DOMAIN>
-func UUIDGenerator(domain string) IDGenerator {
+func UUIDGenerator(domain string) MessageIDFactory {
 	if domain == "" {
 		domain = "localhost"
 	}
-	return uuidGenerator{
-		domain: domain,
-	}
+	return uuidGenerator{domain: domain}
 }
 
 func (gen uuidGenerator) GenerateID(Mail) string {

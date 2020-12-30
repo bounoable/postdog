@@ -10,7 +10,6 @@ import (
 
 	"github.com/bounoable/mongoutil/index"
 	"github.com/bounoable/postdog/letter"
-	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/query"
 	"github.com/google/uuid"
@@ -28,7 +27,6 @@ type Store struct {
 	wantIndexes              bool
 	withoutAttachmentContent bool
 	col                      *mongo.Collection
-	rfcOpts                  []rfc.Option
 }
 
 // Option is a Store option.
@@ -118,14 +116,6 @@ func WithoutAttachmentContent(ac bool) Option {
 	}
 }
 
-// RFCOptions returns an Option that adds rfc.Options when building the rfc
-// body of a mail.
-func RFCOptions(opts ...rfc.Option) Option {
-	return func(s *Store) {
-		s.rfcOpts = append(s.rfcOpts, opts...)
-	}
-}
-
 // Insert stores m into the database. If there's already a stored mail with the
 // same ID as m, m will override the previously stored mail.
 func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
@@ -156,7 +146,7 @@ func (s *Store) Insert(ctx context.Context, m archive.Mail) error {
 		Subject:     m.Subject(),
 		Text:        m.Text(),
 		HTML:        m.HTML(),
-		RFC:         m.RFC(s.rfcOpts...),
+		RFC:         m.RFC(),
 		SendError:   m.SendError(),
 		SentAt:      m.SentAt(),
 	}

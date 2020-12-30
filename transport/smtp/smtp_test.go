@@ -40,7 +40,7 @@ func TestTransport_Send(t *testing.T) {
 			},
 			assertSender: func(let letter.Letter, s *mock_smtp.MockMailSender) {
 				s.EXPECT().
-					SendMail(addr, gomock.Any(), "bob@example.com", []string{"linda@example.com"}, []byte(let.RFC(rfcOpts...))).
+					SendMail(addr, gomock.Any(), "bob@example.com", []string{"linda@example.com"}, []byte(let.RFC())).
 					Return(nil)
 			},
 		},
@@ -61,7 +61,7 @@ func TestTransport_Send(t *testing.T) {
 						"linda@example.com",
 						"tina@example.com",
 						"gene@example.com",
-					}, []byte(let.RFC(rfcOpts...))).
+					}, []byte(let.RFC())).
 					Return(nil)
 			},
 		},
@@ -74,13 +74,14 @@ func TestTransport_Send(t *testing.T) {
 
 			let, err := letter.TryWrite(test.letterOpts...)
 			assert.Nil(t, err)
+			let = let.WithRFCOptions(rfcOpts...)
 
 			s := mock_smtp.NewMockMailSender(ctrl)
 			if test.assertSender != nil {
 				test.assertSender(let, s)
 			}
 
-			tr := smtp.TransportWithSender(s, host, port, username, password, smtp.RFCOptions(rfcOpts...))
+			tr := smtp.TransportWithSender(s, host, port, username, password)
 			err = tr.Send(context.Background(), let)
 			assert.Nil(t, err)
 		})
@@ -90,7 +91,7 @@ func TestTransport_Send(t *testing.T) {
 func rfcOpts() []rfc.Option {
 	now := time.Now()
 	clock := rfc.ClockFunc(func() time.Time { return now })
-	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })
+	idgen := rfc.MessageIDFunc(func(rfc.Mail) string { return "<id@domain>" })
 	return []rfc.Option{
 		rfc.WithClock(clock),
 		rfc.WithIDGenerator(idgen),

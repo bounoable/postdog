@@ -48,31 +48,31 @@ func (mr *MockClockMockRecorder) Now() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Now", reflect.TypeOf((*MockClock)(nil).Now))
 }
 
-// MockIDGenerator is a mock of IDGenerator interface
-type MockIDGenerator struct {
+// MockMessageIDFactory is a mock of MessageIDFactory interface
+type MockMessageIDFactory struct {
 	ctrl     *gomock.Controller
-	recorder *MockIDGeneratorMockRecorder
+	recorder *MockMessageIDFactoryMockRecorder
 }
 
-// MockIDGeneratorMockRecorder is the mock recorder for MockIDGenerator
-type MockIDGeneratorMockRecorder struct {
-	mock *MockIDGenerator
+// MockMessageIDFactoryMockRecorder is the mock recorder for MockMessageIDFactory
+type MockMessageIDFactoryMockRecorder struct {
+	mock *MockMessageIDFactory
 }
 
-// NewMockIDGenerator creates a new mock instance
-func NewMockIDGenerator(ctrl *gomock.Controller) *MockIDGenerator {
-	mock := &MockIDGenerator{ctrl: ctrl}
-	mock.recorder = &MockIDGeneratorMockRecorder{mock}
+// NewMockMessageIDFactory creates a new mock instance
+func NewMockMessageIDFactory(ctrl *gomock.Controller) *MockMessageIDFactory {
+	mock := &MockMessageIDFactory{ctrl: ctrl}
+	mock.recorder = &MockMessageIDFactoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockIDGenerator) EXPECT() *MockIDGeneratorMockRecorder {
+func (m *MockMessageIDFactory) EXPECT() *MockMessageIDFactoryMockRecorder {
 	return m.recorder
 }
 
 // GenerateID mocks base method
-func (m *MockIDGenerator) GenerateID(arg0 rfc.Mail) string {
+func (m *MockMessageIDFactory) GenerateID(arg0 rfc.Mail) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateID", arg0)
 	ret0, _ := ret[0].(string)
@@ -80,7 +80,7 @@ func (m *MockIDGenerator) GenerateID(arg0 rfc.Mail) string {
 }
 
 // GenerateID indicates an expected call of GenerateID
-func (mr *MockIDGeneratorMockRecorder) GenerateID(arg0 interface{}) *gomock.Call {
+func (mr *MockMessageIDFactoryMockRecorder) GenerateID(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateID", reflect.TypeOf((*MockIDGenerator)(nil).GenerateID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateID", reflect.TypeOf((*MockMessageIDFactory)(nil).GenerateID), arg0)
 }

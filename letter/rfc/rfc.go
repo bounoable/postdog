@@ -35,6 +35,12 @@ type Attachment struct {
 	Header   textproto.MIMEHeader
 }
 
+// Config is the builder config.
+type Config struct {
+	Clock     Clock
+	MessageID MessageIDFactory
+}
+
 // A Clock provides the current time.
 type Clock interface {
 	Now() time.Time
@@ -43,49 +49,61 @@ type Clock interface {
 // ClockFunc allows a function to be used as a Clock.
 type ClockFunc func() time.Time
 
-// IDGenerator generates Message-IDs.
-type IDGenerator interface {
+// MessageIDFactory generates Message-IDs.
+type MessageIDFactory interface {
 	GenerateID(Mail) string
 }
 
-// IDGeneratorFunc allows a function to be used as an IDGenerator.
-type IDGeneratorFunc func(Mail) string
+// MessageIDFunc allows a function to be used as an MessageIDFactory.
+type MessageIDFunc func(Mail) string
 
 // Option is a builder option.
-type Option func(*builder)
+type Option func(*Config)
 
 type builder struct {
-	clock      Clock
-	idgen      IDGenerator
+	cfg        Config
 	boundaries int
 }
 
 // Build the mail according to RFC 5322.
 func Build(mail Mail, opts ...Option) string {
-	var b builder
+	var cfg Config
 	for _, opt := range opts {
-		opt(&b)
+		opt(&cfg)
 	}
-	if b.clock == nil {
-		b.clock = ClockFunc(time.Now)
+	return BuildConfig(mail, cfg)
+}
+
+// BuildConfig the mail according to RFC 5322.
+func BuildConfig(mail Mail, cfg Config) string {
+	if cfg.Clock == nil {
+		cfg.Clock = ClockFunc(time.Now)
 	}
-	if b.idgen == nil {
-		b.idgen = UUIDGenerator("")
+	if cfg.MessageID == nil {
+		cfg.MessageID = UUIDGenerator("")
 	}
+	b := builder{cfg: cfg}
 	return b.build(mail)
 }
 
 // WithClock returns an Option that overrides the used Clock.
 func WithClock(c Clock) Option {
-	return func(b *builder) {
-		b.clock = c
+	return func(cfg *Config) {
+		cfg.Clock = c
 	}
 }
 
-// WithIDGenerator returns an Option that overrides the used IDGenerator.
-func WithIDGenerator(gen IDGenerator) Option {
-	return func(b *builder) {
-		b.idgen = gen
+// WithIDGenerator returns an Option that specifies the used MessageIDFactory.
+func WithIDGenerator(id MessageIDFactory) Option {
+	return func(cfg *Config) {
+		cfg.MessageID = id
+	}
+}
+
+// WithMessageID returns an Option that sets the Message-ID of the mail.
+func WithMessageID(id string) Option {
+	return func(cfg *Config) {
+		cfg.MessageID = MessageIDFunc(func(m Mail) string { return id })
 	}
 }
 
@@ -94,8 +112,8 @@ var emptyAddr mail.Address
 func (b *builder) build(mail Mail) string {
 	lines := []string{
 		"MIME-Version: 1.0",
-		fmt.Sprintf("Message-ID: %s", b.idgen.GenerateID(mail)),
-		fmt.Sprintf("Date: %s", b.clock.Now().Format(time.RFC1123Z)),
+		fmt.Sprintf("Message-ID: %s", b.cfg.MessageID.GenerateID(mail)),
+		fmt.Sprintf("Date: %s", b.cfg.Clock.Now().Format(time.RFC1123Z)),
 	}
 
 	if mail.Subject != "" {
@@ -212,8 +230,8 @@ func (c ClockFunc) Now() time.Time {
 }
 
 // GenerateID generates a Message-ID.
-func (gen IDGeneratorFunc) GenerateID(m Mail) string {
-	return gen(m)
+func (id MessageIDFunc) GenerateID(m Mail) string {
+	return id(m)
 }
 
 func joinAddresses(addrs ...mail.Address) string {

@@ -1,11 +1,8 @@
 package mapper
 
-import "github.com/bounoable/postdog/letter/rfc"
-
 // Config is the mapper config.
 type Config struct {
 	WithoutAttachmentContent bool
-	RFCOptions               []rfc.Option
 }
 
 // Option configures a Map() call.
@@ -23,12 +20,5 @@ func Configure(opts ...Option) (cfg Config) {
 func WithoutAttachmentContent() Option {
 	return func(cfg *Config) {
 		cfg.WithoutAttachmentContent = true
-	}
-}
-
-// RFCOptions returns an Option that adds rfc.Options when generating the RFC body.
-func RFCOptions(opts ...rfc.Option) Option {
-	return func(cfg *Config) {
-		cfg.RFCOptions = append(cfg.RFCOptions, opts...)
 	}
 }

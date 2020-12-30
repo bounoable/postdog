@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bounoable/postdog/letter/rfc"
 	"github.com/bounoable/postdog/send"
 )
 
@@ -76,7 +75,7 @@ type Mail interface {
 	// Recipients returns the recipients of the mail.
 	Recipients() []mail.Address
 	// RFC returns the RFC 5322 body / data of the mail.
-	RFC(...rfc.Option) string
+	RFC() string
 }
 
 // A Waiter implements rate limiting.
