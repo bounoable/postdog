@@ -466,6 +466,113 @@ func TestLetter_Recipients(t *testing.T) {
 	}
 }
 
+func TestLetter_WithSubject(t *testing.T) {
+	assert.Equal(t, "foo", letter.Write().WithSubject("foo").Subject())
+}
+
+func TestLetter_WithFrom(t *testing.T) {
+	addr := mail.Address{
+		Name:    "Bob",
+		Address: "bob@example.com",
+	}
+	assert.Equal(t, addr, letter.Write().WithFrom(addr.Name, addr.Address).From())
+	assert.Equal(t, addr, letter.Write().WithFromAddress(addr).From())
+}
+
+func TestLetter_WithRecipients(t *testing.T) {
+	addrs := []mail.Address{
+		{
+			Name:    "Bob",
+			Address: "bob@example.com",
+		},
+		{
+			Name:    "Linda",
+			Address: "linda@example.com",
+		},
+	}
+	assert.Equal(t, addrs, letter.Write().WithRecipients(addrs...).Recipients())
+}
+
+func TestLetter_WithTo(t *testing.T) {
+	addrs := []mail.Address{
+		{
+			Name:    "Bob",
+			Address: "bob@example.com",
+		},
+		{
+			Name:    "Linda",
+			Address: "linda@example.com",
+		},
+	}
+	assert.Equal(t, addrs, letter.Write().WithTo(addrs...).To())
+}
+
+func TestLetter_WithCC(t *testing.T) {
+	addrs := []mail.Address{
+		{
+			Name:    "Bob",
+			Address: "bob@example.com",
+		},
+		{
+			Name:    "Linda",
+			Address: "linda@example.com",
+		},
+	}
+	assert.Equal(t, addrs, letter.Write().WithCC(addrs...).CC())
+}
+func TestLetter_WithBCC(t *testing.T) {
+	addrs := []mail.Address{
+		{
+			Name:    "Bob",
+			Address: "bob@example.com",
+		},
+		{
+			Name:    "Linda",
+			Address: "linda@example.com",
+		},
+	}
+	assert.Equal(t, addrs, letter.Write().WithBCC(addrs...).BCC())
+}
+
+func TestLetter_WithReplyTo(t *testing.T) {
+	addrs := []mail.Address{
+		{
+			Name:    "Bob",
+			Address: "bob@example.com",
+		},
+		{
+			Name:    "Linda",
+			Address: "linda@example.com",
+		},
+	}
+	assert.Equal(t, addrs, letter.Write().WithReplyTo(addrs...).ReplyTo())
+}
+
+func TestLetter_WithText(t *testing.T) {
+	assert.Equal(t, "foo", letter.Write().WithText("foo").Text())
+}
+
+func TestLetter_WithHTML(t *testing.T) {
+	assert.Equal(t, "foo", letter.Write().WithHTML("foo").HTML())
+}
+
+func TestLetter_WithContent(t *testing.T) {
+	assert.Equal(t, letter.Write(letter.Text("foo"), letter.HTML("bar")), letter.Write().WithContent("foo", "bar"))
+}
+
+func TestLetter_WithAttachments(t *testing.T) {
+	give := letter.Write()
+	attach := []letter.Option{
+		letter.Attach("foo", []byte{1, 2, 3}),
+		letter.Attach("bar", []byte{1, 2, 3}),
+	}
+	want := letter.Write(attach...)
+	assert.Equal(t, want, give.WithAttachments(
+		letter.NewAttachment("foo", []byte{1, 2, 3}),
+		letter.NewAttachment("bar", []byte{1, 2, 3}),
+	))
+}
+
 func TestLetter_RFC(t *testing.T) {
 	clock := staticClock(time.Now())
 	idgen := rfc.IDGeneratorFunc(func(rfc.Mail) string { return "<id@domain>" })

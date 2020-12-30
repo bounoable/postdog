@@ -226,36 +226,7 @@ func RFC(body string) Option {
 // Attach adds a file attachment to the letter.
 func Attach(filename string, content []byte, opts ...AttachmentOption) Option {
 	return func(l *Letter) error {
-		at := Attachment{
-			filename: filename,
-			content:  content,
-			header:   make(textproto.MIMEHeader),
-		}
-
-		for _, opt := range opts {
-			opt(&at)
-		}
-
-		if at.contentType == "" {
-			if ext := filepath.Ext(filename); ext != "" {
-				at.contentType = mime.TypeByExtension(ext)
-			}
-		}
-
-		if at.contentType == "" {
-			at.contentType = http.DetectContentType(content)
-		}
-
-		filename8 := encode.UTF8(at.filename)
-		filenameASCII := encode.ToASCII(at.filename)
-
-		at.header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.contentType, filename8))
-		at.header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], filenameASCII))
-		at.header.Set("Content-Disposition", fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), filename8))
-		at.header.Set("Content-Transfer-Encoding", "base64")
-
-		l.attachments = append(l.attachments, at)
-
+		l.attachments = append(l.attachments, NewAttachment(filename, content, opts...))
 		return nil
 	}
 }
@@ -306,6 +277,39 @@ func AttachmentSize(s int) AttachmentOption {
 	return func(at *Attachment) {
 		at.size = s
 	}
+}
+
+// NewAttachment creates an Attachment from the given filename, content and opts.
+func NewAttachment(filename string, content []byte, opts ...AttachmentOption) Attachment {
+	at := Attachment{
+		filename: filename,
+		content:  content,
+		header:   make(textproto.MIMEHeader),
+	}
+
+	for _, opt := range opts {
+		opt(&at)
+	}
+
+	if at.contentType == "" {
+		if ext := filepath.Ext(filename); ext != "" {
+			at.contentType = mime.TypeByExtension(ext)
+		}
+	}
+
+	if at.contentType == "" {
+		at.contentType = http.DetectContentType(content)
+	}
+
+	filename8 := encode.UTF8(at.filename)
+	filenameASCII := encode.ToASCII(at.filename)
+
+	at.header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.contentType, filename8))
+	at.header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], filenameASCII))
+	at.header.Set("Content-Disposition", fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), filename8))
+	at.header.Set("Content-Transfer-Encoding", "base64")
+
+	return at
 }
 
 // Expand converts the postdog.Mail pm to a Letter.
@@ -379,9 +383,26 @@ func (l Letter) Subject() string {
 	return l.subject
 }
 
+// WithSubject returns a copy of l withs it's subject set to s.
+func (l Letter) WithSubject(s string) Letter {
+	l.subject = s
+	return l
+}
+
 // From returns the sender of the letter.
 func (l Letter) From() mail.Address {
 	return l.from
+}
+
+// WithFrom returns a copy of l with an updated `From` field.
+func (l Letter) WithFrom(name, addr string) Letter {
+	return l.WithFromAddress(mail.Address{Name: name, Address: addr})
+}
+
+// WithFromAddress returns a copy of l with addr as it's `From` field.
+func (l Letter) WithFromAddress(addr mail.Address) Letter {
+	l.from = addr
+	return l
 }
 
 // To returns the `To` recipients of the letter.
@@ -389,9 +410,21 @@ func (l Letter) To() []mail.Address {
 	return l.to
 }
 
+// WithTo returns a copy of l with addrs as it's `To` recipients.
+func (l Letter) WithTo(addrs ...mail.Address) Letter {
+	l.to = addrs
+	return l
+}
+
 // CC returns the `Cc` recipients of the letter.
 func (l Letter) CC() []mail.Address {
 	return l.cc
+}
+
+// WithCC returns a copy of l with addrs as it's `CC` recipients.
+func (l Letter) WithCC(addrs ...mail.Address) Letter {
+	l.cc = addrs
+	return l
 }
 
 // BCC returns the `Bcc` recipients of the letter.
@@ -399,9 +432,21 @@ func (l Letter) BCC() []mail.Address {
 	return l.bcc
 }
 
+// WithBCC returns a copy of l with addrs as it's `BCC` recipients.
+func (l Letter) WithBCC(addrs ...mail.Address) Letter {
+	l.bcc = addrs
+	return l
+}
+
 // ReplyTo returns the `Reply-To` recipients of the letter.
 func (l Letter) ReplyTo() []mail.Address {
 	return l.replyTo
+}
+
+// WithReplyTo returns a copy of l with addrs as it's `ReplyTo` field.
+func (l Letter) WithReplyTo(addrs ...mail.Address) Letter {
+	l.replyTo = addrs
+	return l
 }
 
 // Recipients returns all recipients of the letter.
@@ -418,9 +463,21 @@ func (l Letter) Recipients() []mail.Address {
 	return rcpts
 }
 
+// WithRecipients returns a copy of l with addrs as it's recipients.
+func (l Letter) WithRecipients(addrs ...mail.Address) Letter {
+	l.recipients = addrs
+	return l
+}
+
 // Text returns the text content of the letter.
 func (l Letter) Text() string {
 	return l.text
+}
+
+// WithText returns a copy of l with t as it's text content.
+func (l Letter) WithText(t string) Letter {
+	l.text = t
+	return l
 }
 
 // HTML returns the HTML content of the letter.
@@ -428,14 +485,32 @@ func (l Letter) HTML() string {
 	return l.html
 }
 
+// WithHTML returns a copy of h with t as it's HTML content.
+func (l Letter) WithHTML(h string) Letter {
+	l.html = h
+	return l
+}
+
 // Content returns both the text and HTML content of the letter.
 func (l Letter) Content() (text string, html string) {
 	return l.text, l.html
 }
 
+// WithContent returns a copy of l with text as it's text content and html as
+// it's HTML content.
+func (l Letter) WithContent(text, html string) Letter {
+	return l.WithText(text).WithHTML(html)
+}
+
 // Attachments returns the attachments of the letter.
 func (l Letter) Attachments() []Attachment {
 	return l.attachments
+}
+
+// WithAttachments returns a copy of l with attach as it's attachments.
+func (l Letter) WithAttachments(attach ...Attachment) Letter {
+	l.attachments = attach
+	return l
 }
 
 // RFC returns the letter as a RFC 5322 string.
