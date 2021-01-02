@@ -573,6 +573,10 @@ func TestLetter_WithAttachments(t *testing.T) {
 	))
 }
 
+func TestLetter_WithRFC(t *testing.T) {
+	assert.Equal(t, letter.Write(letter.RFC("rfc body")), letter.Write().WithRFC("rfc body"))
+}
+
 func TestLetter_RFC(t *testing.T) {
 	clock := staticClock(time.Now())
 

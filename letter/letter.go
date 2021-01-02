@@ -558,6 +558,12 @@ func (l Letter) RFC() string {
 	}, l.rfcConfig)
 }
 
+// WithRFC returns a copy of l with it's rfc body replaced by rfc.
+func (l Letter) WithRFC(rfc string) Letter {
+	l.rfc = rfc
+	return l
+}
+
 func (l Letter) String() string {
 	return l.RFC()
 }
