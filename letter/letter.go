@@ -323,6 +323,9 @@ func NewAttachment(filename string, content []byte, opts ...AttachmentOption) At
 // If pm has an Attachments() method, the return type of that method must be
 // a slice of a type that implements the following methods: Filename() string,
 // Content() []byte, ContentType() string, Header() textproto.MIMEHeader.
+//
+// If pm implements an RFCConfig() method, it will be used to add an rfc.Config
+// to the Letter.
 func Expand(pm postdog.Mail) Letter {
 	if l, ok := pm.(Letter); ok {
 		return l
@@ -368,6 +371,10 @@ func Expand(pm postdog.Mail) Letter {
 	}
 
 	l := Write(letterOpts...)
+
+	if rfcm, ok := pm.(interface{ RFCConfig() rfc.Config }); ok {
+		l = l.WithRFCConfig(rfcm.RFCConfig())
+	}
 
 	if rfcBody := pm.RFC(); rfcBody != "" {
 		if tmp := l.RFC(); tmp != rfcBody {
