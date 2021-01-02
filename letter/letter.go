@@ -331,7 +331,6 @@ func Expand(pm postdog.Mail) Letter {
 	letterOpts := []Option{
 		FromAddress(pm.From()),
 		RecipientAddress(pm.Recipients()...),
-		RFC(pm.RFC()),
 	}
 
 	if toMail, ok := pm.(interface{ To() []mail.Address }); ok {
@@ -369,6 +368,12 @@ func Expand(pm postdog.Mail) Letter {
 	}
 
 	l := Write(letterOpts...)
+
+	if rfcBody := pm.RFC(); rfcBody != "" {
+		if tmp := l.RFC(); tmp != rfcBody {
+			l.rfc = rfcBody
+		}
+	}
 
 	return l
 }
