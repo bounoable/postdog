@@ -3,6 +3,7 @@ package letter
 import (
 	"bytes"
 	"net/mail"
+	"net/textproto"
 	"testing"
 
 	"github.com/bounoable/postdog"
@@ -13,6 +14,15 @@ type basicMail struct {
 	from       mail.Address
 	recipients []mail.Address
 	body       string
+}
+
+type attachmentMail struct {
+	basicMail
+	attachments []attachment
+}
+
+type attachment struct {
+	name string
 }
 
 var (
@@ -161,13 +171,13 @@ func TestExpand(t *testing.T) {
 		},
 		{
 			name: "mail with Attachments() method",
-			give: Write(
-				AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
-				AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
-			),
+			give: attachmentMail{
+				attachments: []attachment{{"foo"}, {"bar"}, {"foobar"}},
+			},
 			want: Write(
-				AttachReader("attach-1", bytes.NewReader([]byte{1, 2, 3})),
-				AttachReader("attach-2", bytes.NewReader([]byte{2, 3, 4, 5})),
+				AttachReader("foo", bytes.NewReader([]byte{1, 2, 3}), AttachmentType("application/pdf")),
+				AttachReader("bar", bytes.NewReader([]byte{1, 2, 3}), AttachmentType("application/pdf")),
+				AttachReader("foobar", bytes.NewReader([]byte{1, 2, 3}), AttachmentType("application/pdf")),
 			),
 		},
 	}
@@ -191,4 +201,33 @@ func (m basicMail) RFC() string {
 	return m.body
 }
 
+func (m attachmentMail) Attachments() []attachment {
+	return m.attachments
+}
+
+func (a attachment) Filename() string {
+	return a.name
+}
+
+func (a attachment) Content() []byte {
+	return []byte{1, 2, 3}
+}
+
+func (a attachment) ContentType() string {
+	return "application/pdf"
+}
+
+func (a attachment) Header() textproto.MIMEHeader {
+	return textproto.MIMEHeader{
+		"foo": []string{"bar"},
+	}
+}
+
 var _ postdog.Mail = basicMail{}
+var _ postdog.Mail = attachmentMail{}
+var _ interface {
+	Filename() string
+	Content() []byte
+	ContentType() string
+	Header() textproto.MIMEHeader
+} = attachment{}
