@@ -570,6 +570,11 @@ func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
 		attachments[i] = at.Map(opts...)
 	}
 
+	var rfc string
+	if l.rfc != "" {
+		rfc = l.rfc
+	}
+
 	return map[string]interface{}{
 		"from":        mapAddress(l.From()),
 		"recipients":  mapAddresses(l.Recipients()...),
@@ -580,7 +585,7 @@ func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
 		"subject":     l.Subject(),
 		"text":        l.Text(),
 		"html":        l.HTML(),
-		"rfc":         l.RFC(),
+		"rfc":         rfc,
 		"attachments": attachments,
 	}
 }
