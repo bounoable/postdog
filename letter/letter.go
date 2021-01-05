@@ -376,12 +376,6 @@ func Expand(pm postdog.Mail) Letter {
 		l = l.WithRFCConfig(rfcm.RFCConfig())
 	}
 
-	if rfcBody := pm.RFC(); rfcBody != "" {
-		if tmp := l.RFC(); tmp != rfcBody {
-			l.rfc = rfcBody
-		}
-	}
-
 	return l
 }
 
@@ -571,8 +565,6 @@ func (l Letter) String() string {
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment contents in the map.
 func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
-	// cfg := mapper.Configure(opts...)
-
 	attachments := make([]interface{}, len(l.attachments))
 	for i, at := range l.attachments {
 		attachments[i] = at.Map(opts...)

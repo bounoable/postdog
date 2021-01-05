@@ -34,7 +34,15 @@ func TestExpandMail_basic(t *testing.T) {
 	m := ExpandMail(bm)
 	assert.Equal(t, bm.from, m.From())
 	assert.Equal(t, bm.recipients, m.Recipients())
-	assert.Equal(t, bm.rfc, m.RFC())
+
+	now := time.Now()
+	clock := rfc.ClockFunc(func() time.Time { return now })
+
+	assert.Equal(
+		t,
+		letter.Expand(bm).WithRFCOptions(rfc.WithClock(clock), rfc.WithMessageID("static")).RFC(),
+		m.WithRFCOptions(rfc.WithClock(clock), rfc.WithMessageID("static")).RFC(),
+	)
 }
 
 func TestExpandMail_withID(t *testing.T) {

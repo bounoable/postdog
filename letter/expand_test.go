@@ -49,7 +49,6 @@ func TestExpand(t *testing.T) {
 				recipients: []mail.Address{
 					{Name: "Linda Belcher", Address: "linda@example.com"},
 				},
-				rfc: "mail body",
 			},
 		},
 		{
@@ -162,11 +161,23 @@ func TestExpand(t *testing.T) {
 		},
 		{
 			name: "mail with RFC() method",
+			give: aBasicMail,
+			want: Letter{
+				from: mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
+				recipients: []mail.Address{
+					{Name: "Linda Belcher", Address: "linda@example.com"},
+				},
+			},
+		},
+		{
+			name: "letter with custom RFC body",
 			give: Write(
+				From("Bob Belcher", "bob@example.com"),
 				RFC("rfc body"),
 			),
 			want: Letter{
-				rfc: "rfc body",
+				from: mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
+				rfc:  "rfc body",
 			},
 		},
 		{
