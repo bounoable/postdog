@@ -719,7 +719,7 @@ func (at Attachment) Map(opts ...mapper.Option) map[string]interface{} {
 		"content":     []byte{},
 		"size":        at.Size(),
 		"contentType": at.contentType,
-		"header":      (map[string][]string)(at.header),
+		"header":      headerToMap(at.header),
 	}
 
 	if !cfg.WithoutAttachmentContent {
@@ -747,8 +747,8 @@ func (at *Attachment) Parse(m map[string]interface{}) {
 		at.size = size
 	}
 
-	if header, ok := m["header"].(map[string][]string); ok {
-		at.header = textproto.MIMEHeader(header)
+	if header, ok := m["header"].(map[string]interface{}); ok {
+		at.header = mapToHeader(header)
 	}
 
 	at.normalize()
@@ -883,4 +883,34 @@ func parseIFaceAddresses(ifs ...interface{}) []mail.Address {
 		}
 	}
 	return addrs
+}
+
+func headerToMap(h textproto.MIMEHeader) map[string]interface{} {
+	m := make(map[string]interface{})
+	for k, v := range h {
+		iv := make([]interface{}, len(v))
+		for i, vv := range v {
+			iv[i] = vv
+		}
+		m[k] = iv
+	}
+	return m
+}
+
+func mapToHeader(m map[string]interface{}) textproto.MIMEHeader {
+	h := make(textproto.MIMEHeader, len(m))
+	for k, v := range m {
+		vals, ok := v.([]interface{})
+		if !ok {
+			continue
+		}
+		svals := make([]string, 0, len(vals))
+		for _, val := range vals {
+			if sval, ok := val.(string); ok {
+				svals = append(svals, sval)
+			}
+		}
+		h[k] = svals
+	}
+	return h
 }

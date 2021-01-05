@@ -29,7 +29,7 @@ func TestAttachment_Map(t *testing.T) {
 					"content":     []byte{1, 2, 3},
 					"size":        3,
 					"contentType": "text/plain",
-					"header":      (map[string][]string)(at.header),
+					"header":      headerToMap(at.header),
 				}
 			},
 		},
@@ -46,7 +46,7 @@ func TestAttachment_Map(t *testing.T) {
 					"content":     []byte{},
 					"size":        3,
 					"contentType": "text/plain",
-					"header":      (map[string][]string)(at.header),
+					"header":      headerToMap(at.header),
 				}
 			},
 			opts: []mapper.Option{
@@ -125,6 +125,28 @@ func TestAttachment_Parse(t *testing.T) {
 				assert.Equal(t, []byte{1, 2, 3}, a.Content())
 				assert.Equal(t, "text/plain", a.ContentType())
 				assert.Equal(t, 5, a.Size())
+			},
+		},
+		{
+			name: "with header",
+			give: map[string]interface{}{
+				"filename":    "at1",
+				"content":     []byte{1, 2, 3},
+				"contentType": "text/plain",
+				"header": map[string]interface{}{
+					"foo": []interface{}{"bar", "baz"},
+					"bar": []interface{}{"foo", "baz"},
+				},
+			},
+			assert: func(t *testing.T, a Attachment) {
+				assert.Equal(t, "at1", a.Filename())
+				assert.Equal(t, []byte{1, 2, 3}, a.Content())
+				assert.Equal(t, "text/plain", a.ContentType())
+				assert.Equal(t, 3, a.Size())
+				assert.Equal(t, textproto.MIMEHeader{
+					"foo": []string{"bar", "baz"},
+					"bar": []string{"foo", "baz"},
+				}, a.Header())
 			},
 		},
 	}
@@ -211,7 +233,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     []byte{1, 2, 3},
 							"size":        3,
 							"contentType": "text/plain",
-							"header":      (map[string][]string)(l.attachments[0].header),
+							"header":      headerToMap(l.attachments[0].header),
 						},
 					},
 					"rfc": "",
@@ -285,7 +307,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     []byte{1, 2, 3},
 							"size":        3,
 							"contentType": "text/plain",
-							"header":      (map[string][]string)(l.attachments[0].header),
+							"header":      headerToMap(l.attachments[0].header),
 						},
 					},
 					"rfc": "rfc body",
@@ -362,7 +384,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     []byte{},
 							"size":        3,
 							"contentType": "text/plain",
-							"header":      (map[string][]string)(l.attachments[0].header),
+							"header":      headerToMap(l.attachments[0].header),
 						},
 					},
 					"rfc": "rfc body",
@@ -439,9 +461,9 @@ func TestLetter_Parse(t *testing.T) {
 						"content":     []byte{1, 2, 3},
 						"size":        3,
 						"contentType": "text/plain",
-						"header": map[string][]string{
-							"key1": {"val"},
-							"key2": {"val1", "val2"},
+						"header": map[string]interface{}{
+							"key1": []interface{}{"val"},
+							"key2": []interface{}{"val1", "val2"},
 						},
 					},
 				},
@@ -538,9 +560,9 @@ func TestLetter_Parse(t *testing.T) {
 						"content":     []byte{1, 2, 3},
 						"size":        3,
 						"contentType": "text/plain",
-						"header": map[string][]string{
-							"key1": {"val"},
-							"key2": {"val1", "val2"},
+						"header": map[string]interface{}{
+							"key1": []interface{}{"val"},
+							"key2": []interface{}{"val1", "val2"},
 						},
 					},
 				},
