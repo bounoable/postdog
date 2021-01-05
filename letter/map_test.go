@@ -1,6 +1,8 @@
 package letter
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/mail"
 	"net/textproto"
 	"testing"
@@ -26,8 +28,8 @@ func TestAttachment_Map(t *testing.T) {
 			want: func(at Attachment) map[string]interface{} {
 				return map[string]interface{}{
 					"filename":    "at1",
-					"content":     []byte{1, 2, 3},
-					"size":        3,
+					"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
+					"size":        float64(3),
 					"contentType": "text/plain",
 					"header":      headerToMap(at.header),
 				}
@@ -43,8 +45,8 @@ func TestAttachment_Map(t *testing.T) {
 			want: func(at Attachment) map[string]interface{} {
 				return map[string]interface{}{
 					"filename":    "at1",
-					"content":     []byte{},
-					"size":        3,
+					"content":     base64.StdEncoding.EncodeToString([]byte{}),
+					"size":        float64(3),
 					"contentType": "text/plain",
 					"header":      headerToMap(at.header),
 				}
@@ -73,8 +75,8 @@ func TestAttachment_Parse(t *testing.T) {
 			name: "default",
 			give: map[string]interface{}{
 				"filename":    "at1",
-				"content":     []byte{1, 2, 3},
-				"size":        3,
+				"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
+				"size":        float64(3),
 				"contentType": "text/plain",
 			},
 			assert: func(t *testing.T, a Attachment) {
@@ -88,7 +90,7 @@ func TestAttachment_Parse(t *testing.T) {
 			name: "without content",
 			give: map[string]interface{}{
 				"filename":    "at1",
-				"size":        3,
+				"size":        float64(3),
 				"contentType": "text/plain",
 			},
 			assert: func(t *testing.T, a Attachment) {
@@ -102,7 +104,7 @@ func TestAttachment_Parse(t *testing.T) {
 			name: "without size",
 			give: map[string]interface{}{
 				"filename":    "at1",
-				"content":     []byte{1, 2, 3},
+				"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 				"contentType": "text/plain",
 			},
 			assert: func(t *testing.T, a Attachment) {
@@ -116,8 +118,8 @@ func TestAttachment_Parse(t *testing.T) {
 			name: "content <-> size mismatch",
 			give: map[string]interface{}{
 				"filename":    "at1",
-				"content":     []byte{1, 2, 3},
-				"size":        5,
+				"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
+				"size":        float64(5),
 				"contentType": "text/plain",
 			},
 			assert: func(t *testing.T, a Attachment) {
@@ -131,7 +133,7 @@ func TestAttachment_Parse(t *testing.T) {
 			name: "with header",
 			give: map[string]interface{}{
 				"filename":    "at1",
-				"content":     []byte{1, 2, 3},
+				"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 				"contentType": "text/plain",
 				"header": map[string]interface{}{
 					"foo": []interface{}{"bar", "baz"},
@@ -158,6 +160,21 @@ func TestAttachment_Parse(t *testing.T) {
 			tt.assert(t, at)
 		})
 	}
+
+	t.Run("JSON", func(t *testing.T) {
+		raw := `{"filename": "foo.txt", "content": "AQID", "contentType": "text/plain", "header": {"foo": ["bar", "baz"]}}`
+		m := make(map[string]interface{})
+		err := json.Unmarshal([]byte(raw), &m)
+		assert.Nil(t, err)
+
+		var at Attachment
+		at.Parse(m)
+
+		assert.Equal(t, "foo.txt", at.Filename())
+		assert.Equal(t, []byte{1, 2, 3}, at.Content())
+		assert.Equal(t, "text/plain", at.ContentType())
+		assert.Equal(t, textproto.MIMEHeader{"foo": []string{"bar", "baz"}}, at.Header())
+	})
 }
 
 func TestLetter_Map(t *testing.T) {
@@ -230,8 +247,8 @@ func TestLetter_Map(t *testing.T) {
 					"attachments": []interface{}{
 						map[string]interface{}{
 							"filename":    "at1",
-							"content":     []byte{1, 2, 3},
-							"size":        3,
+							"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
+							"size":        float64(3),
 							"contentType": "text/plain",
 							"header":      headerToMap(l.attachments[0].header),
 						},
@@ -304,8 +321,8 @@ func TestLetter_Map(t *testing.T) {
 					"attachments": []interface{}{
 						map[string]interface{}{
 							"filename":    "at1",
-							"content":     []byte{1, 2, 3},
-							"size":        3,
+							"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
+							"size":        float64(3),
 							"contentType": "text/plain",
 							"header":      headerToMap(l.attachments[0].header),
 						},
@@ -381,8 +398,8 @@ func TestLetter_Map(t *testing.T) {
 					"attachments": []interface{}{
 						map[string]interface{}{
 							"filename":    "at1",
-							"content":     []byte{},
-							"size":        3,
+							"content":     base64.StdEncoding.EncodeToString([]byte{}),
+							"size":        float64(3),
 							"contentType": "text/plain",
 							"header":      headerToMap(l.attachments[0].header),
 						},
@@ -458,7 +475,7 @@ func TestLetter_Parse(t *testing.T) {
 				"attachments": []interface{}{
 					map[string]interface{}{
 						"filename":    "at1",
-						"content":     []byte{1, 2, 3},
+						"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 						"size":        3,
 						"contentType": "text/plain",
 						"header": map[string]interface{}{
@@ -557,7 +574,7 @@ func TestLetter_Parse(t *testing.T) {
 				"attachments": []interface{}{
 					map[string]interface{}{
 						"filename":    "at1",
-						"content":     []byte{1, 2, 3},
+						"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 						"size":        3,
 						"contentType": "text/plain",
 						"header": map[string]interface{}{

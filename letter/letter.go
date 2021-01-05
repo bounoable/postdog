@@ -2,9 +2,11 @@ package letter
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"mime"
 	"net/http"
 	"net/mail"
@@ -716,14 +718,14 @@ func (at Attachment) Map(opts ...mapper.Option) map[string]interface{} {
 
 	m := map[string]interface{}{
 		"filename":    at.filename,
-		"content":     []byte{},
-		"size":        at.Size(),
+		"content":     "",
+		"size":        float64(at.Size()),
 		"contentType": at.contentType,
 		"header":      headerToMap(at.header),
 	}
 
 	if !cfg.WithoutAttachmentContent {
-		m["content"] = at.content
+		m["content"] = base64.StdEncoding.EncodeToString(at.Content())
 	}
 
 	return m
@@ -735,16 +737,18 @@ func (at *Attachment) Parse(m map[string]interface{}) {
 		at.filename = name
 	}
 
-	if content, ok := m["content"].([]byte); ok {
-		at.content = content
+	if content, ok := m["content"].(string); ok {
+		if b, err := base64.StdEncoding.DecodeString(content); err == nil {
+			at.content = b
+		}
 	}
 
 	if contentType, ok := m["contentType"].(string); ok {
 		at.contentType = contentType
 	}
 
-	if size, ok := m["size"].(int); ok {
-		at.size = size
+	if size, ok := m["size"].(float64); ok {
+		at.size = int(math.Round(size))
 	}
 
 	if header, ok := m["header"].(map[string]interface{}); ok {
