@@ -89,8 +89,13 @@ func New(s Store, opts ...Option) postdog.Plugin {
 				errMsg = sendError.Error()
 			}
 
+			id := MailIDFromContext(ctx)
+			if id == uuid.Nil {
+				id = uuid.New()
+			}
+
 			m := ExpandMail(pm).
-				WithID(uuid.New()).
+				WithID(id).
 				WithSendError(errMsg).
 				WithSendTime(sentAt)
 
