@@ -465,8 +465,8 @@ func withFilter(filter bson.D, keys []string, vals interface{}) bson.D {
 }
 
 func withAddressesFilter(filter bson.D, field string, addrs ...mail.Address) bson.D {
-	names := regexInValues(addressNames(addrs...))
-	addresses := regexInValues(addresses(addrs...))
+	names := inValues(addressNames(addrs...))
+	addresses := inValues(addresses(addrs...))
 
 	if len(names) == 0 && len(addresses) == 0 {
 		return filter
@@ -488,6 +488,10 @@ func withAddressesFilter(filter bson.D, field string, addrs ...mail.Address) bso
 		{{Key: field + ".name", Value: names}},
 		{{Key: field + ".address", Value: addresses}},
 	}})
+}
+
+func inValues(vals []string) bson.D {
+	return bson.D{{Key: "$in", Value: vals}}
 }
 
 func regexInValues(texts []string) bson.D {
