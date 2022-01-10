@@ -21,9 +21,11 @@ func TestAttachment_Map(t *testing.T) {
 		{
 			name: "default",
 			give: Attachment{
-				filename:    "at1",
-				content:     []byte{1, 2, 3},
-				contentType: "text/plain",
+				A{
+					Filename:    "at1",
+					Content:     []byte{1, 2, 3},
+					ContentType: "text/plain",
+				},
 			},
 			want: func(at Attachment) map[string]interface{} {
 				return map[string]interface{}{
@@ -31,16 +33,18 @@ func TestAttachment_Map(t *testing.T) {
 					"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 					"size":        float64(3),
 					"contentType": "text/plain",
-					"header":      headerToMap(at.header),
+					"header":      headerToMap(at.A.Header),
 				}
 			},
 		},
 		{
 			name: "without content",
 			give: Attachment{
-				filename:    "at1",
-				content:     []byte{1, 2, 3},
-				contentType: "text/plain",
+				A{
+					Filename:    "at1",
+					Content:     []byte{1, 2, 3},
+					ContentType: "text/plain",
+				},
 			},
 			want: func(at Attachment) map[string]interface{} {
 				return map[string]interface{}{
@@ -48,7 +52,7 @@ func TestAttachment_Map(t *testing.T) {
 					"content":     base64.StdEncoding.EncodeToString([]byte{}),
 					"size":        float64(3),
 					"contentType": "text/plain",
-					"header":      headerToMap(at.header),
+					"header":      headerToMap(at.A.Header),
 				}
 			},
 			opts: []mapper.Option{
@@ -250,7 +254,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 							"size":        float64(3),
 							"contentType": "text/plain",
-							"header":      headerToMap(l.L.Attachments[0].header),
+							"header":      headerToMap(l.L.Attachments[0].A.Header),
 						},
 					},
 					"rfc": "",
@@ -324,7 +328,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 							"size":        float64(3),
 							"contentType": "text/plain",
-							"header":      headerToMap(l.L.Attachments[0].header),
+							"header":      headerToMap(l.L.Attachments[0].A.Header),
 						},
 					},
 					"rfc": "rfc body",
@@ -401,7 +405,7 @@ func TestLetter_Map(t *testing.T) {
 							"content":     base64.StdEncoding.EncodeToString([]byte{}),
 							"size":        float64(3),
 							"contentType": "text/plain",
-							"header":      headerToMap(l.L.Attachments[0].header),
+							"header":      headerToMap(l.L.Attachments[0].A.Header),
 						},
 					},
 					"rfc": "rfc body",
@@ -510,16 +514,16 @@ func TestLetter_Parse(t *testing.T) {
 				assert.Equal(t, "<p>Hello.</p>", l.HTML())
 				assert.NotEqual(t, "", l.RFC())
 				assert.Equal(t, []Attachment{
-					{
-						filename:    "at1",
-						content:     []byte{1, 2, 3},
-						contentType: "text/plain",
-						size:        0, // because non-0 means override actual size
-						header: textproto.MIMEHeader{
+					{A{
+						Filename:    "at1",
+						Content:     []byte{1, 2, 3},
+						ContentType: "text/plain",
+						Size:        0, // because non-0 means override actual size
+						Header: textproto.MIMEHeader{
 							"key1": {"val"},
 							"key2": {"val1", "val2"},
 						},
-					},
+					}},
 				}, l.Attachments())
 			},
 		},
@@ -609,16 +613,16 @@ func TestLetter_Parse(t *testing.T) {
 				assert.Equal(t, "<p>Hello.</p>", l.HTML())
 				assert.Equal(t, "rfc body", l.RFC())
 				assert.Equal(t, []Attachment{
-					{
-						filename:    "at1",
-						content:     []byte{1, 2, 3},
-						contentType: "text/plain",
-						size:        0, // because non-0 means override actual size
-						header: textproto.MIMEHeader{
+					{A{
+						Filename:    "at1",
+						Content:     []byte{1, 2, 3},
+						ContentType: "text/plain",
+						Size:        0, // because non-0 means override actual size
+						Header: textproto.MIMEHeader{
 							"key1": {"val"},
 							"key2": {"val1", "val2"},
 						},
-					},
+					}},
 				}, l.Attachments())
 			},
 		},

@@ -45,11 +45,16 @@ type L struct {
 
 // Attachment is a file attachment.
 type Attachment struct {
-	filename    string
-	content     []byte
-	contentType string
-	size        int // overrides the actual size if != 0
-	header      textproto.MIMEHeader
+	A
+}
+
+// A contains the fields of Attachment.
+type A struct {
+	Filename    string
+	Content     []byte
+	ContentType string
+	Size        int // overrides the actual size if != 0
+	Header      textproto.MIMEHeader
 }
 
 // Option modifies a letter.
@@ -276,46 +281,48 @@ func AttachFile(filename, path string, opts ...AttachmentOption) Option {
 // AttachmentType sets the `Content-Type` of the attachment.
 func AttachmentType(ct string) AttachmentOption {
 	return func(at *Attachment) {
-		at.contentType = ct
+		at.A.ContentType = ct
 	}
 }
 
 // AttachmentSize returns an AttachmentOption that explicitly sets / overrides it's size.
 func AttachmentSize(s int) AttachmentOption {
 	return func(at *Attachment) {
-		at.size = s
+		at.A.Size = s
 	}
 }
 
 // NewAttachment creates an Attachment from the given filename, content and opts.
 func NewAttachment(filename string, content []byte, opts ...AttachmentOption) Attachment {
 	at := Attachment{
-		filename: filename,
-		content:  content,
-		header:   make(textproto.MIMEHeader),
+		A{
+			Filename: filename,
+			Content:  content,
+			Header:   make(textproto.MIMEHeader),
+		},
 	}
 
 	for _, opt := range opts {
 		opt(&at)
 	}
 
-	if at.contentType == "" {
+	if at.A.ContentType == "" {
 		if ext := filepath.Ext(filename); ext != "" {
-			at.contentType = mime.TypeByExtension(ext)
+			at.A.ContentType = mime.TypeByExtension(ext)
 		}
 	}
 
-	if at.contentType == "" {
-		at.contentType = http.DetectContentType(content)
+	if at.A.ContentType == "" {
+		at.A.ContentType = http.DetectContentType(content)
 	}
 
-	filename8 := encode.UTF8(at.filename)
-	filenameASCII := encode.ToASCII(at.filename)
+	filename8 := encode.UTF8(at.A.Filename)
+	filenameASCII := encode.ToASCII(at.A.Filename)
 
-	at.header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.contentType, filename8))
-	at.header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], filenameASCII))
-	at.header.Set("Content-Disposition", fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), filename8))
-	at.header.Set("Content-Transfer-Encoding", "base64")
+	at.A.Header.Set("Content-Type", fmt.Sprintf(`%s; name="%s"`, at.A.ContentType, filename8))
+	at.A.Header.Set("Content-ID", fmt.Sprintf("<%s_%s>", fmt.Sprintf("%x", sha1.Sum(at.Content()))[:12], filenameASCII))
+	at.A.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; size=%d; filename="%s"`, at.Size(), filename8))
+	at.A.Header.Set("Content-Transfer-Encoding", "base64")
 
 	return at
 }
@@ -691,30 +698,30 @@ func (l *Letter) normalizeAttachments() {
 
 // Filename returns the filename of the Attachment.
 func (at Attachment) Filename() string {
-	return at.filename
+	return at.A.Filename
 }
 
 // Size returns the filesize of the Attachment.
 func (at Attachment) Size() int {
-	if at.size != 0 {
-		return at.size
+	if at.A.Size != 0 {
+		return at.A.Size
 	}
-	return len(at.content)
+	return len(at.A.Content)
 }
 
 // Content returns the file contents of the Attachment.
 func (at Attachment) Content() []byte {
-	return at.content
+	return at.A.Content
 }
 
 // ContentType returns the `Content-Type` of the Attachment.
 func (at Attachment) ContentType() string {
-	return at.contentType
+	return at.A.ContentType
 }
 
 // Header returns the MIME headers of the Attachment.
 func (at Attachment) Header() textproto.MIMEHeader {
-	return at.header
+	return at.A.Header
 }
 
 // Map maps at to a map[string]interface{}. Use WithoutContent() option to
@@ -723,11 +730,11 @@ func (at Attachment) Map(opts ...mapper.Option) map[string]interface{} {
 	cfg := mapper.Configure(opts...)
 
 	m := map[string]interface{}{
-		"filename":    at.filename,
+		"filename":    at.A.Filename,
 		"content":     "",
 		"size":        float64(at.Size()),
-		"contentType": at.contentType,
-		"header":      headerToMap(at.header),
+		"contentType": at.A.ContentType,
+		"header":      headerToMap(at.A.Header),
 	}
 
 	if !cfg.WithoutAttachmentContent {
@@ -740,33 +747,33 @@ func (at Attachment) Map(opts ...mapper.Option) map[string]interface{} {
 // Parse parses the map m and applies the values to at.
 func (at *Attachment) Parse(m map[string]interface{}) {
 	if name, ok := m["filename"].(string); ok {
-		at.filename = name
+		at.A.Filename = name
 	}
 
 	if content, ok := m["content"].(string); ok {
 		if b, err := base64.StdEncoding.DecodeString(content); err == nil {
-			at.content = b
+			at.A.Content = b
 		}
 	}
 
 	if contentType, ok := m["contentType"].(string); ok {
-		at.contentType = contentType
+		at.A.ContentType = contentType
 	}
 
 	if size, ok := m["size"].(float64); ok {
-		at.size = int(math.Round(size))
+		at.A.Size = int(math.Round(size))
 	}
 
 	if header, ok := m["header"].(map[string]interface{}); ok {
-		at.header = mapToHeader(header)
+		at.A.Header = mapToHeader(header)
 	}
 
 	at.normalize()
 }
 
 func (at *Attachment) normalize() {
-	if at.size != 0 && at.size == len(at.content) {
-		at.size = 0
+	if at.A.Size != 0 && at.A.Size == len(at.A.Content) {
+		at.A.Size = 0
 	}
 }
 
@@ -822,10 +829,12 @@ func getAttachments(m postdog.Mail) []Attachment {
 	for i := 0; i < len; i++ {
 		at := ret[0].Index(i).Interface().(attachment)
 		result[i] = Attachment{
-			filename:    at.Filename(),
-			content:     at.Content(),
-			contentType: at.ContentType(),
-			header:      at.Header(),
+			A{
+				Filename:    at.Filename(),
+				Content:     at.Content(),
+				ContentType: at.ContentType(),
+				Header:      at.Header(),
+			},
 		}
 	}
 
