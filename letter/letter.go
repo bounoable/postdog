@@ -23,18 +23,23 @@ import (
 
 // Letter represents a mail.
 type Letter struct {
-	subject     string
-	from        mail.Address
-	recipients  []mail.Address
-	to          []mail.Address
-	cc          []mail.Address
-	bcc         []mail.Address
-	replyTo     []mail.Address
-	rfc         string
-	text        string
-	html        string
-	attachments []Attachment
-	rfcConfig   rfc.Config
+	L
+}
+
+// L contains the fields of a Letter.
+type L struct {
+	Subject     string
+	From        mail.Address
+	Recipients  []mail.Address
+	To          []mail.Address
+	CC          []mail.Address
+	BCC         []mail.Address
+	ReplyTo     []mail.Address
+	RFC         string
+	Text        string
+	HTML        string
+	Attachments []Attachment
+	RFCConfig   rfc.Config
 }
 
 // Attachment is a file attachment.
@@ -87,7 +92,7 @@ func New(opts ...Option) (Letter, error) {
 // Subject sets the `Subject` header.
 func Subject(s string) Option {
 	return func(l *Letter) error {
-		l.subject = s
+		l.L.Subject = s
 		return nil
 	}
 }
@@ -100,7 +105,7 @@ func From(name, addr string) Option {
 // FromAddress sets sender of the letter.
 func FromAddress(addr mail.Address) Option {
 	return func(l *Letter) error {
-		l.from = addr
+		l.L.From = addr
 		return nil
 	}
 }
@@ -116,8 +121,8 @@ func Recipient(name, addr string) Option {
 func RecipientAddress(addrs ...mail.Address) Option {
 	return func(l *Letter) error {
 		for _, addr := range addrs {
-			if !containsAddress(l.recipients, addr) {
-				l.recipients = append(l.recipients, addr)
+			if !containsAddress(l.L.Recipients, addr) {
+				l.L.Recipients = append(l.L.Recipients, addr)
 			}
 		}
 		return nil
@@ -133,8 +138,8 @@ func To(name, addr string) Option {
 func ToAddress(addrs ...mail.Address) Option {
 	return func(l *Letter) error {
 		for _, addr := range addrs {
-			if !containsAddress(l.to, addr) {
-				l.to = append(l.to, addr)
+			if !containsAddress(l.L.To, addr) {
+				l.L.To = append(l.L.To, addr)
 			}
 		}
 		return nil
@@ -150,8 +155,8 @@ func CC(name, addr string) Option {
 func CCAddress(addrs ...mail.Address) Option {
 	return func(l *Letter) error {
 		for _, addr := range addrs {
-			if !containsAddress(l.cc, addr) {
-				l.cc = append(l.cc, addr)
+			if !containsAddress(l.L.CC, addr) {
+				l.L.CC = append(l.L.CC, addr)
 			}
 		}
 		return nil
@@ -167,8 +172,8 @@ func BCC(name, addr string) Option {
 func BCCAddress(addrs ...mail.Address) Option {
 	return func(l *Letter) error {
 		for _, addr := range addrs {
-			if !containsAddress(l.bcc, addr) {
-				l.bcc = append(l.bcc, addr)
+			if !containsAddress(l.L.BCC, addr) {
+				l.L.BCC = append(l.L.BCC, addr)
 			}
 		}
 		return nil
@@ -184,8 +189,8 @@ func ReplyTo(name, addr string) Option {
 func ReplyToAddress(addrs ...mail.Address) Option {
 	return func(l *Letter) error {
 		for _, addr := range addrs {
-			if !containsAddress(l.replyTo, addr) {
-				l.replyTo = append(l.replyTo, addr)
+			if !containsAddress(l.L.ReplyTo, addr) {
+				l.L.ReplyTo = append(l.L.ReplyTo, addr)
 			}
 		}
 		return nil
@@ -195,7 +200,7 @@ func ReplyToAddress(addrs ...mail.Address) Option {
 // Text sets the text content of the letter.
 func Text(s string) Option {
 	return func(l *Letter) error {
-		l.text = s
+		l.L.Text = s
 		return nil
 	}
 }
@@ -203,7 +208,7 @@ func Text(s string) Option {
 // HTML sets the HTML content of the letter.
 func HTML(s string) Option {
 	return func(l *Letter) error {
-		l.html = s
+		l.L.HTML = s
 		return nil
 	}
 }
@@ -211,8 +216,8 @@ func HTML(s string) Option {
 // Content sets both the text and HTML content of the letter.
 func Content(text, html string) Option {
 	return func(l *Letter) error {
-		l.text = text
-		l.html = html
+		l.L.Text = text
+		l.L.HTML = html
 		return nil
 	}
 }
@@ -220,7 +225,7 @@ func Content(text, html string) Option {
 // RFC returns an Option that
 func RFC(body string) Option {
 	return func(l *Letter) error {
-		l.rfc = body
+		l.L.RFC = body
 		return nil
 	}
 }
@@ -228,7 +233,7 @@ func RFC(body string) Option {
 // Attach adds a file attachment to the letter.
 func Attach(filename string, content []byte, opts ...AttachmentOption) Option {
 	return func(l *Letter) error {
-		l.attachments = append(l.attachments, NewAttachment(filename, content, opts...))
+		l.L.Attachments = append(l.L.Attachments, NewAttachment(filename, content, opts...))
 		return nil
 	}
 }
@@ -383,18 +388,18 @@ func Expand(pm postdog.Mail) Letter {
 
 // Subject returns the subject of the letter.
 func (l Letter) Subject() string {
-	return l.subject
+	return l.L.Subject
 }
 
 // WithSubject returns a copy of l withs it's subject set to s.
 func (l Letter) WithSubject(s string) Letter {
-	l.subject = s
+	l.L.Subject = s
 	return l
 }
 
 // From returns the sender of the letter.
 func (l Letter) From() mail.Address {
-	return l.from
+	return l.L.From
 }
 
 // WithFrom returns a copy of l with an updated `From` field.
@@ -404,99 +409,99 @@ func (l Letter) WithFrom(name, addr string) Letter {
 
 // WithFromAddress returns a copy of l with addr as it's `From` field.
 func (l Letter) WithFromAddress(addr mail.Address) Letter {
-	l.from = addr
+	l.L.From = addr
 	return l
 }
 
 // To returns the `To` recipients of the letter.
 func (l Letter) To() []mail.Address {
-	return l.to
+	return l.L.To
 }
 
 // WithTo returns a copy of l with addrs as it's `To` recipients.
 func (l Letter) WithTo(addrs ...mail.Address) Letter {
-	l.to = addrs
+	l.L.To = addrs
 	return l
 }
 
 // CC returns the `Cc` recipients of the letter.
 func (l Letter) CC() []mail.Address {
-	return l.cc
+	return l.L.CC
 }
 
 // WithCC returns a copy of l with addrs as it's `CC` recipients.
 func (l Letter) WithCC(addrs ...mail.Address) Letter {
-	l.cc = addrs
+	l.L.CC = addrs
 	return l
 }
 
 // BCC returns the `Bcc` recipients of the letter.
 func (l Letter) BCC() []mail.Address {
-	return l.bcc
+	return l.L.BCC
 }
 
 // WithBCC returns a copy of l with addrs as it's `BCC` recipients.
 func (l Letter) WithBCC(addrs ...mail.Address) Letter {
-	l.bcc = addrs
+	l.L.BCC = addrs
 	return l
 }
 
 // ReplyTo returns the `Reply-To` recipients of the letter.
 func (l Letter) ReplyTo() []mail.Address {
-	return l.replyTo
+	return l.L.ReplyTo
 }
 
 // WithReplyTo returns a copy of l with addrs as it's `ReplyTo` field.
 func (l Letter) WithReplyTo(addrs ...mail.Address) Letter {
-	l.replyTo = addrs
+	l.L.ReplyTo = addrs
 	return l
 }
 
 // Recipients returns all recipients of the letter.
 func (l Letter) Recipients() []mail.Address {
-	count := len(l.recipients) + len(l.to) + len(l.cc) + len(l.bcc)
+	count := len(l.L.Recipients) + len(l.L.To) + len(l.L.CC) + len(l.L.BCC)
 	if count == 0 {
 		return nil
 	}
 	rcpts := make([]mail.Address, 0, count)
-	rcpts = append(rcpts, l.recipients...)
-	rcpts = append(rcpts, l.to...)
-	rcpts = append(rcpts, l.cc...)
-	rcpts = append(rcpts, l.bcc...)
+	rcpts = append(rcpts, l.L.Recipients...)
+	rcpts = append(rcpts, l.L.To...)
+	rcpts = append(rcpts, l.L.CC...)
+	rcpts = append(rcpts, l.L.BCC...)
 	return rcpts
 }
 
 // WithRecipients returns a copy of l with addrs as it's recipients.
 func (l Letter) WithRecipients(addrs ...mail.Address) Letter {
-	l.recipients = addrs
+	l.L.Recipients = addrs
 	return l
 }
 
 // Text returns the text content of the letter.
 func (l Letter) Text() string {
-	return l.text
+	return l.L.Text
 }
 
 // WithText returns a copy of l with t as it's text content.
 func (l Letter) WithText(t string) Letter {
-	l.text = t
+	l.L.Text = t
 	return l
 }
 
 // HTML returns the HTML content of the letter.
 func (l Letter) HTML() string {
-	return l.html
+	return l.L.HTML
 }
 
 // WithHTML returns a copy of h with t as it's HTML content.
 func (l Letter) WithHTML(h string) Letter {
-	l.html = h
+	l.L.HTML = h
 	return l
 }
 
 // Content returns both the text and HTML content of the letter.
 func (l Letter) Content() (text string, html string) {
-	return l.text, l.html
+	return l.L.Text, l.L.HTML
 }
 
 // WithContent returns a copy of l with text as it's text content and html as
@@ -507,39 +512,39 @@ func (l Letter) WithContent(text, html string) Letter {
 
 // Attachments returns the attachments of the letter.
 func (l Letter) Attachments() []Attachment {
-	return l.attachments
+	return l.L.Attachments
 }
 
 // WithAttachments returns a copy of l with attach as it's attachments.
 func (l Letter) WithAttachments(attach ...Attachment) Letter {
-	l.attachments = attach
+	l.L.Attachments = attach
 	return l
 }
 
-// RFCConfig returns the RFC config that is used when calling l.RFC().
+// RFCConfig returns the RFC config that is used when calling l.L.RFC().
 func (l Letter) RFCConfig() rfc.Config {
-	return l.rfcConfig
+	return l.L.RFCConfig
 }
 
 // WithRFCOptions returns a copy of l with it's rfc configuration replaced.
 func (l Letter) WithRFCOptions(opts ...rfc.Option) Letter {
-	l.rfcConfig = rfc.Config{}
+	l.L.RFCConfig = rfc.Config{}
 	for _, opt := range opts {
-		opt(&l.rfcConfig)
+		opt(&l.L.RFCConfig)
 	}
 	return l
 }
 
 // WithRFCConfig returns a copy of l with it's rfc configuration replaced by cfg.
 func (l Letter) WithRFCConfig(cfg rfc.Config) Letter {
-	l.rfcConfig = cfg
+	l.L.RFCConfig = cfg
 	return l
 }
 
 // RFC returns the letter as a RFC 5322 string.
 func (l Letter) RFC() string {
-	if l.rfc != "" {
-		return l.rfc
+	if l.L.RFC != "" {
+		return l.L.RFC
 	}
 	return rfc.BuildConfig(rfc.Mail{
 		Subject:     l.Subject(),
@@ -551,12 +556,12 @@ func (l Letter) RFC() string {
 		Text:        l.Text(),
 		HTML:        l.HTML(),
 		Attachments: rfcAttachments(l.Attachments()),
-	}, l.rfcConfig)
+	}, l.L.RFCConfig)
 }
 
 // WithRFC returns a copy of l with it's rfc body replaced by rfc.
 func (l Letter) WithRFC(rfc string) Letter {
-	l.rfc = rfc
+	l.L.RFC = rfc
 	return l
 }
 
@@ -567,14 +572,14 @@ func (l Letter) String() string {
 // Map maps l to a map[string]interface{}. Use WithoutContent() option to
 // clear the attachment contents in the map.
 func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
-	attachments := make([]interface{}, len(l.attachments))
-	for i, at := range l.attachments {
+	attachments := make([]interface{}, len(l.L.Attachments))
+	for i, at := range l.L.Attachments {
 		attachments[i] = at.Map(opts...)
 	}
 
 	var rfc string
-	if l.rfc != "" {
-		rfc = l.rfc
+	if l.L.RFC != "" {
+		rfc = l.L.RFC
 	}
 
 	return map[string]interface{}{
@@ -595,43 +600,43 @@ func (l Letter) Map(opts ...mapper.Option) map[string]interface{} {
 // Parse parses m into l.
 func (l *Letter) Parse(m map[string]interface{}) {
 	if from, ok := m["from"].(map[string]interface{}); ok {
-		l.from = parseAddress(from)
+		l.L.From = parseAddress(from)
 	}
 
 	if recipients, ok := m["recipients"].([]interface{}); ok && len(recipients) > 0 {
-		l.recipients = parseIFaceAddresses(recipients...)
+		l.L.Recipients = parseIFaceAddresses(recipients...)
 	}
 
 	if to, ok := m["to"].([]interface{}); ok && len(to) > 0 {
-		l.to = parseIFaceAddresses(to...)
+		l.L.To = parseIFaceAddresses(to...)
 	}
 
 	if cc, ok := m["cc"].([]interface{}); ok && len(cc) > 0 {
-		l.cc = parseIFaceAddresses(cc...)
+		l.L.CC = parseIFaceAddresses(cc...)
 	}
 
 	if bcc, ok := m["bcc"].([]interface{}); ok && len(bcc) > 0 {
-		l.bcc = parseIFaceAddresses(bcc...)
+		l.L.BCC = parseIFaceAddresses(bcc...)
 	}
 
 	if replyTo, ok := m["replyTo"].([]interface{}); ok && len(replyTo) > 0 {
-		l.replyTo = parseIFaceAddresses(replyTo...)
+		l.L.ReplyTo = parseIFaceAddresses(replyTo...)
 	}
 
 	if subject, ok := m["subject"].(string); ok && len(subject) > 0 {
-		l.subject = subject
+		l.L.Subject = subject
 	}
 
 	if text, ok := m["text"].(string); ok && len(text) > 0 {
-		l.text = text
+		l.L.Text = text
 	}
 
 	if html, ok := m["html"].(string); ok && len(html) > 0 {
-		l.html = html
+		l.L.HTML = html
 	}
 
 	if rfc, ok := m["rfc"].(string); ok && len(rfc) > 0 {
-		l.rfc = rfc
+		l.L.RFC = rfc
 	}
 
 	if attachments, ok := m["attachments"].([]interface{}); ok && len(attachments) > 0 {
@@ -643,7 +648,7 @@ func (l *Letter) Parse(m map[string]interface{}) {
 				ats = append(ats, at)
 			}
 		}
-		l.attachments = ats
+		l.L.Attachments = ats
 	}
 
 	l.normalize()
@@ -655,15 +660,15 @@ func (l *Letter) normalize() {
 }
 
 func (l *Letter) normalizeRecipients() {
-	l.removeRecipients(l.to)
-	l.removeRecipients(l.cc)
-	l.removeRecipients(l.bcc)
+	l.removeRecipients(l.L.To)
+	l.removeRecipients(l.L.CC)
+	l.removeRecipients(l.L.BCC)
 }
 
 func (l *Letter) removeRecipients(addrs []mail.Address) {
-	remaining := l.recipients[:0]
+	remaining := l.L.Recipients[:0]
 L:
-	for _, rcpt := range l.recipients {
+	for _, rcpt := range l.L.Recipients {
 		for _, addr := range addrs {
 			if rcpt == addr {
 				continue L
@@ -674,12 +679,12 @@ L:
 	if len(remaining) == 0 {
 		remaining = nil
 	}
-	l.recipients = remaining
+	l.L.Recipients = remaining
 }
 
 func (l *Letter) normalizeAttachments() {
-	for i := range l.attachments {
-		l.attachments[i].normalize()
+	for i := range l.L.Attachments {
+		l.L.Attachments[i].normalize()
 	}
 }
 
@@ -869,14 +874,6 @@ func parseAddress(m map[string]interface{}) mail.Address {
 		Name:    name,
 		Address: addr,
 	}
-}
-
-func parseAddresses(maps ...map[string]interface{}) []mail.Address {
-	res := make([]mail.Address, len(maps))
-	for i, m := range maps {
-		res[i] = parseAddress(m)
-	}
-	return res
 }
 
 func parseIFaceAddresses(ifs ...interface{}) []mail.Address {
