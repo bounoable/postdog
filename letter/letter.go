@@ -24,6 +24,8 @@ import (
 // Letter represents a mail.
 type Letter struct {
 	L
+
+	rfcConfig rfc.Config
 }
 
 // L contains the fields of a Letter.
@@ -39,7 +41,6 @@ type L struct {
 	Text        string
 	HTML        string
 	Attachments []Attachment
-	RFCConfig   rfc.Config
 }
 
 // Attachment is a file attachment.
@@ -523,21 +524,21 @@ func (l Letter) WithAttachments(attach ...Attachment) Letter {
 
 // RFCConfig returns the RFC config that is used when calling l.L.RFC().
 func (l Letter) RFCConfig() rfc.Config {
-	return l.L.RFCConfig
+	return l.rfcConfig
 }
 
 // WithRFCOptions returns a copy of l with it's rfc configuration replaced.
 func (l Letter) WithRFCOptions(opts ...rfc.Option) Letter {
-	l.L.RFCConfig = rfc.Config{}
+	l.rfcConfig = rfc.Config{}
 	for _, opt := range opts {
-		opt(&l.L.RFCConfig)
+		opt(&l.rfcConfig)
 	}
 	return l
 }
 
 // WithRFCConfig returns a copy of l with it's rfc configuration replaced by cfg.
 func (l Letter) WithRFCConfig(cfg rfc.Config) Letter {
-	l.L.RFCConfig = cfg
+	l.rfcConfig = cfg
 	return l
 }
 
@@ -556,7 +557,7 @@ func (l Letter) RFC() string {
 		Text:        l.Text(),
 		HTML:        l.HTML(),
 		Attachments: rfcAttachments(l.Attachments()),
-	}, l.L.RFCConfig)
+	}, l.rfcConfig)
 }
 
 // WithRFC returns a copy of l with it's rfc body replaced by rfc.

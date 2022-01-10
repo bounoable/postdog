@@ -45,7 +45,7 @@ func TestExpand(t *testing.T) {
 			name: "basic mail",
 			give: aBasicMail,
 			want: Letter{
-				L{
+				L: L{
 					From: mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
 					Recipients: []mail.Address{
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -60,7 +60,7 @@ func TestExpand(t *testing.T) {
 				To("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					To: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -75,7 +75,7 @@ func TestExpand(t *testing.T) {
 				CC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					CC: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -90,7 +90,7 @@ func TestExpand(t *testing.T) {
 				BCC("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					BCC: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -105,7 +105,7 @@ func TestExpand(t *testing.T) {
 				ReplyTo("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					ReplyTo: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -120,7 +120,7 @@ func TestExpand(t *testing.T) {
 				Recipient("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					Recipients: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -136,7 +136,7 @@ func TestExpand(t *testing.T) {
 				To("Linda Belcher", "linda@example.com"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					Recipients: []mail.Address{
 						{Name: "Bob Belcher", Address: "bob@example.com"},
 					},
@@ -152,7 +152,7 @@ func TestExpand(t *testing.T) {
 				Subject("Hello."),
 			),
 			want: Letter{
-				L{
+				L: L{
 					Subject: "Hello.",
 				},
 			},
@@ -163,7 +163,7 @@ func TestExpand(t *testing.T) {
 				Text("Hello."),
 			),
 			want: Letter{
-				L{
+				L: L{
 					Text: "Hello.",
 				},
 			},
@@ -174,7 +174,7 @@ func TestExpand(t *testing.T) {
 				HTML("<p>Hello.</p>"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					HTML: "<p>Hello.</p>",
 				},
 			},
@@ -183,7 +183,7 @@ func TestExpand(t *testing.T) {
 			name: "mail with RFC() method",
 			give: aBasicMail,
 			want: Letter{
-				L{
+				L: L{
 					From: mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
 					Recipients: []mail.Address{
 						{Name: "Linda Belcher", Address: "linda@example.com"},
@@ -198,7 +198,7 @@ func TestExpand(t *testing.T) {
 				RFC("rfc body"),
 			),
 			want: Letter{
-				L{
+				L: L{
 					From: mail.Address{Name: "Bob Belcher", Address: "bob@example.com"},
 					RFC:  "rfc body",
 				},
