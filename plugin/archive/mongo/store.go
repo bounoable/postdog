@@ -212,6 +212,7 @@ func (s *Store) createIndexes(ctx context.Context) error {
 		{Keys: bson.D{
 			{Key: "text", Value: "text"},
 			{Key: "html", Value: "text"},
+			{Key: "subject", Value: "text"},
 		}},
 	})
 	return err
