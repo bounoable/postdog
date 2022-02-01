@@ -368,7 +368,7 @@ func newFilter(q query.Query) bson.D {
 	if q.Input != "" {
 		filter = append(filter, bson.E{
 			Key:   "$text",
-			Value: bson.D{{Key: "$search", Value: fmt.Sprintf("%q", q.Input)}},
+			Value: bson.D{{Key: "$search", Value: q.Input}},
 		})
 	}
 
