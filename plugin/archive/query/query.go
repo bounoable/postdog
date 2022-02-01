@@ -24,21 +24,22 @@ const (
 
 // Query provides filters, sorting & pagination for querying mails.
 type Query struct {
-	From          []mail.Address
-	To            []mail.Address
-	CC            []mail.Address
-	BCC           []mail.Address
-	Recipients    []mail.Address
-	Subjects      []string
-	Texts         []string
-	HTML          []string
-	RFC           []string
-	SendErrors    []string
+	From       []mail.Address
+	To         []mail.Address
+	CC         []mail.Address
+	BCC        []mail.Address
+	Recipients []mail.Address
+	Subjects   []string
+	// Texts         []string
+	// HTML          []string
+	// RFC           []string
+	// SendErrors    []string
 	SendTime      SendTimeFilter
 	Attachment    AttachmentFilter
 	Sorting       Sorting
 	SortDirection SortDirection
 	Pagination    Pagination
+	Input         string
 }
 
 // SendTimeFilter is the query filter for the send date.
@@ -128,33 +129,33 @@ func Subject(subjects ...string) Option {
 	}
 }
 
-// Text returns an Option that adds a `Text` filter to a Query.
-func Text(texts ...string) Option {
-	return func(q *Query) {
-		q.Texts = append(q.Texts, texts...)
-	}
-}
+// // Text returns an Option that adds a `Text` filter to a Query.
+// func Text(texts ...string) Option {
+// 	return func(q *Query) {
+// 		q.Texts = append(q.Texts, texts...)
+// 	}
+// }
 
-// HTML returns an Option that adds an `HTML` filter to a Query.
-func HTML(html ...string) Option {
-	return func(q *Query) {
-		q.HTML = append(q.HTML, html...)
-	}
-}
+// // HTML returns an Option that adds an `HTML` filter to a Query.
+// func HTML(html ...string) Option {
+// 	return func(q *Query) {
+// 		q.HTML = append(q.HTML, html...)
+// 	}
+// }
 
-// RFC returns an Option that adds an `RFC` filter to a Query.
-func RFC(rfc ...string) Option {
-	return func(q *Query) {
-		q.RFC = append(q.RFC, rfc...)
-	}
-}
+// // RFC returns an Option that adds an `RFC` filter to a Query.
+// func RFC(rfc ...string) Option {
+// 	return func(q *Query) {
+// 		q.RFC = append(q.RFC, rfc...)
+// 	}
+// }
 
-// SendError returns an Option that adds a `send error` filter to a Query.
-func SendError(errs ...string) Option {
-	return func(q *Query) {
-		q.SendErrors = append(q.SendErrors, errs...)
-	}
-}
+// // SendError returns an Option that adds a `send error` filter to a Query.
+// func SendError(errs ...string) Option {
+// 	return func(q *Query) {
+// 		q.SendErrors = append(q.SendErrors, errs...)
+// 	}
+// }
 
 // SentAt returns an Option that filters mails by their send time.
 // The send time of a mail must be one of t.
@@ -227,6 +228,13 @@ func AttachmentContentType(cts ...string) Option {
 func AttachmentContent(content ...[]byte) Option {
 	return func(q *Query) {
 		q.Attachment.Contents = append(q.Attachment.Contents, content...)
+	}
+}
+
+// Input returns an Option that sets the search input for a Query.
+func Input(input string) Option {
+	return func(q *Query) {
+		q.Input = input
 	}
 }
 

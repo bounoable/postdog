@@ -90,36 +90,36 @@ func TestNew(t *testing.T) {
 				Subjects: []string{"Subject 1", "Subject 2", "Subject 3", "Subject 4"},
 			},
 		},
-		{
-			name: "Text()",
-			opts: []query.Option{
-				query.Text("text body 1", "text body 2"),
-				query.Text("text body 3", "text body 4"),
-			},
-			want: query.Query{
-				Texts: []string{"text body 1", "text body 2", "text body 3", "text body 4"},
-			},
-		},
-		{
-			name: "HTML()",
-			opts: []query.Option{
-				query.HTML("html body 1", "html body 2"),
-				query.HTML("html body 3", "html body 4"),
-			},
-			want: query.Query{
-				HTML: []string{"html body 1", "html body 2", "html body 3", "html body 4"},
-			},
-		},
-		{
-			name: "RFC()",
-			opts: []query.Option{
-				query.RFC("rfc body 1", "rfc body 2"),
-				query.RFC("rfc body 3", "rfc body 4"),
-			},
-			want: query.Query{
-				RFC: []string{"rfc body 1", "rfc body 2", "rfc body 3", "rfc body 4"},
-			},
-		},
+		// {
+		// 	name: "Text()",
+		// 	opts: []query.Option{
+		// 		query.Text("text body 1", "text body 2"),
+		// 		query.Text("text body 3", "text body 4"),
+		// 	},
+		// 	want: query.Query{
+		// 		Texts: []string{"text body 1", "text body 2", "text body 3", "text body 4"},
+		// 	},
+		// },
+		// {
+		// 	name: "HTML()",
+		// 	opts: []query.Option{
+		// 		query.HTML("html body 1", "html body 2"),
+		// 		query.HTML("html body 3", "html body 4"),
+		// 	},
+		// 	want: query.Query{
+		// 		HTML: []string{"html body 1", "html body 2", "html body 3", "html body 4"},
+		// 	},
+		// },
+		// {
+		// 	name: "RFC()",
+		// 	opts: []query.Option{
+		// 		query.RFC("rfc body 1", "rfc body 2"),
+		// 		query.RFC("rfc body 3", "rfc body 4"),
+		// 	},
+		// 	want: query.Query{
+		// 		RFC: []string{"rfc body 1", "rfc body 2", "rfc body 3", "rfc body 4"},
+		// 	},
+		// },
 		{
 			name: "AttachmentFilename()",
 			opts: []query.Option{
@@ -187,16 +187,16 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "SendError()",
-			opts: []query.Option{
-				query.SendError("send error 1", "send error 2"),
-				query.SendError("send error 3", "send error 4"),
-			},
-			want: query.Query{
-				SendErrors: []string{"send error 1", "send error 2", "send error 3", "send error 4"},
-			},
-		},
+		// {
+		// 	name: "SendError()",
+		// 	opts: []query.Option{
+		// 		query.SendError("send error 1", "send error 2"),
+		// 		query.SendError("send error 3", "send error 4"),
+		// 	},
+		// 	want: query.Query{
+		// 		SendErrors: []string{"send error 1", "send error 2", "send error 3", "send error 4"},
+		// 	},
+		// },
 		{
 			name: "SentAt()",
 			opts: []query.Option{

@@ -270,65 +270,65 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 					})
 				})
 
-				Convey("When I query the RFC body of a mail", func() {
-					cur, err := s.Query(stdctx.Background(), query.New(
-						query.RFC(`To: "Recipient 2" <rcpt2@example.com>`),
-					))
+				// Convey("When I query the RFC body of a mail", func() {
+				// 	cur, err := s.Query(stdctx.Background(), query.New(
+				// 		query.RFC(`To: "Recipient 2" <rcpt2@example.com>`),
+				// 	))
 
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
+				// 	Convey("It shouldn't fail", func() {
+				// 		So(err, ShouldBeNil)
+				// 	})
 
-					Convey("Cursor should have one element", func() {
-						So(drain(cur), ShouldHaveLength, 1)
-					})
+				// 	Convey("Cursor should have one element", func() {
+				// 		So(drain(cur), ShouldHaveLength, 1)
+				// 	})
 
-					Convey("Cursor should return the correct mail", func() {
-						mails := drain(cur)
-						mail := mails[0]
-						So(mail, shouldResembleMail, mockMails[1])
-					})
-				})
+				// 	Convey("Cursor should return the correct mail", func() {
+				// 		mails := drain(cur)
+				// 		mail := mails[0]
+				// 		So(mail, shouldResembleMail, mockMails[1])
+				// 	})
+				// })
 
-				Convey("When I query the text body of a mail", func() {
-					cur, err := s.Query(stdctx.Background(), query.New(
-						query.Text("Content 2"),
-					))
+				// Convey("When I query the text body of a mail", func() {
+				// 	cur, err := s.Query(stdctx.Background(), query.New(
+				// 		query.Text("Content 2"),
+				// 	))
 
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
+				// 	Convey("It shouldn't fail", func() {
+				// 		So(err, ShouldBeNil)
+				// 	})
 
-					Convey("Cursor should have one element", func() {
-						So(drain(cur), ShouldHaveLength, 1)
-					})
+				// 	Convey("Cursor should have one element", func() {
+				// 		So(drain(cur), ShouldHaveLength, 1)
+				// 	})
 
-					Convey("Cursor should return the correct mail", func() {
-						mails := drain(cur)
-						mail := mails[0]
-						So(mail, shouldResembleMail, mockMails[1])
-					})
-				})
+				// 	Convey("Cursor should return the correct mail", func() {
+				// 		mails := drain(cur)
+				// 		mail := mails[0]
+				// 		So(mail, shouldResembleMail, mockMails[1])
+				// 	})
+				// })
 
-				Convey("When I query the HTML body of a mail", func() {
-					cur, err := s.Query(stdctx.Background(), query.New(
-						query.HTML("<p>Content 2"),
-					))
+				// Convey("When I query the HTML body of a mail", func() {
+				// 	cur, err := s.Query(stdctx.Background(), query.New(
+				// 		query.HTML("<p>Content 2"),
+				// 	))
 
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
+				// 	Convey("It shouldn't fail", func() {
+				// 		So(err, ShouldBeNil)
+				// 	})
 
-					Convey("Cursor should have one element", func() {
-						So(drain(cur), ShouldHaveLength, 1)
-					})
+				// 	Convey("Cursor should have one element", func() {
+				// 		So(drain(cur), ShouldHaveLength, 1)
+				// 	})
 
-					Convey("Cursor should return the correct mail", func() {
-						mails := drain(cur)
-						mail := mails[0]
-						So(mail, shouldResembleMail, mockMails[1])
-					})
-				})
+				// 	Convey("Cursor should return the correct mail", func() {
+				// 		mails := drain(cur)
+				// 		mail := mails[0]
+				// 		So(mail, shouldResembleMail, mockMails[1])
+				// 	})
+				// })
 
 				Convey("When I query the subject of a mail", func() {
 					cur, err := s.Query(stdctx.Background(), query.New(
@@ -455,45 +455,45 @@ func Store(t *testing.T, newStore func() archive.Store, opts ...StoreTestOption)
 				testSorting(s, mockMails)
 			}))
 
-			Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, cfg.roundTime, func(s archive.Store) {
-				Convey("When I query for the full error message", func() {
-					cur, err := s.Query(context.Background(), query.New(
-						query.SendError(errMockSend.Error()+" 2"),
-					))
+			// Convey("Given a Store with 5 failed mails", withFilledErrMailStore(newStore, 5, cfg.roundTime, func(s archive.Store) {
+			// 	Convey("When I query for the full error message", func() {
+			// 		cur, err := s.Query(context.Background(), query.New(
+			// 			query.SendError(errMockSend.Error()+" 2"),
+			// 		))
 
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
+			// 		Convey("It shouldn't fail", func() {
+			// 			So(err, ShouldBeNil)
+			// 		})
 
-					Convey("Cursor should have 1 element", func() {
-						So(drain(cur), ShouldHaveLength, 1)
-					})
+			// 		Convey("Cursor should have 1 element", func() {
+			// 			So(drain(cur), ShouldHaveLength, 1)
+			// 		})
 
-					Convey("Cursor should return the correct mail", func() {
-						mail := drain(cur)[0]
-						So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
-					})
-				})
+			// 		Convey("Cursor should return the correct mail", func() {
+			// 			mail := drain(cur)[0]
+			// 			So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
+			// 		})
+			// 	})
 
-				Convey("When I query for an error message substring", func() {
-					cur, err := s.Query(context.Background(), query.New(
-						query.SendError("2"),
-					))
+			// 	Convey("When I query for an error message substring", func() {
+			// 		cur, err := s.Query(context.Background(), query.New(
+			// 			query.SendError("2"),
+			// 		))
 
-					Convey("It shouldn't fail", func() {
-						So(err, ShouldBeNil)
-					})
+			// 		Convey("It shouldn't fail", func() {
+			// 			So(err, ShouldBeNil)
+			// 		})
 
-					Convey("Cursor should have 1 element", func() {
-						So(drain(cur), ShouldHaveLength, 1)
-					})
+			// 		Convey("Cursor should have 1 element", func() {
+			// 			So(drain(cur), ShouldHaveLength, 1)
+			// 		})
 
-					Convey("Cursor should return the correct mail", func() {
-						mail := drain(cur)[0]
-						So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
-					})
-				})
-			}))
+			// 		Convey("Cursor should return the correct mail", func() {
+			// 			mail := drain(cur)[0]
+			// 			So(mail.SendError(), ShouldEqual, errMockSend.Error()+" 2")
+			// 		})
+			// 	})
+			// }))
 
 			Convey("Given a Store with 30 mails", withFilledStore(newStore, 30, cfg.roundTime, func(s archive.Store, mockMails []archive.Mail) {
 				Convey("When I query with pagination", func() {

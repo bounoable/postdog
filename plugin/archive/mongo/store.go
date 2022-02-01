@@ -8,7 +8,6 @@ import (
 	"net/textproto"
 	"time"
 
-	"github.com/bounoable/mongoutil/index"
 	"github.com/bounoable/postdog/letter"
 	"github.com/bounoable/postdog/plugin/archive"
 	"github.com/bounoable/postdog/plugin/archive/query"
@@ -192,26 +191,26 @@ func (s *Store) createIndexes(ctx context.Context) error {
 		ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 	}
-	_, err := index.CreateFromConfig(ctx, s.col.Database(), index.Config{
-		s.collectionName: []mongo.IndexModel{
-			{Keys: bson.D{{Key: "id", Value: 1}}, Options: options.Index().SetUnique(true)},
-			{Keys: bson.D{{Key: "sentAt", Value: 1}}},
-			{Keys: bson.D{{Key: "subject", Value: 1}}},
-			{Keys: bson.D{{Key: "from.name", Value: 1}}},
-			{Keys: bson.D{{Key: "from.address", Value: 1}}},
-			{Keys: bson.D{{Key: "recipients.name", Value: 1}}},
-			{Keys: bson.D{{Key: "recipients.address", Value: 1}}},
-			{Keys: bson.D{{Key: "to.name", Value: 1}}},
-			{Keys: bson.D{{Key: "to.address", Value: 1}}},
-			{Keys: bson.D{{Key: "cc.name", Value: 1}}},
-			{Keys: bson.D{{Key: "cc.address", Value: 1}}},
-			{Keys: bson.D{{Key: "bcc.name", Value: 1}}},
-			{Keys: bson.D{{Key: "bcc.address", Value: 1}}},
-			{Keys: bson.D{{Key: "attachments.filename", Value: 1}}},
-			{Keys: bson.D{{Key: "attachments.contentType", Value: 1}}},
-			{Keys: bson.D{{Key: "attachments.content", Value: 1}}},
-			{Keys: bson.D{{Key: "attachments.size", Value: 1}}},
-		},
+	_, err := s.col.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "id", Value: 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{Key: "sentAt", Value: 1}}},
+		{Keys: bson.D{{Key: "subject", Value: 1}}},
+		{Keys: bson.D{{Key: "from.name", Value: 1}}},
+		{Keys: bson.D{{Key: "from.address", Value: 1}}},
+		{Keys: bson.D{{Key: "recipients.name", Value: 1}}},
+		{Keys: bson.D{{Key: "recipients.address", Value: 1}}},
+		{Keys: bson.D{{Key: "to.name", Value: 1}}},
+		{Keys: bson.D{{Key: "to.address", Value: 1}}},
+		{Keys: bson.D{{Key: "cc.name", Value: 1}}},
+		{Keys: bson.D{{Key: "cc.address", Value: 1}}},
+		{Keys: bson.D{{Key: "bcc.name", Value: 1}}},
+		{Keys: bson.D{{Key: "bcc.address", Value: 1}}},
+		{Keys: bson.D{{Key: "attachments.filename", Value: 1}}},
+		{Keys: bson.D{{Key: "attachments.contentType", Value: 1}}},
+		{Keys: bson.D{{Key: "attachments.content", Value: 1}}},
+		{Keys: bson.D{{Key: "attachments.size", Value: 1}}},
+		{Keys: bson.D{{Key: "text", Value: "text"}}},
+		{Keys: bson.D{{Key: "html", Value: "text"}}},
 	})
 	return err
 }
@@ -352,16 +351,23 @@ func newFilter(q query.Query) bson.D {
 		filter = withFilter(filter, []string{"subject"}, regexInValues(q.Subjects))
 	}
 
-	if len(q.Texts) > 0 {
-		filter = withFilter(filter, []string{"text"}, regexInValues(q.Texts))
-	}
+	// if len(q.Texts) > 0 {
+	// 	filter = withFilter(filter, []string{"text"}, regexInValues(q.Texts))
+	// }
 
-	if len(q.HTML) > 0 {
-		filter = withFilter(filter, []string{"html"}, regexInValues(q.HTML))
-	}
+	// if len(q.HTML) > 0 {
+	// 	filter = withFilter(filter, []string{"html"}, regexInValues(q.HTML))
+	// }
 
-	if len(q.RFC) > 0 {
-		filter = withFilter(filter, []string{"rfc"}, regexInValues(q.RFC))
+	// if len(q.RFC) > 0 {
+	// 	filter = withFilter(filter, []string{"rfc"}, regexInValues(q.RFC))
+	// }
+
+	if q.Input != "" {
+		filter = append(filter, bson.E{
+			Key:   "$text",
+			Value: bson.D{{Key: "$search", Value: fmt.Sprintf("%q", q.Input)}},
+		})
 	}
 
 	if len(q.From) > 0 {
@@ -441,9 +447,9 @@ func newFilter(q query.Query) bson.D {
 		filter = append(filter, bson.E{Key: "$or", Value: or})
 	}
 
-	if len(q.SendErrors) > 0 {
-		filter = append(filter, bson.E{Key: "sendError", Value: regexInValues(q.SendErrors)})
-	}
+	// if len(q.SendErrors) > 0 {
+	// 	filter = append(filter, bson.E{Key: "sendError", Value: regexInValues(q.SendErrors)})
+	// }
 
 	return filter
 }

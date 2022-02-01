@@ -106,23 +106,23 @@ func filter(pm archive.Mail, q query.Query) bool {
 		}
 	}
 
-	if len(q.RFC) > 0 {
-		if !containsAnySubstring(m.RFC(), q.RFC) {
-			return false
-		}
-	}
+	// if len(q.RFC) > 0 {
+	// 	if !containsAnySubstring(m.RFC(), q.RFC) {
+	// 		return false
+	// 	}
+	// }
 
-	if len(q.Texts) > 0 {
-		if !containsAnySubstring(m.Text(), q.Texts) {
-			return false
-		}
-	}
+	// if len(q.Texts) > 0 {
+	// 	if !containsAnySubstring(m.Text(), q.Texts) {
+	// 		return false
+	// 	}
+	// }
 
-	if len(q.HTML) > 0 {
-		if !containsAnySubstring(m.HTML(), q.HTML) {
-			return false
-		}
-	}
+	// if len(q.HTML) > 0 {
+	// 	if !containsAnySubstring(m.HTML(), q.HTML) {
+	// 		return false
+	// 	}
+	// }
 
 	if len(q.Subjects) > 0 {
 		if !containsAnySubstring(m.Subject(), q.Subjects) {
@@ -130,11 +130,11 @@ func filter(pm archive.Mail, q query.Query) bool {
 		}
 	}
 
-	if len(q.SendErrors) > 0 {
-		if !containsAnySubstring(m.SendError(), q.SendErrors) {
-			return false
-		}
-	}
+	// if len(q.SendErrors) > 0 {
+	// 	if !containsAnySubstring(m.SendError(), q.SendErrors) {
+	// 		return false
+	// 	}
+	// }
 
 	attachments := m.Attachments()
 	if len(q.Attachment.Filenames) > 0 {
