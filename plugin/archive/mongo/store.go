@@ -209,8 +209,10 @@ func (s *Store) createIndexes(ctx context.Context) error {
 		{Keys: bson.D{{Key: "attachments.contentType", Value: 1}}},
 		{Keys: bson.D{{Key: "attachments.content", Value: 1}}},
 		{Keys: bson.D{{Key: "attachments.size", Value: 1}}},
-		{Keys: bson.D{{Key: "text", Value: "text"}}},
-		{Keys: bson.D{{Key: "html", Value: "text"}}},
+		{Keys: bson.D{
+			{Key: "text", Value: "text"},
+			{Key: "html", Value: "text"},
+		}},
 	})
 	return err
 }
